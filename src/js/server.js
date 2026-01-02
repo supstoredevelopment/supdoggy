@@ -24,7 +24,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
+  process.env.SUPABASE_ANON_KEY  
 );
 
 const supabaseAdmin = createClient(
@@ -35,16 +35,16 @@ const supabaseAdmin = createClient(
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:5500,http://127.0.0.1:5500')
   .split(',')
   .map(origin => origin.trim());
-
+  
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 
 const corsOptions = {
-  origin: function (origin, callback) {
+  origin: function(origin, callback) {
     console.log('📨 CORS request from origin:', origin);
     console.log('✅ ALLOWED_ORIGINS:', ALLOWED_ORIGINS);
-
+    
     if (!origin) return callback(null, true);
-
+    
     if (ALLOWED_ORIGINS.includes(origin)) {
       console.log('✅ Origin ALLOWED');
       return callback(null, true);
@@ -71,19 +71,19 @@ app.options('/api/stripe-webhook', (req, res) => {
 });
 
 app.get('/api/stripe-webhook', (req, res) => {
-  res.json({
+  res.json({ 
     status: 'Webhook endpoint is active',
     message: 'This endpoint only accepts POST requests from Stripe',
     timestamp: new Date().toISOString()
   });
 });
 
-app.post('/api/stripe-webhook',
-  express.raw({ type: 'application/json' }),
+app.post('/api/stripe-webhook', 
+  express.raw({ type: 'application/json' }), 
   async (req, res) => {
     console.log('🎯 Webhook POST received!');
     console.log('Headers:', req.headers);
-
+    
     const sig = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -124,9 +124,9 @@ app.post('/api/stripe-webhook',
 
         const { error: updateError } = await supabaseAdmin
           .from('orders')
-          .update({
-            status: 'completed',
-            payment_date: new Date().toISOString()
+          .update({ 
+            status: 'completed', 
+            payment_date: new Date().toISOString() 
           })
           .eq('session_id', session.id);
 
@@ -143,7 +143,7 @@ app.post('/api/stripe-webhook',
         for (const lineItem of sessionWithLineItems.line_items.data) {
           const priceId = lineItem.price.id;
           console.log('Processing price ID:', priceId);
-
+          
           const { data: asset, error: assetError } = await supabaseAdmin
             .from('assets')
             .select('id')
@@ -241,7 +241,7 @@ app.post('/api/stripe-webhook',
       console.error('❌ Webhook processing error:', err);
       res.status(500).json({ error: 'Webhook processing failed' });
     }
-  });
+});
 
 app.use(
   helmet({
@@ -251,9 +251,11 @@ app.use(
         scriptSrc: [
           "'self'",
           "'unsafe-inline'",
+          "'unsafe-hashes'",
           "https://cdnjs.cloudflare.com",
           "https://js.stripe.com",
         ],
+        scriptSrcAttr: ["'unsafe-inline'", "'unsafe-hashes'"],
         styleSrc: [
           "'self'",
           "'unsafe-inline'",
@@ -317,12 +319,12 @@ const checkoutLimiter = rateLimit({
 
 app.use(limiter);
 
-const csrfProtection = csrf({
-  cookie: {
-    httpOnly: true,
+const csrfProtection = csrf({ 
+  cookie: { 
+    httpOnly: true, 
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax'
-  }
+  } 
 });
 
 const validateEmail = (email) => {
@@ -350,19 +352,19 @@ const validateCartItem = (item) => {
 const authenticateToken = async (req, res, next) => {
   try {
     let token = req.headers.authorization?.replace('Bearer ', '');
-
+    
     if (!token) {
       token = req.cookies.auth_token;
     }
-
+    
     if (!token) {
       return res.status(401).json({ error: 'No authentication token' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+    
     const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(decoded.userId);
-
+    
     if (error || !user || !user.email_confirmed_at) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -408,7 +410,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
     }
 
     const validEmail = validateEmail(email);
-
+    
     if (password.length < 8) {
       return res.status(400).json({ warning: 'Password must be at least 12 characters' });
     }
@@ -452,7 +454,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
     console.log('📨 Login request received');
-
+    
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -475,7 +477,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
           resource: 'auth',
           status: 'failed',
         });
-      } catch (logErr) { }
+      } catch (logErr) {}
       return res.status(401).json({ error: 'Invalid credentials or unconfirmed email' });
     }
 
@@ -508,7 +510,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
       status: 'success',
     });
 
-    res.json({
+    res.json({ 
       message: 'Logged in successfully',
       token: token
     });
@@ -530,7 +532,7 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
         resource: 'auth',
         status: 'success',
       });
-    } catch (logErr) { }
+    } catch (logErr) {}
 
     res.json({ message: 'Logged out' });
   } catch (err) {
@@ -621,7 +623,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         status: 'initiated',
         details: { items_count: cart.length, total_amount: totalAmount },
       });
-    } catch (logErr) { }
+    } catch (logErr) {}
 
     res.json({ url: session.url });
   } catch (err) {
@@ -730,11 +732,11 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
     }
 
     let filePath = version.file_path;
-
+    
     if (filePath.startsWith('/')) {
       filePath = filePath.substring(1);
     }
-
+    
     if (filePath.startsWith('assets/')) {
       filePath = filePath.substring(7);
     }
@@ -748,7 +750,7 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
 
     if (signedUrlError) {
       console.error('Signed URL error:', signedUrlError);
-      return res.status(500).json({
+      return res.status(500).json({ 
         error: 'Failed to generate download URL',
         details: process.env.NODE_ENV === 'development' ? signedUrlError.message : undefined
       });
@@ -767,7 +769,7 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
         status: 'success',
         details: { version_id: versionId, file_path: filePath }
       });
-    } catch (logErr) { }
+    } catch (logErr) {}
 
     res.json({ url: signedUrlData.signedUrl });
   } catch (err) {
@@ -802,7 +804,7 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
         resource: 'user',
         status: 'success',
       });
-    } catch (logErr) { }
+    } catch (logErr) {}
 
     res.json({ message: 'Profile updated' });
   } catch (err) {
@@ -836,7 +838,7 @@ app.get('/api/assets', async (req, res) => {
 
     if (error) return res.status(500).json({ error: 'Failed to fetch assets' });
 
-    res.json({
+    res.json({ 
       data: assets,
       pagination: {
         page,
