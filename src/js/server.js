@@ -854,7 +854,8 @@ app.use(express.static(path.join(__dirname, '..')));
 
 // Catch-all route to serve index.html for frontend routing
 // This must come AFTER all API routes
-app.get('*', (req, res) => {
+// Use regex pattern for Express v5 compatibility
+app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
