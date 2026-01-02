@@ -125,13 +125,11 @@
             document.getElementById('sessionId').textContent = sessionId;
         }
 
-        // Clear cart from localStorage
         function clearCart() {
             try {
                 localStorage.removeItem('cart');
                 console.log('✅ Cart cleared successfully');
                 
-                // Dispatch event to notify other components
                 window.dispatchEvent(new Event('cartCleared'));
                 window.dispatchEvent(new StorageEvent('storage', {
                     key: 'cart',
@@ -143,7 +141,6 @@
             }
         }
 
-        // Update download status
         function updateStatus(message, isSuccess = null) {
             const statusDiv = document.getElementById('downloadStatus');
             let icon = '<span class="loading"></span>';
@@ -173,7 +170,6 @@
             try {
                 updateStatus('Fetching your purchased assets...');
 
-                // Fetch user's assets (all of them, since we just purchased)
                 const res = await fetch(`/api/user/assets`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -200,7 +196,6 @@
 
                 for (const asset of assets) {
                     try {
-                        // Fetch versions for this asset
                         const vres = await fetch(`/api/asset/${asset.id}/versions`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`,
@@ -223,10 +218,8 @@
                             continue;
                         }
 
-                        // Get the latest version (first one since they're ordered by created_at desc)
                         const latestVersion = versions[0];
 
-                        // Request download URL
                         const downloadRes = await fetch(
                             `/api/download/${asset.id}/${latestVersion.id}`,
                             {
@@ -247,11 +240,9 @@
                         const downloadData = await downloadRes.json();
                         
                         if (downloadData.url) {
-                            // Open download in new tab
                             window.open(downloadData.url, '_blank');
                             downloadCount++;
                             
-                            // Small delay between downloads to avoid overwhelming the browser
                             await new Promise(resolve => setTimeout(resolve, 500));
                         }
 
@@ -261,7 +252,6 @@
                     }
                 }
 
-                // Update final status
                 if (downloadCount > 0) {
                     updateStatus(
                         `Successfully started ${downloadCount} download(s)!${errorCount > 0 ? ` (${errorCount} failed)` : ''}`,
@@ -277,12 +267,9 @@
             }
         }
 
-        // Execute on page load
         window.addEventListener('load', async () => {
-            // Clear the cart first
             clearCart();
             
-            // Then handle downloads
             await handleAutoDownloads();
         });
     </script>

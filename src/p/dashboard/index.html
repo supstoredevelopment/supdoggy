@@ -1000,7 +1000,6 @@
             `;
             downloadsList.appendChild(card);
 
-            // Fetch versions for this asset
             try {
                 console.log(`🔍 Fetching versions for asset ${asset.id}...`);
                 const vres = await fetch(`/api/asset/${asset.id}/versions`, {
@@ -1031,7 +1030,6 @@
                             e.preventDefault();
                             console.log(`📥 Downloading asset ${asset.id}, version ${version.id}`);
                             
-                            // Disable button during download
                             btn.style.opacity = '0.5';
                             btn.style.pointerEvents = 'none';
                             const originalText = btn.innerHTML;
@@ -1057,7 +1055,6 @@
                                 console.log('✅ Download URL received:', data.url);
 
                                 if (data.url) {
-                                    // Open in new tab for download
                                     window.open(data.url, '_blank');
                                     console.log('✅ Download started!');
                                 } else {
@@ -1067,7 +1064,6 @@
                                 console.error('❌ Download failed:', err);
                                 alert('Download failed: ' + err.message);
                             } finally {
-                                // Re-enable button
                                 btn.style.opacity = '1';
                                 btn.style.pointerEvents = 'auto';
                                 btn.innerHTML = originalText;

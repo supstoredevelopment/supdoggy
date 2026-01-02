@@ -844,7 +844,6 @@
                     },
                 });
                 if (!response.ok) {
-                    // localStorage.removeItem('auth_token');
                     localStorage.setItem('redirectAfterLogin', '/p/checkout');
                     alert('Please login to complete your purchase');
                     window.location.href = '/p/login';
@@ -852,7 +851,6 @@
                 }
                 return true;
             } catch (err) {
-                // localStorage.removeItem('auth_token');
                 localStorage.setItem('redirectAfterLogin', '/p/checkout');
                 alert('Please login to complete your purchase');
                 window.location.href = '/p/login';

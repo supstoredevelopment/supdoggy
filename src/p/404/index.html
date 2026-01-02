@@ -1328,7 +1328,7 @@
             }
 
             try {
-                const response = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                const response = await fetch('/api/user/profile', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,

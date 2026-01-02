@@ -1851,12 +1851,11 @@
 
         function updateCartCount() {
             const cart = getCart(); 
-            // if cart is higher than 0 then show the cartcount if not hide it
             cartCount.textContent = cart.length;
         }
 
         async function fetchAssets() {
-            const res = await fetch('http://localhost:3000/api/assets/top-selling');
+            const res = await fetch('/api/assets/top-selling');
             if (!res.ok) throw new Error('Failed to load assets');
             return await res.json();
         }
@@ -2085,7 +2084,7 @@
             }
 
             try {
-                const response = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                const response = await fetch('/api/user/profile', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
