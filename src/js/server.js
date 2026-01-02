@@ -895,10 +895,142 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+async function syncAssetsWithStripe() {
+  console.log('🔄 Starting Stripe synchronization...');
+  
+  try {
+    const { data: assets, error } = await supabaseAdmin
+      .from('assets')
+      .select('id, title, description, price, stripe_product_id, stripe_price_id');
+
+    if (error) {
+      console.error('❌ Failed to fetch assets:', error);
+      return;
+    }
+
+    let syncedCount = 0;
+    let createdCount = 0;
+    let updatedCount = 0;
+    let errorCount = 0;
+
+    for (const asset of assets) {
+      try {
+        let productId = asset.stripe_product_id;
+        let priceId = asset.stripe_price_id;
+        let needsUpdate = false;
+
+        // Check if product exists in Stripe
+        if (productId) {
+          try {
+            const product = await stripe.products.retrieve(productId);
+            console.log(`✅ Product found for asset ${asset.id}: ${product.id}`);
+          } catch (err) {
+            if (err.code === 'resource_missing') {
+              console.log(`⚠️  Product ${productId} not found in Stripe, creating new one...`);
+              productId = null;
+            } else {
+              throw err;
+            }
+          }
+        }
+
+        // Create product if it doesn't exist
+        if (!productId) {
+          const product = await stripe.products.create({
+            name: asset.title,
+            description: asset.description || '',
+            metadata: {
+              asset_id: asset.id.toString(),
+            },
+          });
+          productId = product.id;
+          needsUpdate = true;
+          createdCount++;
+          console.log(`✨ Created new product for asset ${asset.id}: ${productId}`);
+        }
+
+        // Check if price exists and is correct
+        if (priceId) {
+          try {
+            const price = await stripe.prices.retrieve(priceId);
+            const dbPriceCents = Math.round(asset.price * 100);
+            
+            if (price.unit_amount !== dbPriceCents || !price.active) {
+              console.log(`⚠️  Price mismatch for asset ${asset.id}. DB: $${asset.price}, Stripe: $${price.unit_amount / 100}, Active: ${price.active}`);
+              priceId = null;
+            } else {
+              console.log(`✅ Price correct for asset ${asset.id}: ${priceId}`);
+            }
+          } catch (err) {
+            if (err.code === 'resource_missing') {
+              console.log(`⚠️  Price ${priceId} not found in Stripe, creating new one...`);
+              priceId = null;
+            } else {
+              throw err;
+            }
+          }
+        }
+
+        // Create or update price if needed
+        if (!priceId) {
+          const price = await stripe.prices.create({
+            product: productId,
+            unit_amount: Math.round(asset.price * 100),
+            currency: 'usd',
+            metadata: {
+              asset_id: asset.id.toString(),
+            },
+          });
+          priceId = price.id;
+          needsUpdate = true;
+          updatedCount++;
+          console.log(`✨ Created new price for asset ${asset.id}: ${priceId} ($${asset.price})`);
+        }
+
+        // Update database if needed
+        if (needsUpdate) {
+          const { error: updateError } = await supabaseAdmin
+            .from('assets')
+            .update({
+              stripe_product_id: productId,
+              stripe_price_id: priceId,
+            })
+            .eq('id', asset.id);
+
+          if (updateError) {
+            console.error(`❌ Failed to update asset ${asset.id}:`, updateError);
+            errorCount++;
+          } else {
+            console.log(`✅ Updated asset ${asset.id} with Stripe IDs`);
+          }
+        }
+
+        syncedCount++;
+      } catch (err) {
+        console.error(`❌ Error syncing asset ${asset.id}:`, err.message);
+        errorCount++;
+      }
+    }
+
+    console.log('\n📊 Synchronization Complete:');
+    console.log(`   Total assets: ${assets.length}`);
+    console.log(`   Successfully synced: ${syncedCount}`);
+    console.log(`   New products created: ${createdCount}`);
+    console.log(`   Prices updated: ${updatedCount}`);
+    console.log(`   Errors: ${errorCount}\n`);
+
+  } catch (err) {
+    console.error('❌ Stripe sync failed:', err);
+  }
+}
+
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🌐 Frontend served from: src/`);
   console.log(`🎯 Webhook endpoint: http://localhost:${PORT}/api/stripe-webhook`);
-  console.log(`📁 Static files directory: ${path.join(__dirname, '..')}`);
+  console.log(`📁 Static files directory: ${path.join(__dirname, '..')}\n`);
+  
+  // Sync assets with Stripe on startup
+  await syncAssetsWithStripe();
 });
