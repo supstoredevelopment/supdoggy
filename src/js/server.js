@@ -10,26 +10,20 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// ES Module dirname setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve all frontend files in src/
-app.use(express.static(path.join(__dirname)));
-
-// Catch-all route to serve index.html for frontend routing
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api')) return next(); // skip API routes
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-
+// Load environment variables
 dotenv.config();
 
+// Initialize Express app FIRST
 const app = express();
+
+// Initialize external services
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const supabase = createClient(
@@ -42,6 +36,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
+// Configuration
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:5500,http://127.0.0.1:5500')
   .split(',')
   .map(origin => origin.trim());
@@ -68,11 +63,15 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With'],
 };
 
+// ===== MIDDLEWARE SETUP (ORDER MATTERS) =====
+
+// 1. Request logging (before everything)
 app.use((req, res, next) => {
   console.log(`📨 ${req.method} ${req.path} from ${req.get('origin') || 'no-origin'}`);
   next();
 });
 
+// 2. Stripe webhook (MUST be before express.json())
 app.options('/api/stripe-webhook', (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
@@ -145,8 +144,6 @@ app.post('/api/stripe-webhook',
           return res.status(500).json({ error: 'Failed to update order' });
         }
 
-      cart = []
-
         const sessionWithLineItems = await stripe.checkout.sessions.retrieve(session.id, { expand: ['line_items'] });
 
         console.log('Processing payment for user:', session.metadata.userId);
@@ -203,6 +200,7 @@ app.post('/api/stripe-webhook',
             details: { amount: session.amount_total / 100 },
           });
         } catch (logErr) {
+          console.error('Audit log error:', logErr);
         }
       }
 
@@ -240,6 +238,7 @@ app.post('/api/stripe-webhook',
                 details: { amount: charge.amount / 100 },
               });
             } catch (logErr) {
+              console.error('Audit log error:', logErr);
             }
           }
         }
@@ -253,13 +252,14 @@ app.post('/api/stripe-webhook',
     }
 });
 
+// 3. Security and parsing middleware
 app.use(helmet());
 app.use(cookieParser(SESSION_SECRET));
 app.use(cors(corsOptions));
-
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
+// 4. Rate limiters
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -282,6 +282,7 @@ const checkoutLimiter = rateLimit({
 
 app.use(limiter);
 
+// 5. CSRF protection
 const csrfProtection = csrf({ 
   cookie: { 
     httpOnly: true, 
@@ -289,6 +290,8 @@ const csrfProtection = csrf({
     sameSite: 'lax'
   } 
 });
+
+// ===== VALIDATION HELPERS =====
 
 const validateEmail = (email) => {
   if (!validator.isEmail(email)) throw new Error('Invalid email');
@@ -311,6 +314,8 @@ const validateCartItem = (item) => {
   }
   return { id: item.id, quantity: item.quantity };
 };
+
+// ===== AUTHENTICATION MIDDLEWARE =====
 
 const authenticateToken = async (req, res, next) => {
   try {
@@ -340,6 +345,8 @@ const authenticateToken = async (req, res, next) => {
     return res.status(401).json({ error: 'Invalid token' });
   }
 };
+
+// ===== API ROUTES =====
 
 app.post('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
@@ -839,6 +846,20 @@ app.get('/api/assets/:id', async (req, res) => {
   }
 });
 
+// ===== STATIC FILE SERVING & FRONTEND ROUTING =====
+
+// Serve static files from the parent directory (src/)
+// Since server.js is in src/js/, we need to go up one level
+app.use(express.static(path.join(__dirname, '..')));
+
+// Catch-all route to serve index.html for frontend routing
+// This must come AFTER all API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
+});
+
+// ===== ERROR HANDLING =====
+
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
     return res.status(403).json({ error: 'CSRF validation failed' });
@@ -852,8 +873,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+// ===== START SERVER =====
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🌐 Frontend served from: src/`);
   console.log(`🎯 Webhook endpoint: http://localhost:${PORT}/api/stripe-webhook`);
+  console.log(`📁 Static files directory: ${path.join(__dirname, '..')}`);
 });
