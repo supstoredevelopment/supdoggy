@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SupStore - Purchase Successful!</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            padding: 2rem;
+        }
+        .success-icon {
+            font-size: 5rem;
+            color: #00d4ff;
+            margin-bottom: 1.5rem;
+            animation: scaleIn 0.5s ease-out;
+        }
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 2rem;
+        }
+        .btn {
+            display: inline-block;
+            background: #0066ff;
+            color: white;
+            padding: 0.8rem 1.8rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #0052cc;
+            transform: translateY(-3px);
+        }
+        .details {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.6);
+        }
+        .download-status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(0, 102, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 102, 255, 0.3);
+        }
+        .download-status p {
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #00d4ff;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .success-badge {
+            color: #00ff88;
+        }
+        .error-badge {
+            color: #ff4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <i class="fas fa-check-circle success-icon"></i>
+        <h1>Purchase Successful!</h1>
+        <p>Thank you for your purchase. Your assets are now available in your account.</p>
+        
+        <div class="download-status" id="downloadStatus">
+            <p><span class="loading"></span> Preparing your downloads...</p>
+        </div>
+
+        <a href="/p/dashboard" class="btn" style="margin-top: 1.5rem;">
+            <i class="fas fa-th-large"></i> Go to My Dashboard
+        </a>
+        <br><br>
+        <a href="/" class="btn" style="background: transparent; border: 1px solid #0066ff;">
+            <i class="fas fa-home"></i> Back to Home
+        </a>
+
+        <div class="details">
+            <p>Order ID: <span id="sessionId">Loading...</span></p>
+            <p>All your purchased assets are available in your dashboard.</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://mywebsite.test:3000';
+        
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+        
+        if (sessionId) {
+            document.getElementById('sessionId').textContent = sessionId;
+        }
+
+        // Clear cart from localStorage
+        function clearCart() {
+            try {
+                localStorage.removeItem('cart');
+                console.log('✅ Cart cleared successfully');
+                
+                // Dispatch event to notify other components
+                window.dispatchEvent(new Event('cartCleared'));
+                window.dispatchEvent(new StorageEvent('storage', {
+                    key: 'cart',
+                    newValue: null,
+                    oldValue: localStorage.getItem('cart')
+                }));
+            } catch (err) {
+                console.error('Failed to clear cart:', err);
+            }
+        }
+
+        // Update download status
+        function updateStatus(message, isSuccess = null) {
+            const statusDiv = document.getElementById('downloadStatus');
+            let icon = '<span class="loading"></span>';
+            
+            if (isSuccess === true) {
+                icon = '<i class="fas fa-check-circle success-badge"></i>';
+            } else if (isSuccess === false) {
+                icon = '<i class="fas fa-exclamation-circle error-badge"></i>';
+            }
+            
+            statusDiv.innerHTML = `<p>${icon} ${message}</p>`;
+        }
+
+        async function handleAutoDownloads() {
+            const token = localStorage.getItem('auth_token') || localStorage.getItem('jwt');
+            
+            if (!token) {
+                updateStatus('Please log in to download your assets.', false);
+                return;
+            }
+
+            if (!sessionId) {
+                updateStatus('No session ID found.', false);
+                return;
+            }
+
+            try {
+                updateStatus('Fetching your purchased assets...');
+
+                // Fetch user's assets (all of them, since we just purchased)
+                const res = await fetch(`${API_BASE_URL}/api/user/assets`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch assets: ${res.status}`);
+                }
+
+                const assets = await res.json();
+
+                if (!assets || assets.length === 0) {
+                    updateStatus('No assets found. They may still be processing.', false);
+                    return;
+                }
+
+                updateStatus(`Found ${assets.length} asset(s). Starting downloads...`);
+
+                let downloadCount = 0;
+                let errorCount = 0;
+
+                for (const asset of assets) {
+                    try {
+                        // Fetch versions for this asset
+                        const vres = await fetch(`${API_BASE_URL}/api/asset/${asset.id}/versions`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include'
+                        });
+
+                        if (!vres.ok) {
+                            console.error(`Failed to fetch versions for asset ${asset.id}`);
+                            errorCount++;
+                            continue;
+                        }
+
+                        const versions = await vres.json();
+                        
+                        if (!versions || versions.length === 0) {
+                            console.warn(`No versions available for asset ${asset.id}`);
+                            errorCount++;
+                            continue;
+                        }
+
+                        // Get the latest version (first one since they're ordered by created_at desc)
+                        const latestVersion = versions[0];
+
+                        // Request download URL
+                        const downloadRes = await fetch(
+                            `${API_BASE_URL}/api/download/${asset.id}/${latestVersion.id}`,
+                            {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                credentials: 'include'
+                            }
+                        );
+
+                        if (!downloadRes.ok) {
+                            console.error(`Failed to get download URL for asset ${asset.id}`);
+                            errorCount++;
+                            continue;
+                        }
+
+                        const downloadData = await downloadRes.json();
+                        
+                        if (downloadData.url) {
+                            // Open download in new tab
+                            window.open(downloadData.url, '_blank');
+                            downloadCount++;
+                            
+                            // Small delay between downloads to avoid overwhelming the browser
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                        }
+
+                    } catch (assetErr) {
+                        console.error(`Error processing asset ${asset.id}:`, assetErr);
+                        errorCount++;
+                    }
+                }
+
+                // Update final status
+                if (downloadCount > 0) {
+                    updateStatus(
+                        `Successfully started ${downloadCount} download(s)!${errorCount > 0 ? ` (${errorCount} failed)` : ''}`,
+                        errorCount === 0
+                    );
+                } else {
+                    updateStatus('Failed to start downloads. Please try from your dashboard.', false);
+                }
+
+            } catch (err) {
+                console.error('Auto download failed:', err);
+                updateStatus('Could not start automatic downloads. Please download from your dashboard.', false);
+            }
+        }
+
+        // Execute on page load
+        window.addEventListener('load', async () => {
+            // Clear the cart first
+            clearCart();
+            
+            // Then handle downloads
+            await handleAutoDownloads();
+        });
+    </script>
+</body>
+</html>

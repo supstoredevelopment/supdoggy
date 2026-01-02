@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account - SupStore</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0066ff;
+            --accent: #00d4ff;
+            --dark: #000000;
+            --light: #ffffff;
+            --text-dark: #ffffff;
+            --text-light: #000000;
+            --subtext-dark: rgba(255, 255, 255, 0.6);
+            --subtext-light: rgba(0, 0, 0, 0.6);
+            --glass-bg-dark: rgba(255, 255, 255, 0.05);
+            --glass-bg-light: rgba(0, 0, 0, 0.05);
+            --glass-border-dark: rgba(255, 255, 255, 0.1);
+            --glass-border-light: rgba(0, 0, 0, 0.1);
+            --bg-rgb-dark: 0, 0, 0;
+            --bg-rgb-light: 255, 255, 255;
+        }
+
+        [data-theme="dark"] {
+            --bg: var(--dark);
+            --text: var(--text-dark);
+            --subtext: var(--subtext-dark);
+            --glass-bg: var(--glass-bg-dark);
+            --glass-border: var(--glass-border-dark);
+            --bg-rgb: var(--bg-rgb-dark);
+        }
+
+        [data-theme="light"] {
+            --bg: var(--light);
+            --text: var(--text-light);
+            --subtext: var(--subtext-light);
+            --glass-bg: var(--glass-bg-light);
+            --glass-border: var(--glass-border-light);
+            --bg-rgb: var(--bg-rgb-light);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(var(--bg-rgb), 0.8);
+            backdrop-filter: blur(30px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000;
+            padding: 1.2rem 0;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .logo:hover {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--subtext);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .cart-icon {
+            position: relative;
+            font-size: 1.2rem;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .cart-icon span {
+            position: absolute;
+            top: -8px;
+            right: -12px;
+            background: var(--accent);
+            color: var(--dark);
+            border-radius: 50%;
+            padding: 2px 7px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .cart-icon:hover {
+            color: var(--accent);
+        }
+
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        input[type="checkbox"]:checked+.toggle-switch {
+            background: var(--primary);
+        }
+
+        input[type="checkbox"]:checked+.toggle-switch::before {
+            transform: translateX(26px);
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 120px 3rem 80px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 3rem;
+        }
+
+        .sidebar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            height: fit-content;
+            position: sticky;
+            top: 140px;
+        }
+
+        .sidebar-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .sidebar-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-header p {
+            font-size: 0.85rem;
+            color: var(--subtext);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--subtext);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: var(--glass-bg);
+            color: var(--accent);
+        }
+
+        .sidebar-menu i {
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            min-height: 60vh;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .section-header {
+            margin-bottom: 2rem;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-header p {
+            color: var(--subtext);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .stat-card h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--subtext);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--accent);
+        }
+
+        .orders-list,
+        .downloads-list {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .order-card,
+        .download-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .order-card:hover,
+        .download-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1.5rem;
+        }
+
+        .order-id {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .order-date {
+            color: var(--subtext);
+            font-size: 0.9rem;
+        }
+
+        .order-status {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .order-status.completed {
+            background: rgba(0, 255, 136, 0.1);
+            color: #00ff88;
+        }
+
+        .order-items {
+            list-style: none;
+            margin-bottom: 1rem;
+        }
+
+        .order-items li {
+            padding: 0.5rem 0;
+            color: var(--subtext);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            padding: 0.7rem 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .order-total {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding-top: 1rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .download-item {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .download-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .download-info {
+            flex: 1;
+        }
+
+        .download-info h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        @media (max-width: 1024px) {
+            .nav-container {
+                padding: 0 2rem;
+            }
+
+            .cart-section {
+                padding: 100px 2rem;
+            }
+
+            .cart-card {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .cart-item-image {
+                margin-bottom: var(--spacing-medium);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+
+            #authBtn {
+                padding: 0.7rem;
+            }
+
+            #authBtnText {
+                display: none;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                background: var(--bg);
+                padding: var(--spacing-medium);
+                gap: var(--spacing-medium);
+                border-bottom: 1px solid var(--glass-border);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .nav-links a {
+                text-align: center;
+            }
+
+            .nav-container {
+                padding: 0 1.5rem;
+            }
+
+            .cart-section {
+                padding: 80px 1.5rem;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-large);
+            }
+
+            .cart-container {
+                max-width: 100%;
+            }
+
+            .cart-header {
+                font-size: 2rem;
+            }
+
+            .cart-total {
+                font-size: 1.8rem;
+            }
+
+            .checkout-btn {
+                width: 100%;
+            }
+
+            .cart-summary {
+                text-align: center;
+            }
+
+            .cart-item-title {
+                font-size: 1.3rem;
+            }
+
+            .cart-item-price {
+                font-size: 1.3rem;
+            }
+
+            .cart-item-image {
+                max-width: 120px;
+                height: 120px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .cart-section {
+                padding: 60px 1rem;
+            }
+
+            .cart-header {
+                font-size: 1.8rem;
+            }
+
+            .cart-total {
+                font-size: 1.6rem;
+            }
+
+            .nav-links {
+                gap: 1.5rem;
+            }
+
+            .nav-links a {
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (min-width: 1440px) {
+
+            .nav-container,
+            .footer-content {
+                max-width: 1600px;
+            }
+
+            .cart-container {
+                max-width: 1200px;
+            }
+        }
+
+
+        .download-info p {
+            color: var(--subtext);
+            font-size: 0.9rem;
+        }
+
+        .versions-list {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            background: var(--accent);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            max-width: 500px;
+            padding: 0.9rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--subtext);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+                padding: 120px 2rem 80px;
+            }
+
+            .sidebar {
+                position: relative;
+                top: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                padding: 0 1.5rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .dashboard-container {
+                padding: 100px 1.5rem 60px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .order-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body data-theme="dark">
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">SupStore</a>
+            <ul class="nav-links">
+                <li><a href="/p/assets">Assets</a></li>
+                <li><a href="/#features">Features</a></li>
+                <li><a href="/#stats">Stats</a></li>
+                <li><a href="/#contact">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <a href="/p/cart" class="cart-icon">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span id="cartCount">0</span>
+                </a>
+
+                <a href="/p/login" id="authBtn" class="btn btn-secondary" style="display: none;">
+                    <i class="fas fa-user"></i>
+                    <span id="authBtnText">Login</span>
+                </a>
+
+                <div class="theme-toggle">
+                    <input type="checkbox" id="themeSwitch" hidden>
+                    <label for="themeSwitch" class="toggle-switch"></label>
+                    <span>Light Mode</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3 id="userName">Loading...</h3>
+                <p id="userEmail">loading@example.com</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#dashboard" class="menu-link active" data-section="dashboard"><i
+                            class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="#orders" class="menu-link" data-section="orders"><i class="fas fa-shopping-bag"></i>
+                        Orders</a></li>
+                <li><a href="#downloads" class="menu-link" data-section="downloads"><i class="fas fa-download"></i>
+                        Downloads</a></li>
+                <li><a href="#account" class="menu-link" data-section="account"><i class="fas fa-user"></i> Account
+                        Details</a></li>
+                <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <section id="dashboard" class="content-section active">
+                <div class="section-header">
+                    <h2>Dashboard</h2>
+                    <p>Overview of your account activity</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Orders</h3>
+                        <div class="stat-value" id="totalOrders">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Spent</h3>
+                        <div class="stat-value" id="totalSpent">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Downloads</h3>
+                        <div class="stat-value" id="totalDownloads">0</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="orders" class="content-section">
+                <div class="section-header">
+                    <h2>Order History</h2>
+                    <p>View all your past purchases</p>
+                </div>
+                <div class="orders-list" id="ordersList">
+                    <div class="empty-state">
+                        <i class="fas fa-shopping-bag"></i>
+                        <h3>No orders yet</h3>
+                        <p>Start shopping to see your orders here</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="downloads" class="content-section">
+                <div class="section-header">
+                    <h2>Downloads</h2>
+                    <p>Access all your purchased assets</p>
+                </div>
+                <div class="downloads-list" id="downloadsList">
+                    <div class="empty-state">
+                        <i class="fas fa-download"></i>
+                        <h3>No downloads available</h3>
+                        <p>Purchase assets to access downloads</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="account" class="content-section">
+                <div class="section-header">
+                    <h2>Account Details</h2>
+                    <p>Manage your account information</p>
+                </div>
+                <form id="accountForm">
+                    <div class="form-group">
+                        <label for="fullName">Username</label>
+                        <input type="text" id="fullName" name="fullName" placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="emailAddress">Email Address</label>
+                        <input type="email" id="emailAddress" name="emailAddress" disabled>
+                    </div>
+                    <button type="submit" class="btn">Save Changes</button>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const themeSwitch = document.getElementById('themeSwitch');
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        document.body.dataset.theme = currentTheme;
+        themeSwitch.checked = currentTheme === 'light';
+
+        themeSwitch.addEventListener('change', (e) => {
+            const theme = e.target.checked ? 'light' : 'dark';
+            document.body.dataset.theme = theme;
+            localStorage.setItem('theme', theme);
+        });
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            document.getElementById('cartCount').textContent = cart.length;
+        }
+
+        async function checkAuth() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                window.location.href = '/p/login';
+                return null;
+            }
+
+            try {
+                const res = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Unauthorized');
+                const user = await res.json();
+                return user;
+            } catch {
+                localStorage.removeItem('auth_token');
+                window.location.href = '/p/login';
+                return null;
+            }
+        }
+
+        async function loadUserData() {
+            const user = await checkAuth();
+            if (!user) return;
+
+            document.getElementById('userName').textContent = user.fullName || 'User';
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('fullName').value = user.fullName || '';
+            document.getElementById('emailAddress').value = user.email;
+
+            await loadOrders();
+            await loadDownloads();
+        }
+
+        document.querySelectorAll('.menu-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const section = link.dataset.section;
+
+                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.menu-link').forEach(l => l.classList.remove('active'));
+
+                document.getElementById(section).classList.add('active');
+                link.classList.add('active');
+            });
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('auth_token');
+            try {
+                await fetch('http://mywebsite.test:3000/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch { }
+            localStorage.removeItem('auth_token');
+            window.location.href = '/';
+        });
+
+        document.getElementById('accountForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('auth_token');
+            const fullName = document.getElementById('fullName').value;
+
+            try {
+                const res = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ fullName })
+                });
+                if (!res.ok) throw new Error();
+                alert('Profile updated successfully!');
+                loadUserData();
+            } catch {
+                alert('Error updating profile');
+            }
+        });
+
+        async function loadOrders() {
+            const token = localStorage.getItem('auth_token');
+            try {
+                const res = await fetch('http://mywebsite.test:3000/api/user/orders', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error();
+                const orders = await res.json();
+
+                const completedOrders = orders.filter(o => o.status === 'completed');
+                const totalOrders = orders.length;
+                const totalSpent = completedOrders.reduce((sum, o) => sum + o.total_amount, 0).toFixed(2);
+
+                document.getElementById('totalOrders').textContent = totalOrders;
+                document.getElementById('totalSpent').textContent = `$${totalSpent}`;
+
+                const ordersList = document.getElementById('ordersList');
+                ordersList.innerHTML = '';
+                if (orders.length === 0) {
+                    ordersList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-shopping-bag"></i>
+                            <h3>No orders yet</h3>
+                            <p>Start shopping to see your orders here</p>
+                        </div>
+                    `;
+                } else {
+                    orders.forEach(order => {
+                        const card = document.createElement('div');
+                        card.className = 'order-card';
+                        card.innerHTML = `
+                            <div class="order-header">
+                                <div>
+                                    <div class="order-id">#${order.id.substring(0, 8).toUpperCase()}</div>
+                                    <div class="order-date">${new Date(order.created_at).toLocaleString()}</div>
+                                </div>
+                                <span class="order-status ${order.status}">${order.status.toUpperCase()}</span>
+                            </div>
+                            <ul class="order-items">
+                                ${order.order_items && Array.isArray(order.order_items) ? order.order_items.map(item => `
+                                    <li>${item.assets.title} - $${item.price.toFixed(2)} x ${item.quantity}</li>
+                                `).join('') : '<li>No item details available</li>'}
+                            </ul>
+                            <div class="order-total">
+                                <span>Total</span>
+                                <span>$${order.total_amount.toFixed(2)}</span>
+                            </div>
+                        `;
+                        ordersList.appendChild(card);
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading orders:', err);
+            }
+        }
+
+      async function loadDownloads() {
+    const token = localStorage.getItem('auth_token');
+    try {
+        console.log('🔍 Fetching user assets...');
+        const res = await fetch('http://mywebsite.test:3000/api/user/assets', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) {
+            console.error('❌ Failed to fetch assets:', res.status);
+            throw new Error('Failed to fetch assets');
+        }
+        
+        const assets = await res.json();
+        console.log('✅ Assets fetched:', assets);
+
+        document.getElementById('totalDownloads').textContent = assets.length;
+
+        const downloadsList = document.getElementById('downloadsList');
+        downloadsList.innerHTML = '';
+        
+        if (assets.length === 0) {
+            downloadsList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-download"></i>
+                    <h3>No downloads available</h3>
+                    <p>Purchase assets to access downloads</p>
+                </div>
+            `;
+            return;
+        }
+
+        for (const asset of assets) {
+            console.log(`📦 Processing asset:`, asset);
+            
+            const card = document.createElement('div');
+            card.className = 'download-card';
+            card.innerHTML = `
+                <div class="download-item">
+                    <img src="${asset.image_url}" alt="${asset.title}" class="download-image">
+                    <div class="download-info">
+                        <h3>${asset.title}</h3>
+                        <p>Purchased asset</p>
+                        <div class="versions-list" id="versions-${asset.id}">
+                            <p style="color: var(--subtext); font-size: 0.9rem;">Loading versions...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            downloadsList.appendChild(card);
+
+            // Fetch versions for this asset
+            try {
+                console.log(`🔍 Fetching versions for asset ${asset.id}...`);
+                const vres = await fetch(`http://mywebsite.test:3000/api/asset/${asset.id}/versions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!vres.ok) {
+                    console.error(`❌ Failed to fetch versions for asset ${asset.id}:`, vres.status);
+                    throw new Error('Failed to fetch versions');
+                }
+                
+                const versions = await vres.json();
+                console.log(`✅ Versions for asset ${asset.id}:`, versions);
+
+                const vlist = document.getElementById(`versions-${asset.id}`);
+                vlist.innerHTML = '';
+                
+                if (versions.length === 0) {
+                    vlist.innerHTML = '<p style="color: var(--subtext); font-size: 0.9rem;">No versions available</p>';
+                } else {
+                    versions.forEach(version => {
+                        const btn = document.createElement('a');
+                        btn.className = 'btn-secondary';
+                        btn.style.cursor = 'pointer';
+                        btn.innerHTML = `<i class="fas fa-download"></i> v${version.version}`;
+                        
+                        btn.onclick = async (e) => {
+                            e.preventDefault();
+                            console.log(`📥 Downloading asset ${asset.id}, version ${version.id}`);
+                            
+                            // Disable button during download
+                            btn.style.opacity = '0.5';
+                            btn.style.pointerEvents = 'none';
+                            const originalText = btn.innerHTML;
+                            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+                            
+                            try {
+                                const downloadRes = await fetch(
+                                    `http://mywebsite.test:3000/api/download/${asset.id}/${version.id}`, 
+                                    {
+                                        headers: { 'Authorization': `Bearer ${token}` }
+                                    }
+                                );
+
+                                console.log('Download response status:', downloadRes.status);
+
+                                if (!downloadRes.ok) {
+                                    const error = await downloadRes.json();
+                                    console.error('❌ Download error:', error);
+                                    throw new Error(error.error || 'Download failed');
+                                }
+
+                                const data = await downloadRes.json();
+                                console.log('✅ Download URL received:', data.url);
+
+                                if (data.url) {
+                                    // Open in new tab for download
+                                    window.open(data.url, '_blank');
+                                    console.log('✅ Download started!');
+                                } else {
+                                    throw new Error('No download URL received');
+                                }
+                            } catch (err) {
+                                console.error('❌ Download failed:', err);
+                                alert('Download failed: ' + err.message);
+                            } finally {
+                                // Re-enable button
+                                btn.style.opacity = '1';
+                                btn.style.pointerEvents = 'auto';
+                                btn.innerHTML = originalText;
+                            }
+                        };
+                        
+                        vlist.appendChild(btn);
+                    });
+                }
+            } catch (verr) {
+                console.error(`❌ Error loading versions for asset ${asset.id}:`, verr);
+                const vlist = document.getElementById(`versions-${asset.id}`);
+                vlist.innerHTML = '<p style="color: #ff4444; font-size: 0.9rem;">Error loading versions</p>';
+            }
+        }
+    } catch (err) {
+        console.error('❌ Error loading downloads:', err);
+        const downloadsList = document.getElementById('downloadsList');
+        downloadsList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Error loading downloads</h3>
+                <p>${err.message}</p>
+            </div>
+        `;
+    }
+}
+        async function updateAuthButton() {
+            const token = localStorage.getItem('auth_token');
+            const authBtn = document.getElementById('authBtn');
+            const authBtnText = document.getElementById('authBtnText');
+
+            if (!token) {
+                authBtn.href = '/p/login';
+                authBtnText.textContent = 'Login';
+                authBtn.style.display = 'inline-flex';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
+
+                if (response.ok) {
+                    authBtn.href = '/p/dashboard';
+                    authBtnText.textContent = 'My Account';
+                    authBtn.style.display = 'inline-flex';
+                } else {
+                    localStorage.removeItem('auth_token');
+                    authBtn.href = '/p/login';
+                    authBtnText.textContent = 'Login';
+                    authBtn.style.display = 'inline-flex';
+                }
+            } catch (err) {
+                localStorage.removeItem('auth_token');
+                authBtn.href = '/p/login';
+                authBtnText.textContent = 'Login';
+                authBtn.style.display = 'inline-flex';
+            }
+        }
+
+        loadUserData();
+        updateCartCount();
+        updateAuthButton();
+    </script>
+</body>
+
+</html>

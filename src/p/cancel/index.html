@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SupStore - Purchase Successful!</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            padding: 2rem;
+        }
+        .success-icon {
+            font-size: 5rem;
+            color: #ff0000;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 2rem;
+        }
+        .btn {
+            display: inline-block;
+            background: #0066ff;
+            color: white;
+            padding: 0.8rem 1.8rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #0052cc;
+            transform: translateY(-3px);
+        }
+        .details {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.6);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <i class="fas fa-solid fa-circle-xmark success-icon"></i>
+        <h1>Purchase Cancelled</h1>
+        <p>You cancelled your purchase or a error occured, if this was an accident, check your dashboard for the order id and contact support.</p>
+        <a href="/p/dashboard" class="btn">
+            <i class="fas fa-th-large"></i> Go to My Dashboard
+        </a>
+        <br><br>
+        <a href="/" class="btn" style="background: transparent; border: 1px solid #0066ff;">
+            <i class="fas fa-home"></i> Back to Home
+        </a>
+
+        <div class="details">
+            <p>Order ID: <span id="sessionId">Loading...</span></p>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+        if (sessionId) {
+            document.getElementById('sessionId').textContent = sessionId;
+        }
+
+        async function handleAutoDownloads() {
+            const token = localStorage.getItem('auth_token');
+            if (!token || !sessionId) return;
+
+            try {
+                const res = await fetch(`http://mywebsite.test:3000/api/session/${sessionId}/assets`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!res.ok) throw new Error('Failed to fetch assets');
+
+                const assets = await res.json();
+
+                for (const asset of assets) {
+                    const vres = await fetch(`http://mywebsite.test:3000/api/asset/${asset.id}/versions`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!vres.ok) continue;
+
+                    const versions = await vres.json();
+                    if (versions.length === 0) continue;
+
+                    const latestVersionId = versions[0].id;
+                    window.open(`http://mywebsite.test:3000/api/download/${asset.id}/${latestVersionId}`, '_blank');
+                }
+            } catch (err) {
+                console.error('Auto download failed:', err);
+            }
+        }
+
+        window.addEventListener('load', handleAutoDownloads);
+    </script>
+</body>
+</html>

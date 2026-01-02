@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - SupStore</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0066ff;
+            --accent: #00d4ff;
+            --dark: #000000;
+            --light: #ffffff;
+            --text-dark: #ffffff;
+            --text-light: #000000;
+            --subtext-dark: rgba(255, 255, 255, 0.6);
+            --subtext-light: rgba(0, 0, 0, 0.6);
+            --glass-bg-dark: rgba(255, 255, 255, 0.05);
+            --glass-bg-light: rgba(0, 0, 0, 0.05);
+            --glass-border-dark: rgba(255, 255, 255, 0.1);
+            --glass-border-light: rgba(0, 0, 0, 0.1);
+            --bg-rgb-dark: 0, 0, 0;
+            --bg-rgb-light: 255, 255, 255;
+        }
+
+        [data-theme="dark"] {
+            --bg: var(--dark);
+            --text: var(--text-dark);
+            --subtext: var(--subtext-dark);
+            --glass-bg: var(--glass-bg-dark);
+            --glass-border: var(--glass-border-dark);
+            --bg-rgb: var(--bg-rgb-dark);
+        }
+
+        [data-theme="light"] {
+            --bg: var(--light);
+            --text: var(--text-light);
+            --subtext: var(--subtext-light);
+            --glass-bg: var(--glass-bg-light);
+            --glass-border: var(--glass-border-light);
+            --bg-rgb: var(--bg-rgb-light);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(var(--bg-rgb), 0.8);
+            backdrop-filter: blur(30px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000;
+            padding: 1.2rem 0;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .logo:hover {
+            color: var(--accent);
+        }
+
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        input[type="checkbox"]:checked+.toggle-switch {
+            background: var(--primary);
+        }
+
+        input[type="checkbox"]:checked+.toggle-switch::before {
+            transform: translateX(26px);
+        }
+
+        .content-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 140px 2rem 80px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            padding: 0.7rem 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .page-badge {
+            display: inline-block;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .page-header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-header p {
+            color: var(--subtext);
+            font-size: 1.1rem;
+        }
+
+        .content-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .content-section h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .content-section h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 2rem 0 1rem;
+            color: var(--text);
+        }
+
+        .content-section p {
+            color: var(--subtext);
+            margin-bottom: 1rem;
+            line-height: 1.8;
+        }
+
+        .content-section ul,
+        .content-section ol {
+            color: var(--subtext);
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .content-section li {
+            margin-bottom: 0.5rem;
+            line-height: 1.7;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.1), rgba(0, 212, 255, 0.05));
+            border-left: 4px solid var(--accent);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .highlight-box p {
+            color: var(--text);
+            margin: 0;
+        }
+
+        footer {
+            background: rgba(var(--bg-rgb), 0.9);
+            backdrop-filter: blur(20px);
+            padding: 40px 3rem;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+        }
+
+        footer p {
+            color: var(--subtext);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                padding: 0 1.5rem;
+            }
+
+            .content-wrapper {
+                padding: 120px 1.5rem 60px;
+            }
+
+            .content-section {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body data-theme="dark">
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">SupStore</a>
+            <div class="theme-toggle">
+                <input type="checkbox" id="themeSwitch" hidden>
+                <label for="themeSwitch" class="toggle-switch"></label>
+                <span>Light Mode</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="content-wrapper">
+        <div class="page-header">
+            <span class="page-badge">Legal</span>
+            <h1>Terms of Service</h1>
+            <p>Last updated: December 29, 2025</p>
+        </div>
+
+        <div class="content-section">
+            <h2>1. Acceptance of Terms</h2>
+            <p>By accessing and using SupStore's services, you accept and agree to be bound by the terms and provisions
+                of this agreement. If you do not agree to these terms, please do not use our services.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>2. Use License</h2>
+            <p>Permission is granted to download and use assets from SupStore for commercial and personal projects,
+                subject to the following conditions:</p>
+            <ul>
+                <li>Assets may be used in unlimited commercial projects</li>
+                <li>Assets may be modified and adapted for your specific needs</li>
+                <li>Assets cannot be resold, redistributed, or sublicensed as standalone files</li>
+                <li>You may not claim ownership of the original asset files</li>
+            </ul>
+
+            <div class="highlight-box">
+                <p><strong>Important:</strong> This license is automatically granted upon purchase and remains valid in
+                    perpetuity.</p>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2>3. User Account</h2>
+            <p>When you create an account with us, you must provide accurate, complete, and current information. Failure
+                to do so constitutes a breach of the Terms.</p>
+            <p>You are responsible for safeguarding the password and for all activities that occur under your account.
+                You agree to notify us immediately of any unauthorized use of your account.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>4. Purchases and Payments</h2>
+            <h3>4.1 Pricing</h3>
+            <p>All prices are listed in USD. We reserve the right to change prices at any time, but changes will not
+                affect orders already placed.</p>
+
+            <h3>4.2 Payment Processing</h3>
+            <p>We use third-party payment processors to handle transactions. By making a purchase, you agree to the
+                terms of these payment processors.</p>
+
+            <h3>4.3 Refund Policy</h3>
+            <p>Due to the nature of digital products, we do not offer refunds once an asset has been downloaded. Please
+                review asset descriptions and preview images carefully before purchasing.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>5. Intellectual Property</h2>
+            <p>The assets, designs, and content on SupStore are protected by copyright, trademark, and other
+                intellectual property laws. Unless explicitly stated, all rights remain with SupStore or the original
+                creators.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>6. Prohibited Uses</h2>
+            <p>You may not use our assets for:</p>
+            <ul>
+                <li>Creating competing asset marketplaces or libraries</li>
+                <li>Training AI or machine learning models without explicit permission</li>
+                <li>Illegal, harmful, or unethical purposes</li>
+                <li>Creating derivative works that are resold as standalone assets</li>
+                <li>Any activity that violates local, state, national, or international law</li>
+            </ul>
+        </div>
+
+        <div class="content-section">
+            <h2>7. Limitation of Liability</h2>
+            <p>SupStore shall not be liable for any indirect, incidental, special, consequential, or punitive damages
+                resulting from your use or inability to use the service.</p>
+            <p>Assets are provided "as is" without warranty of any kind, either express or implied.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>8. Termination</h2>
+            <p>We may terminate or suspend your account and access to our services immediately, without prior notice,
+                for conduct that we believe violates these Terms or is harmful to other users, us, or third parties.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>9. Changes to Terms</h2>
+            <p>We reserve the right to modify these terms at any time. We will notify users of any material changes by
+                posting the new Terms on this page and updating the "Last updated" date.</p>
+            <p>Your continued use of the service after changes constitutes acceptance of the new terms.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>10. Governing Law</h2>
+            <p>These Terms shall be governed by and construed in accordance with the laws of the jurisdiction in which
+                SupStore operates, without regard to its conflict of law provisions.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>11. Contact Information</h2>
+            <p>If you have any questions about these Terms, please contact us:</p>
+            <ul>
+                <li>Email: legal@supstore.dev</li>
+                <li>Discord: https://discord.gg/X4B3zPMbNE</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025 SupStore. Built with passion for developers worldwide.</p>
+    </footer>
+
+    <script>
+        const themeSwitch = document.getElementById('themeSwitch');
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        document.body.dataset.theme = currentTheme;
+        themeSwitch.checked = currentTheme === 'light';
+
+        themeSwitch.addEventListener('change', (e) => {
+            const theme = e.target.checked ? 'light' : 'dark';
+            document.body.dataset.theme = theme;
+            localStorage.setItem('theme', theme);
+        });
+
+    </script>
+</body>
+
+</html>
