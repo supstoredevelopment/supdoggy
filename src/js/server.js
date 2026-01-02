@@ -13,22 +13,18 @@ import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// ES Module dirname setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
 dotenv.config();
 
-// Initialize Express app FIRST
 const app = express();
 
-// Initialize external services
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY  
+  process.env.SUPABASE_ANON_KEY
 );
 
 const supabaseAdmin = createClient(
@@ -36,20 +32,19 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-// Configuration
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:5500,http://127.0.0.1:5500')
   .split(',')
   .map(origin => origin.trim());
-  
+
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 
 const corsOptions = {
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     console.log('📨 CORS request from origin:', origin);
     console.log('✅ ALLOWED_ORIGINS:', ALLOWED_ORIGINS);
-    
+
     if (!origin) return callback(null, true);
-    
+
     if (ALLOWED_ORIGINS.includes(origin)) {
       console.log('✅ Origin ALLOWED');
       return callback(null, true);
@@ -63,15 +58,11 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With'],
 };
 
-// ===== MIDDLEWARE SETUP (ORDER MATTERS) =====
-
-// 1. Request logging (before everything)
 app.use((req, res, next) => {
   console.log(`📨 ${req.method} ${req.path} from ${req.get('origin') || 'no-origin'}`);
   next();
 });
 
-// 2. Stripe webhook (MUST be before express.json())
 app.options('/api/stripe-webhook', (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
@@ -80,19 +71,19 @@ app.options('/api/stripe-webhook', (req, res) => {
 });
 
 app.get('/api/stripe-webhook', (req, res) => {
-  res.json({ 
+  res.json({
     status: 'Webhook endpoint is active',
     message: 'This endpoint only accepts POST requests from Stripe',
     timestamp: new Date().toISOString()
   });
 });
 
-app.post('/api/stripe-webhook', 
-  express.raw({ type: 'application/json' }), 
+app.post('/api/stripe-webhook',
+  express.raw({ type: 'application/json' }),
   async (req, res) => {
     console.log('🎯 Webhook POST received!');
     console.log('Headers:', req.headers);
-    
+
     const sig = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -133,9 +124,9 @@ app.post('/api/stripe-webhook',
 
         const { error: updateError } = await supabaseAdmin
           .from('orders')
-          .update({ 
-            status: 'completed', 
-            payment_date: new Date().toISOString() 
+          .update({
+            status: 'completed',
+            payment_date: new Date().toISOString()
           })
           .eq('session_id', session.id);
 
@@ -152,7 +143,7 @@ app.post('/api/stripe-webhook',
         for (const lineItem of sessionWithLineItems.line_items.data) {
           const priceId = lineItem.price.id;
           console.log('Processing price ID:', priceId);
-          
+
           const { data: asset, error: assetError } = await supabaseAdmin
             .from('assets')
             .select('id')
@@ -250,9 +241,8 @@ app.post('/api/stripe-webhook',
       console.error('❌ Webhook processing error:', err);
       res.status(500).json({ error: 'Webhook processing failed' });
     }
-});
+  });
 
-// 3. Security and parsing middleware
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -260,18 +250,20 @@ app.use(
         defaultSrc: ["'self'"],
         scriptSrc: [
           "'self'",
-          "'unsafe-inline'", // Allow inline scripts - consider using nonces in production
+          "'unsafe-inline'",
           "https://cdnjs.cloudflare.com",
           "https://js.stripe.com",
         ],
         styleSrc: [
           "'self'",
-          "'unsafe-inline'", // Allow inline styles
+          "'unsafe-inline'",
           "https://fonts.googleapis.com",
+          "https://cdnjs.cloudflare.com",
         ],
         fontSrc: [
           "'self'",
           "https://fonts.gstatic.com",
+          "https://cdnjs.cloudflare.com",
         ],
         imgSrc: [
           "'self'",
@@ -283,7 +275,10 @@ app.use(
           "'self'",
           "https://api.stripe.com",
           process.env.SUPABASE_URL,
-        ],
+          process.env.FRONTEND_URL || "'self'",
+          "http://localhost:3000",
+          "http://localhost:3001",
+        ].filter(Boolean),
         frameSrc: [
           "'self'",
           "https://js.stripe.com",
@@ -300,7 +295,6 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// 4. Rate limiters
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -323,16 +317,13 @@ const checkoutLimiter = rateLimit({
 
 app.use(limiter);
 
-// 5. CSRF protection
-const csrfProtection = csrf({ 
-  cookie: { 
-    httpOnly: true, 
+const csrfProtection = csrf({
+  cookie: {
+    httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax'
-  } 
+  }
 });
-
-// ===== VALIDATION HELPERS =====
 
 const validateEmail = (email) => {
   if (!validator.isEmail(email)) throw new Error('Invalid email');
@@ -356,24 +347,22 @@ const validateCartItem = (item) => {
   return { id: item.id, quantity: item.quantity };
 };
 
-// ===== AUTHENTICATION MIDDLEWARE =====
-
 const authenticateToken = async (req, res, next) => {
   try {
     let token = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
       token = req.cookies.auth_token;
     }
-    
+
     if (!token) {
       return res.status(401).json({ error: 'No authentication token' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(decoded.userId);
-    
+
     if (error || !user || !user.email_confirmed_at) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -386,8 +375,6 @@ const authenticateToken = async (req, res, next) => {
     return res.status(401).json({ error: 'Invalid token' });
   }
 };
-
-// ===== API ROUTES =====
 
 app.post('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
@@ -421,7 +408,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
     }
 
     const validEmail = validateEmail(email);
-    
+
     if (password.length < 8) {
       return res.status(400).json({ warning: 'Password must be at least 12 characters' });
     }
@@ -465,7 +452,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
     console.log('📨 Login request received');
-    
+
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -488,7 +475,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
           resource: 'auth',
           status: 'failed',
         });
-      } catch (logErr) {}
+      } catch (logErr) { }
       return res.status(401).json({ error: 'Invalid credentials or unconfirmed email' });
     }
 
@@ -521,7 +508,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
       status: 'success',
     });
 
-    res.json({ 
+    res.json({
       message: 'Logged in successfully',
       token: token
     });
@@ -543,7 +530,7 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
         resource: 'auth',
         status: 'success',
       });
-    } catch (logErr) {}
+    } catch (logErr) { }
 
     res.json({ message: 'Logged out' });
   } catch (err) {
@@ -634,7 +621,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         status: 'initiated',
         details: { items_count: cart.length, total_amount: totalAmount },
       });
-    } catch (logErr) {}
+    } catch (logErr) { }
 
     res.json({ url: session.url });
   } catch (err) {
@@ -743,11 +730,11 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
     }
 
     let filePath = version.file_path;
-    
+
     if (filePath.startsWith('/')) {
       filePath = filePath.substring(1);
     }
-    
+
     if (filePath.startsWith('assets/')) {
       filePath = filePath.substring(7);
     }
@@ -761,7 +748,7 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
 
     if (signedUrlError) {
       console.error('Signed URL error:', signedUrlError);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Failed to generate download URL',
         details: process.env.NODE_ENV === 'development' ? signedUrlError.message : undefined
       });
@@ -780,7 +767,7 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
         status: 'success',
         details: { version_id: versionId, file_path: filePath }
       });
-    } catch (logErr) {}
+    } catch (logErr) { }
 
     res.json({ url: signedUrlData.signedUrl });
   } catch (err) {
@@ -815,7 +802,7 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
         resource: 'user',
         status: 'success',
       });
-    } catch (logErr) {}
+    } catch (logErr) { }
 
     res.json({ message: 'Profile updated' });
   } catch (err) {
@@ -849,7 +836,7 @@ app.get('/api/assets', async (req, res) => {
 
     if (error) return res.status(500).json({ error: 'Failed to fetch assets' });
 
-    res.json({ 
+    res.json({
       data: assets,
       pagination: {
         page,
@@ -887,20 +874,11 @@ app.get('/api/assets/:id', async (req, res) => {
   }
 });
 
-// ===== STATIC FILE SERVING & FRONTEND ROUTING =====
-
-// Serve static files from the parent directory (src/)
-// Since server.js is in src/js/, we need to go up one level
 app.use(express.static(path.join(__dirname, '..')));
 
-// Catch-all route to serve index.html for frontend routing
-// This must come AFTER all API routes
-// Use regex pattern for Express v5 compatibility
 app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
-
-// ===== ERROR HANDLING =====
 
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
@@ -914,8 +892,6 @@ app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
-
-// ===== START SERVER =====
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {

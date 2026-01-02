@@ -837,7 +837,7 @@
                 return false;
             }
             try {
-                const response = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                const response = await fetch('/api/user/profile', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -872,7 +872,7 @@
             checkoutBtn.disabled = true;
             checkoutBtn.innerHTML = '<div class="loading"></div> Processing...';
             try {
-                const response = await fetch('http://mywebsite.test:3000/api/create-checkout-session', {
+                const response = await fetch('/api/create-checkout-session', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -950,7 +950,7 @@
                 return;
             }
             try {
-                const response = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                const response = await fetch('/api/user/profile', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,

@@ -393,7 +393,7 @@ form.addEventListener('submit', async (e) => {
     errorMessage.classList.remove('show');
 
     try {
-        const response = await fetch('http://localhost:3000/api/auth/login', {
+        const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -430,7 +430,7 @@ async function checkAuth() {
     if (!token) return;
 
     try {
-        const response = await fetch('http://localhost:3000/api/user/profile', {
+        const response = await fetch('/api/user/profile', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',

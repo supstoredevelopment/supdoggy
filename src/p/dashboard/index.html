@@ -819,7 +819,7 @@
             }
 
             try {
-                const res = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                const res = await fetch('/api/user/profile', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!res.ok) throw new Error('Unauthorized');
@@ -862,7 +862,7 @@
             e.preventDefault();
             const token = localStorage.getItem('auth_token');
             try {
-                await fetch('http://mywebsite.test:3000/api/auth/logout', {
+                await fetch('/api/auth/logout', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -877,7 +877,7 @@
             const fullName = document.getElementById('fullName').value;
 
             try {
-                const res = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                const res = await fetch('/api/user/profile', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -896,7 +896,7 @@
         async function loadOrders() {
             const token = localStorage.getItem('auth_token');
             try {
-                const res = await fetch('http://mywebsite.test:3000/api/user/orders', {
+                const res = await fetch('/api/user/orders', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!res.ok) throw new Error();
@@ -953,7 +953,7 @@
     const token = localStorage.getItem('auth_token');
     try {
         console.log('🔍 Fetching user assets...');
-        const res = await fetch('http://mywebsite.test:3000/api/user/assets', {
+        const res = await fetch('/api/user/assets', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -1003,7 +1003,7 @@
             // Fetch versions for this asset
             try {
                 console.log(`🔍 Fetching versions for asset ${asset.id}...`);
-                const vres = await fetch(`http://mywebsite.test:3000/api/asset/${asset.id}/versions`, {
+                const vres = await fetch(`/api/asset/${asset.id}/versions`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -1039,7 +1039,7 @@
                             
                             try {
                                 const downloadRes = await fetch(
-                                    `http://mywebsite.test:3000/api/download/${asset.id}/${version.id}`, 
+                                    `/api/download/${asset.id}/${version.id}`, 
                                     {
                                         headers: { 'Authorization': `Bearer ${token}` }
                                     }
@@ -1108,7 +1108,7 @@
             }
 
             try {
-                const response = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                const response = await fetch('/api/user/profile', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,

@@ -82,7 +82,7 @@
             if (!token || !sessionId) return;
 
             try {
-                const res = await fetch(`http://mywebsite.test:3000/api/session/${sessionId}/assets`, {
+                const res = await fetch(`/api/session/${sessionId}/assets`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -93,7 +93,7 @@
                 const assets = await res.json();
 
                 for (const asset of assets) {
-                    const vres = await fetch(`http://mywebsite.test:3000/api/asset/${asset.id}/versions`, {
+                    const vres = await fetch(`/api/asset/${asset.id}/versions`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -105,7 +105,7 @@
                     if (versions.length === 0) continue;
 
                     const latestVersionId = versions[0].id;
-                    window.open(`http://mywebsite.test:3000/api/download/${asset.id}/${latestVersionId}`, '_blank');
+                    window.open(`/api/download/${asset.id}/${latestVersionId}`, '_blank');
                 }
             } catch (err) {
                 console.error('Auto download failed:', err);

@@ -845,7 +845,7 @@
             cartCount.textContent = cart.length;
         }
         async function fetchAssets() {
-            const res = await fetch('http://localhost:3000/api/assets?limit=100');
+            const res = await fetch('/api/assets?limit=100');
             if (!res.ok) throw new Error('Failed to load assets');
             const json = await res.json();
             return Array.isArray(json.data) ? json.data : [];
@@ -1052,7 +1052,7 @@
                 return;
             }
             try {
-                const response = await fetch('http://mywebsite.test:3000/api/user/profile', {
+                const response = await fetch('/api/user/profile', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,

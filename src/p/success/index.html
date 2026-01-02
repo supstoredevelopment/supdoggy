@@ -118,8 +118,6 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://mywebsite.test:3000';
-        
         const params = new URLSearchParams(window.location.search);
         const sessionId = params.get('session_id');
         
@@ -176,7 +174,7 @@
                 updateStatus('Fetching your purchased assets...');
 
                 // Fetch user's assets (all of them, since we just purchased)
-                const res = await fetch(`${API_BASE_URL}/api/user/assets`, {
+                const res = await fetch(`/api/user/assets`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -203,7 +201,7 @@
                 for (const asset of assets) {
                     try {
                         // Fetch versions for this asset
-                        const vres = await fetch(`${API_BASE_URL}/api/asset/${asset.id}/versions`, {
+                        const vres = await fetch(`/api/asset/${asset.id}/versions`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'Content-Type': 'application/json'
@@ -230,7 +228,7 @@
 
                         // Request download URL
                         const downloadRes = await fetch(
-                            `${API_BASE_URL}/api/download/${asset.id}/${latestVersion.id}`,
+                            `/api/download/${asset.id}/${latestVersion.id}`,
                             {
                                 headers: {
                                     'Authorization': `Bearer ${token}`,
