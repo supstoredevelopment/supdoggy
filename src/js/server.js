@@ -253,7 +253,48 @@ app.post('/api/stripe-webhook',
 });
 
 // 3. Security and parsing middleware
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'", // Allow inline scripts - consider using nonces in production
+          "https://cdnjs.cloudflare.com",
+          "https://js.stripe.com",
+        ],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'", // Allow inline styles
+          "https://fonts.googleapis.com",
+        ],
+        fontSrc: [
+          "'self'",
+          "https://fonts.gstatic.com",
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https:",
+          "blob:",
+        ],
+        connectSrc: [
+          "'self'",
+          "https://api.stripe.com",
+          process.env.SUPABASE_URL,
+        ],
+        frameSrc: [
+          "'self'",
+          "https://js.stripe.com",
+          "https://hooks.stripe.com",
+        ],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+      },
+    },
+  })
+);
 app.use(cookieParser(SESSION_SECRET));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10kb' }));
