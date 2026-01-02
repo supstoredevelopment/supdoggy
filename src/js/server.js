@@ -11,6 +11,22 @@ import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve all frontend files in src/
+app.use(express.static(path.join(__dirname)));
+
+// Catch-all route to serve index.html for frontend routing
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next(); // skip API routes
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+
 dotenv.config();
 
 const app = express();
