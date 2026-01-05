@@ -937,29 +937,37 @@
             renderPagination();
         }
         function renderPage(page) {
-            grid.innerHTML = '';
-            const data = filteredAssets;
-            const start = (page - 1) * perPage;
-            const end = Math.min(start + perPage, data.length);
-            data.slice(start, end).forEach(asset => {
-                const item = document.createElement('a');
-                item.className = 'asset-item';
-                item.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
-                item.innerHTML = `
-            <img src="${asset.image_url}" alt="${asset.title}">
+    grid.innerHTML = '';
+    const data = filteredAssets;
+    const start = (page - 1) * perPage;
+    const end = Math.min(start + perPage, data.length);
+    data.slice(start, end).forEach(asset => {
+        const item = document.createElement('a');
+        item.className = 'asset-item';
+        item.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
+        item.innerHTML = `
+            <div class="asset-item-image">
+                <img src="${asset.image_url}" alt="${asset.title}">
+            </div>
+            <div class="asset-item-info">
+                <div class="asset-item-price">
+                    $${asset.price}
+                </div>
+                <div class="asset-item-title">
+                    ${asset.title}
+                </div>
+            </div>
         `;
-                item.dataset.title = asset.title;
-                item.dataset.price = asset.price;
-                grid.appendChild(item);
-            });
-            if (data.length === 0) {
-                grid.innerHTML = `
+        grid.appendChild(item);
+    });
+    if (data.length === 0) {
+        grid.innerHTML = `
             <p style="text-align:center; color:var(--subtext);">
                 No matching assets found.
             </p>
         `;
-            }
-        }
+    }
+}
         function renderPagination() {
             pagination.innerHTML = '';
             const numPages = Math.ceil(filteredAssets.length / perPage);
