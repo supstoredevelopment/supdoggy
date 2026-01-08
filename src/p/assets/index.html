@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SupStore - All Assets</title>
+    <title>SupStore - Asset Detail</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -77,8 +77,6 @@
             overflow-x: hidden;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            transition: background var(--transition-fast), color var(--transition-fast);
         }
 
         nav {
@@ -164,176 +162,242 @@
             transform: rotate(-45deg) translate(7px, -6px);
         }
 
-        .all-assets {
-            padding: 100px var(--spacing-extra-large);
+        .asset-detail {
+            padding: 120px var(--spacing-extra-large) 80px;
             min-height: 100vh;
         }
 
-        .all-assets h2 {
-            font-size: 3rem;
-            font-weight: 800;
-            margin-bottom: var(--spacing-extra-large);
-            text-align: center;
+        .asset-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-extra-large);
+            align-items: start;
+            margin-bottom: 80px;
         }
 
-        .search-container {
-            max-width: 1400px;
-            margin: 0 auto var(--spacing-large);
+        .asset-image-container {
             display: flex;
             justify-content: center;
+            align-items: center;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-large);
+            padding: var(--spacing-large);
+            min-height: 500px;
+        }
+
+        .asset-image {
+            width: 100%;
+            max-height: 450px;
+            object-fit: contain;
+            border-radius: var(--border-radius-medium);
+        }
+
+        .asset-info {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-large);
+        }
+
+        .asset-tag {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .asset-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .asset-description {
+            font-size: 1.05rem;
+            color: var(--subtext);
+            line-height: 1.8;
+        }
+
+        .asset-price {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--accent);
+        }
+
+        .action-buttons {
+            display: flex;
             gap: var(--spacing-medium);
             flex-wrap: wrap;
         }
 
-        #search,
-        #tagFilter {
-            padding: var(--spacing-medium) var(--spacing-large);
-            width: 100%;
-            max-width: 300px;
-            border: 1px solid var(--glass-border);
+        .btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: var(--border-radius-medium);
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0052cc;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.4);
+        }
+
+        .btn-secondary {
             background: var(--glass-bg);
             color: var(--text);
-            border-radius: var(--border-radius-medium);
-            font-size: 1rem;
-            transition: all var(--transition-fast);
+            border: 2px solid var(--glass-border);
         }
 
-        #search:focus,
-        #tagFilter:focus {
+        .btn-secondary:hover {
+            background: rgba(0, 212, 255, 0.15);
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
-            outline: none;
+            transform: translateY(-3px);
         }
 
-        .assets-grid {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: var(--spacing-large);
+        .recommended-section {
+            margin-top: 100px;
         }
 
-        .asset-card {
+        .recommended-header {
+            max-width: 1200px;
+            margin: 0 auto var(--spacing-large);
+            padding: 0 var(--spacing-extra-large);
+        }
+
+        .recommended-header h3 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: var(--spacing-medium);
+        }
+
+        .carousel-container {
+            padding: 0 var(--spacing-extra-large);
             position: relative;
-            border-radius: var(--border-radius-large);
+        }
+
+        .carousel {
+            display: flex;
+            gap: var(--spacing-large);
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding-bottom: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .carousel::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .carousel::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        .carousel-item {
+            flex: 0 0 220px;
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-medium);
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
             transition: all var(--transition-fast);
             text-decoration: none;
             color: var(--text);
             cursor: pointer;
-            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
-        .asset-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 60px rgba(0, 102, 255, 0.3);
+        .carousel-item:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 102, 255, 0.3);
             border-color: var(--accent);
         }
 
-        .asset-card-image {
+        .carousel-item-image {
             width: 100%;
-            aspect-ratio: 16 / 9;
+            aspect-ratio: 1;
             overflow: hidden;
-            background: rgba(0, 0, 0, 0.2);
-            position: relative;
         }
 
-        .asset-card img {
+        .carousel-item-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform var(--transition-medium);
+            transition: transform var(--transition-fast);
         }
 
-        .asset-card:hover img {
-            transform: scale(1.08);
+        .carousel-item:hover .carousel-item-image img {
+            transform: scale(1.1);
         }
 
-        .asset-card-content {
-            padding: var(--spacing-large);
+        .carousel-item-info {
+            padding: var(--spacing-medium);
+            flex-grow: 1;
             display: flex;
             flex-direction: column;
-            gap: var(--spacing-medium);
-            flex-grow: 1;
+            gap: 0.5rem;
         }
 
-        .asset-card-title {
-            font-size: 1.1rem;
+        .carousel-item-price {
             font-weight: 700;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        .carousel-item-title {
+            font-weight: 600;
             line-height: 1.3;
         }
 
-        .asset-card-description {
-            font-size: 0.9rem;
-            color: var(--subtext);
-            line-height: 1.4;
-            flex-grow: 1;
-        }
-
-        .asset-card-footer {
+        .carousel-controls {
+            position: absolute;
+            bottom: 1rem;
+            right: var(--spacing-extra-large);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: var(--spacing-medium);
-            border-top: 1px solid var(--glass-border);
-        }
-
-        .asset-card-price {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: var(--accent);
-        }
-
-        .asset-card-tag {
-            display: inline-block;
-            background: rgba(0, 212, 255, 0.15);
-            color: var(--accent);
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
             gap: 0.5rem;
-            margin-top: 3rem;
-            max-width: 1400px;
-            margin-left: auto;
-            margin-right: auto;
+            z-index: 10;
         }
 
-        .pagination-btn {
-            padding: 0.6rem 1rem;
-            border: 1px solid var(--glass-border);
-            background: var(--glass-bg);
-            color: var(--text);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            font-weight: 600;
-        }
-
-        .pagination-btn:hover:not(:disabled) {
+        .carousel-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             background: var(--primary);
             color: white;
-            border-color: var(--primary);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
         }
 
-        .pagination-btn.active {
+        .carousel-btn:hover {
             background: var(--accent);
-            color: var(--dark);
-            border-color: var(--accent);
-        }
-
-        .pagination-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+            transform: scale(1.1);
         }
 
         footer {
@@ -341,7 +405,6 @@
             backdrop-filter: blur(20px);
             padding: 60px var(--spacing-extra-large) 40px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
-            margin-top: 80px;
         }
 
         .footer-content {
@@ -453,10 +516,6 @@
             font-weight: 700;
         }
 
-        .cart-icon:hover {
-            color: var(--accent);
-        }
-
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
@@ -479,13 +538,24 @@
             }
         }
 
-        @media (max-width: 768px) {
-            .all-assets {
-                padding: 80px 1.5rem;
+        @media (max-width: 1024px) {
+            .asset-wrapper {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-large);
             }
 
-            .nav-container {
-                padding: 0 1.5rem;
+            .asset-title {
+                font-size: 2rem;
+            }
+
+            .asset-price {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .asset-detail {
+                padding: 100px 1.5rem 60px;
             }
 
             .hamburger {
@@ -508,39 +578,46 @@
                 display: flex;
             }
 
-            .assets-grid {
-                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            .action-buttons {
+                flex-direction: column;
             }
 
-            .all-assets h2 {
-                font-size: 2rem;
+            .btn {
+                width: 100%;
+            }
+
+            .carousel-item {
+                flex: 0 0 180px;
+            }
+
+            .recommended-header {
+                padding: 0 1.5rem;
+            }
+
+            .carousel-container {
+                padding: 0 1.5rem;
+            }
+
+            .carousel-controls {
+                right: 1.5rem;
             }
         }
 
         @media (max-width: 480px) {
-            .all-assets {
-                padding: 60px 1rem;
+            .asset-detail {
+                padding: 80px 1rem 40px;
             }
 
-            .search-container {
-                flex-direction: column;
+            .asset-title {
+                font-size: 1.6rem;
             }
 
-            #search,
-            #tagFilter {
-                max-width: none;
+            .asset-price {
+                font-size: 2rem;
             }
 
-            .all-assets h2 {
-                font-size: 1.5rem;
-            }
-
-            .assets-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            }
-
-            .asset-card-content {
-                padding: var(--spacing-medium);
+            .carousel-item {
+                flex: 0 0 150px;
             }
         }
     </style>
@@ -574,16 +651,21 @@
         </div>
     </nav>
 
-    <section class="all-assets">
-        <h2>All Assets</h2>
-        <div class="search-container">
-            <input id="search" placeholder="Search assets by title or description...">
-            <select id="tagFilter">
-                <option value="">All Tags</option>
-            </select>
+    <section class="asset-detail">
+        <div id="assetDetailContainer"></div>
+    </section>
+
+    <section class="recommended-section" id="recommendedSection" style="display: none;">
+        <div class="recommended-header">
+            <h3>You Might Also Like</h3>
         </div>
-        <div class="assets-grid" id="assetsGrid"></div>
-        <div id="pagination" class="pagination"></div>
+        <div class="carousel-container">
+            <div class="carousel" id="carouselItems"></div>
+            <div class="carousel-controls">
+                <button class="carousel-btn" id="prevBtn"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn" id="nextBtn"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
     </section>
 
     <footer>
@@ -605,7 +687,7 @@
                 <ul class="footer-links">
                     <li><a href="#">Terms</a></li>
                     <li><a href="#">Privacy</a></li>
-                    <li><a href="#">Contact</a></li>
+                    <li><a href="/p/contact">Contact</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -620,23 +702,10 @@
 
     <script>
         const nav = document.getElementById('nav');
-        const grid = document.getElementById('assetsGrid');
-        const search = document.getElementById('search');
-        const tagFilter = document.getElementById('tagFilter');
-        const pagination = document.getElementById('pagination');
+        let selectedAsset = null;
+        let recommendedAssets = [];
+        const container = document.getElementById('assetDetailContainer');
         const cartCount = document.getElementById('cartCount');
-        const hamburger = document.getElementById('hamburger');
-        const navLinks = document.querySelector('.nav-links');
-
-        let assets = [];
-        let filteredAssets = [];
-        const perPage = 12;
-        let currentPage = 1;
-
-        hamburger.addEventListener('click', () => {
-            hamburger.classList.toggle('active');
-            navLinks.classList.toggle('active');
-        });
 
         function getCart() {
             return JSON.parse(localStorage.getItem('cart') || '[]');
@@ -647,8 +716,38 @@
             updateCartCount();
         }
 
-        function updateCartCount() {
-            cartCount.textContent = getCart().length;
+        function addToCart() {
+            if (!selectedAsset) return;
+            const cart = getCart();
+            if (!cart.find(item => item.id === selectedAsset.id)) {
+                cart.push({
+                    id: selectedAsset.id,
+                    title: selectedAsset.title,
+                    price: selectedAsset.price,
+                    image_url: selectedAsset.image_url,
+                    stripe_price_id: selectedAsset.stripe_price_id
+                });
+                saveCart(cart);
+                showSuccess('Added to cart!');
+            } else {
+                showSuccess('Already in cart!');
+            }
+        }
+
+        function buyNow() {
+            if (!selectedAsset) return;
+            const cart = getCart();
+            if (!cart.find(item => item.id === selectedAsset.id)) {
+                cart.push({
+                    id: selectedAsset.id,
+                    title: selectedAsset.title,
+                    price: selectedAsset.price,
+                    image_url: selectedAsset.image_url,
+                    stripe_price_id: selectedAsset.stripe_price_id
+                });
+                saveCart(cart);
+            }
+            window.location.href = '/p/cart';
         }
 
         function showSuccess(msg) {
@@ -659,155 +758,98 @@
             setTimeout(() => el.remove(), 3000);
         }
 
-        async function fetchAssets() {
-            const res = await fetch('/api/assets?limit=100');
-            if (!res.ok) throw new Error('Failed to load assets');
+        function updateCartCount() {
+            cartCount.textContent = getCart().length;
+        }
+
+        async function fetchAsset(id) {
+            const res = await fetch(`/api/assets/${id}`);
+            if (!res.ok) throw new Error('Failed to load asset');
+            return await res.json();
+        }
+
+        async function fetchRecommendedAssets() {
+            const res = await fetch('/api/assets?limit=20');
+            if (!res.ok) return [];
             const json = await res.json();
             return Array.isArray(json.data) ? json.data : [];
         }
 
-        function populateTags() {
-            tagFilter.innerHTML = '<option value="">All Tags</option>';
-            const allTags = new Set();
-            assets.forEach(asset => {
-                if (!asset.tag) return;
-                const tags = Array.isArray(asset.tag) ? asset.tag : asset.tag.split(',').map(t => t.trim());
-                tags.forEach(tag => allTags.add(tag));
-            });
-            Array.from(allTags).sort().forEach(tag => {
-                const opt = document.createElement('option');
-                opt.value = tag;
-                opt.textContent = tag;
-                tagFilter.appendChild(opt);
-            });
-        }
-
-        function debounce(fn, ms) {
-            let timeout;
-            return (...args) => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => fn(...args), ms);
-            };
-        }
-
-        function filterAssets() {
-            const query = search.value.toLowerCase();
-            const selectedTag = tagFilter.value;
-            filteredAssets = assets.filter(asset => {
-                const matchesQuery = asset.title.toLowerCase().includes(query) || asset.description.toLowerCase().includes(query);
-                const matchesTag = !selectedTag || (Array.isArray(asset.tag) ? asset.tag.includes(selectedTag) : asset.tag?.split(',').map(t => t.trim()).includes(selectedTag));
-                return matchesQuery && matchesTag;
-            });
-            currentPage = 1;
-            renderPage(1);
-            renderPagination();
-        }
-
-        function renderPage(page) {
-            grid.innerHTML = '';
-            const start = (page - 1) * perPage;
-            const end = start + perPage;
-            const items = filteredAssets.slice(start, end);
-
-            if (items.length === 0) {
-                grid.innerHTML = '<p style="text-align:center; color:var(--subtext); grid-column:1/-1; padding: 2rem;">No matching assets found.</p>';
+        async function loadAsset() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            if (!id) {
+                container.innerHTML = '<p style="text-align: center; color: var(--subtext); padding: 2rem;">No asset ID provided.</p>';
                 return;
             }
 
-            items.forEach(asset => {
-                const el = document.createElement('a');
-                el.className = 'asset-card';
-                el.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
-                el.innerHTML = `
-<div class="asset-card-image">
-<img src="${asset.image_url}" alt="${asset.title}">
+            try {
+                const asset = await fetchAsset(id);
+                selectedAsset = asset;
+
+                container.innerHTML = `
+<div class="asset-wrapper">
+<div class="asset-image-container">
+<img class="asset-image" src="${asset.image_url}" alt="${asset.title}">
 </div>
-<div class="asset-card-content">
-<div class="asset-card-title">${asset.title}</div>
-<div class="asset-card-description">${asset.description.substring(0, 60)}${asset.description.length > 60 ? '...' : ''}</div>
-<div class="asset-card-footer">
-<div class="asset-card-price">$${asset.price.toLocaleString()}</div>
-<div class="asset-card-tag">${asset.tag || 'Asset'}</div>
+<div class="asset-info">
+<span class="asset-tag">${asset.tag || 'Asset'}</span>
+<h1 class="asset-title">${asset.title}</h1>
+<p class="asset-description">${asset.description}</p>
+<div class="asset-price">$${asset.price.toLocaleString()}</div>
+<div class="action-buttons">
+<button class="btn btn-primary" onclick="buyNow()">
+<i class="fas fa-bolt"></i> Buy Now
+</button>
+<button class="btn btn-secondary" onclick="addToCart()">
+<i class="fas fa-cart-plus"></i> Add to Cart
+</button>
+</div>
 </div>
 </div>
 `;
-                grid.appendChild(el);
+
+                recommendedAssets = await fetchRecommendedAssets();
+                recommendedAssets = recommendedAssets.filter(a => a.id !== asset.id);
+                if (recommendedAssets.length > 0) {
+                    loadCarousel();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<p style="text-align: center; color: var(--subtext);">Error loading asset.</p>';
+            }
+        }
+
+        function loadCarousel() {
+            const section = document.getElementById('recommendedSection');
+            const carousel = document.getElementById('carouselItems');
+            carousel.innerHTML = '';
+
+            recommendedAssets.slice(0, 15).forEach(asset => {
+                const item = document.createElement('a');
+                item.className = 'carousel-item';
+                item.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
+                item.innerHTML = `
+<div class="carousel-item-image">
+<img src="${asset.image_url}" alt="${asset.title}">
+</div>
+<div class="carousel-item-info">
+<div class="carousel-item-price">$${asset.price.toLocaleString()}</div>
+<div class="carousel-item-title">${asset.title}</div>
+</div>
+`;
+                carousel.appendChild(item);
             });
-        }
 
-        function renderPagination() {
-            pagination.innerHTML = '';
-            const numPages = Math.ceil(filteredAssets.length / perPage);
-            if (numPages <= 1) return;
+            section.style.display = 'block';
 
-            const prev = document.createElement('button');
-            prev.className = 'pagination-btn';
-            prev.textContent = '‹ Previous';
-            prev.disabled = currentPage === 1;
-            prev.onclick = () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderPage(currentPage);
-                    renderPagination();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
+            document.getElementById('prevBtn').onclick = () => {
+                carousel.scrollBy({ left: -240, behavior: 'smooth' });
             };
-            pagination.appendChild(prev);
 
-            for (let i = 1; i <= numPages; i++) {
-                if (numPages <= 7 || i === 1 || i === numPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
-                    const btn = document.createElement('button');
-                    btn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
-                    btn.textContent = i;
-                    btn.onclick = () => {
-                        currentPage = i;
-                        renderPage(currentPage);
-                        renderPagination();
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    };
-                    pagination.appendChild(btn);
-                } else if ((i === 2 && currentPage > 3) || (i === numPages - 1 && currentPage < numPages - 2)) {
-                    const span = document.createElement('span');
-                    span.textContent = '...';
-                    span.style.padding = '0.6rem 0.3rem';
-                    span.style.color = 'var(--subtext)';
-                    pagination.appendChild(span);
-                }
-            }
-
-            const next = document.createElement('button');
-            next.className = 'pagination-btn';
-            next.textContent = 'Next ›';
-            next.disabled = currentPage === numPages;
-            next.onclick = () => {
-                if (currentPage < numPages) {
-                    currentPage++;
-                    renderPage(currentPage);
-                    renderPagination();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
+            document.getElementById('nextBtn').onclick = () => {
+                carousel.scrollBy({ left: 240, behavior: 'smooth' });
             };
-            pagination.appendChild(next);
-        }
-
-        async function init() {
-            grid.innerHTML = '<div class="loader"></div>';
-            try {
-                assets = await fetchAssets();
-                if (assets.length === 0) {
-                    grid.innerHTML = '<p style="text-align:center; color:var(--subtext); grid-column:1/-1;">No assets available.</p>';
-                    return;
-                }
-                populateTags();
-                filteredAssets = assets;
-                renderPage(1);
-                renderPagination();
-                search.addEventListener('keyup', debounce(filterAssets, 300));
-                tagFilter.addEventListener('change', filterAssets);
-            } catch (err) {
-                console.error('Error:', err);
-                grid.innerHTML = '<p style="text-align:center; color:var(--subtext); grid-column:1/-1;">Error loading assets.</p>';
-            }
         }
 
         const themeSwitch = document.getElementById('themeSwitch');
@@ -825,7 +867,7 @@
         });
 
         window.addEventListener('load', () => {
-            init();
+            loadAsset();
             updateCartCount();
         });
     </script>
