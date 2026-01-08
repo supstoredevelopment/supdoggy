@@ -34,11 +34,10 @@
             --bg-rgb-light: 255, 255, 255;
             --shadow-dark: rgba(0, 0, 0, 0.3);
             --shadow-light: rgba(0, 0, 0, 0.1);
-            --gradient-start-dark: rgba(0, 102, 255, 0.15);
-            --gradient-end-dark: rgba(0, 212, 255, 0.1);
             --transition-fast: 0.3s ease;
             --transition-medium: 0.4s ease;
             --border-radius-medium: 12px;
+            --border-radius-large: 20px;
             --border-radius-circle: 50%;
             --spacing-small: 0.5rem;
             --spacing-medium: 1rem;
@@ -78,6 +77,8 @@
             overflow-x: hidden;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background var(--transition-fast), color var(--transition-fast);
         }
 
         nav {
@@ -115,11 +116,6 @@
             color: var(--text);
             text-decoration: none;
             letter-spacing: -1px;
-            transition: all var(--transition-fast);
-        }
-
-        .logo:hover {
-            color: var(--accent);
         }
 
         .nav-links {
@@ -133,27 +129,11 @@
             color: var(--subtext);
             text-decoration: none;
             font-weight: 500;
-            transition: all var(--transition-fast);
-            position: relative;
-        }
-
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--accent);
-            transition: width var(--transition-fast);
+            transition: color var(--transition-fast);
         }
 
         .nav-links a:hover {
             color: var(--accent);
-        }
-
-        .nav-links a:hover::after {
-            width: 100%;
         }
 
         .hamburger {
@@ -186,22 +166,19 @@
 
         .all-assets {
             padding: 100px var(--spacing-extra-large);
-            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.05), transparent 70%);
             min-height: 100vh;
         }
 
         .all-assets h2 {
-            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-size: 3rem;
             font-weight: 800;
             margin-bottom: var(--spacing-extra-large);
             text-align: center;
-            letter-spacing: -1px;
         }
 
         .search-container {
             max-width: 1400px;
             margin: 0 auto var(--spacing-large);
-            text-align: center;
             display: flex;
             justify-content: center;
             gap: var(--spacing-medium);
@@ -224,7 +201,7 @@
         #search:focus,
         #tagFilter:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(var(--accent), 0.1);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
             outline: none;
         }
 
@@ -232,13 +209,13 @@
             max-width: 1400px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: var(--spacing-large);
         }
 
         .asset-card {
             position: relative;
-            border-radius: var(--border-radius-medium);
+            border-radius: var(--border-radius-large);
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             overflow: hidden;
@@ -252,7 +229,7 @@
         }
 
         .asset-card:hover {
-            transform: translateY(-12px);
+            transform: translateY(-10px);
             box-shadow: 0 20px 60px rgba(0, 102, 255, 0.3);
             border-color: var(--accent);
         }
@@ -261,52 +238,39 @@
             width: 100%;
             aspect-ratio: 16 / 9;
             overflow: hidden;
-            background: linear-gradient(135deg, rgba(0, 102, 255, 0.1), rgba(0, 212, 255, 0.05));
+            background: rgba(0, 0, 0, 0.2);
             position: relative;
         }
 
-        .asset-card-image img {
+        .asset-card img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             transition: transform var(--transition-medium);
         }
 
-        .asset-card:hover .asset-card-image img {
-            transform: scale(1.12);
+        .asset-card:hover img {
+            transform: scale(1.08);
         }
 
         .asset-card-content {
             padding: var(--spacing-large);
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: var(--spacing-medium);
             flex-grow: 1;
-        }
-
-        .asset-card-tag {
-            display: inline-block;
-            background: rgba(0, 212, 255, 0.15);
-            color: var(--accent);
-            padding: 0.4rem 0.9rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            width: fit-content;
-            border: 1px solid rgba(0, 212, 255, 0.2);
         }
 
         .asset-card-title {
             font-size: 1.1rem;
-            font-weight: 800;
+            font-weight: 700;
             line-height: 1.3;
-            color: var(--text);
         }
 
         .asset-card-description {
             font-size: 0.9rem;
             color: var(--subtext);
-            line-height: 1.5;
+            line-height: 1.4;
             flex-grow: 1;
         }
 
@@ -319,9 +283,19 @@
         }
 
         .asset-card-price {
-            font-size: 1.5rem;
-            font-weight: 900;
+            font-size: 1.4rem;
+            font-weight: 800;
             color: var(--accent);
+        }
+
+        .asset-card-tag {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--accent);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
 
         .pagination {
@@ -329,11 +303,13 @@
             justify-content: center;
             gap: 0.5rem;
             margin-top: 3rem;
-            flex-wrap: wrap;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .pagination-btn {
-            padding: 0.7rem 1.2rem;
+            padding: 0.6rem 1rem;
             border: 1px solid var(--glass-border);
             background: var(--glass-bg);
             color: var(--text);
@@ -345,10 +321,8 @@
 
         .pagination-btn:hover:not(:disabled) {
             background: var(--primary);
-            color: var(--light);
+            color: white;
             border-color: var(--primary);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 102, 255, 0.3);
         }
 
         .pagination-btn.active {
@@ -364,21 +338,10 @@
 
         footer {
             background: rgba(10, 10, 10, 0.8);
-            backdrop-filter: blur(var(--blur-extra-large));
-            padding: 80px var(--spacing-extra-large) 40px;
+            backdrop-filter: blur(20px);
+            padding: 60px var(--spacing-extra-large) 40px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-        }
-
-        footer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(0, 102, 255, 0.05), transparent);
-            pointer-events: none;
+            margin-top: 80px;
         }
 
         .footer-content {
@@ -388,19 +351,6 @@
             grid-template-columns: 2fr repeat(3, 1fr);
             gap: 4rem;
             margin-bottom: var(--spacing-extra-large);
-            position: relative;
-            z-index: 1;
-        }
-
-        .footer-brand h3 {
-            font-size: 1.4rem;
-            font-weight: 800;
-            margin-bottom: var(--spacing-medium);
-        }
-
-        .footer-brand p {
-            color: var(--subtext);
-            line-height: 1.8;
         }
 
         .footer-section h4 {
@@ -415,41 +365,37 @@
             list-style: none;
         }
 
-        .footer-links li {
-            margin-bottom: 0.8rem;
-        }
-
         .footer-links a {
             color: var(--subtext);
             text-decoration: none;
-            transition: all var(--transition-fast);
+            transition: color var(--transition-fast);
         }
 
         .footer-links a:hover {
             color: var(--accent);
-            transform: translateX(4px);
-        }
-
-        .footer-bottom {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding-top: var(--spacing-large);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            text-align: center;
-            color: var(--subtext);
-            font-size: 0.9rem;
-            position: relative;
-            z-index: 1;
         }
 
         .loader {
             border: 4px solid var(--glass-border);
             border-top: 4px solid var(--primary);
-            border-radius: var(--border-radius-circle);
+            border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            margin: 3rem auto;
+            margin: 2rem auto;
+        }
+
+        .success-message {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow);
+            animation: slideIn 0.3s ease forwards;
+            z-index: 2000;
         }
 
         .toggle-switch {
@@ -459,7 +405,6 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: var(--border-radius-medium);
             cursor: pointer;
-            transition: background var(--transition-fast);
         }
 
         .toggle-switch::before {
@@ -470,7 +415,7 @@
             width: 20px;
             height: 20px;
             background: white;
-            border-radius: var(--border-radius-circle);
+            border-radius: 50%;
             transition: transform var(--transition-fast);
         }
 
@@ -493,6 +438,7 @@
             font-size: 1.2rem;
             color: var(--text);
             text-decoration: none;
+            transition: color var(--transition-fast);
         }
 
         .cart-icon span {
@@ -521,17 +467,23 @@
             }
         }
 
-        @media (max-width: 1024px) {
-            .nav-container {
-                padding: 0 2rem;
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
             }
 
-            .all-assets {
-                padding: 100px 2rem;
+            to {
+                transform: translateX(0);
+                opacity: 1;
             }
         }
 
         @media (max-width: 768px) {
+            .all-assets {
+                padding: 80px 1.5rem;
+            }
+
             .nav-container {
                 padding: 0 1.5rem;
             }
@@ -556,17 +508,12 @@
                 display: flex;
             }
 
-            .all-assets {
-                padding: 80px 1.5rem;
-            }
-
             .assets-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             }
 
-            .footer-content {
-                grid-template-columns: 1fr;
-                gap: var(--spacing-large);
+            .all-assets h2 {
+                font-size: 2rem;
             }
         }
 
@@ -584,8 +531,16 @@
                 max-width: none;
             }
 
+            .all-assets h2 {
+                font-size: 1.5rem;
+            }
+
             .assets-grid {
-                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .asset-card-content {
+                padding: var(--spacing-medium);
             }
         }
     </style>
@@ -599,7 +554,7 @@
                 <li><a href="/p/assets">Assets</a></li>
                 <li><a href="/#features">Features</a></li>
                 <li><a href="/#stats">Stats</a></li>
-                <li><a href="/p/contact">Contact</a></li>
+                <li><a href="/#contact">Contact</a></li>
             </ul>
             <div class="nav-actions">
                 <a href="/p/cart" class="cart-icon">
@@ -609,7 +564,6 @@
                 <div class="theme-toggle">
                     <input type="checkbox" id="themeSwitch" hidden>
                     <label for="themeSwitch" class="toggle-switch"></label>
-                    <span>Light Mode</span>
                 </div>
             </div>
             <div class="hamburger" id="hamburger">
@@ -634,9 +588,9 @@
 
     <footer>
         <div class="footer-content">
-            <div class="footer-brand">
-                <h3>SupStore</h3>
-                <p>Premium game assets for developers who won't settle. Built by builders, for builders.</p>
+            <div class="footer-section">
+                <h4>SupStore</h4>
+                <p style="color: var(--subtext);">Premium game assets for developers.</p>
             </div>
             <div class="footer-section">
                 <h4>Products</h4>
@@ -644,18 +598,14 @@
                     <li><a href="#">3D Models</a></li>
                     <li><a href="#">UI Kits</a></li>
                     <li><a href="#">Game Systems</a></li>
-                    <li><a href="#">Bundles</a></li>
-                    <li><a href="#">Animations</a></li>
-                    <li><a href="#">Sound Packs</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h4>Legal</h4>
                 <ul class="footer-links">
-                    <li><a href="/p/terms">Terms</a></li>
-                    <li><a href="/p/privacy">Privacy</a></li>
-                    <li><a href="/p/contact">Contact</a></li>
-                    <li><a href="/p/license">License</a></li>
+                    <li><a href="#">Terms</a></li>
+                    <li><a href="#">Privacy</a></li>
+                    <li><a href="#">Contact</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -665,9 +615,6 @@
                     <li><a href="#">Support</a></li>
                 </ul>
             </div>
-        </div>
-        <div class="footer-bottom">
-            <p>© 2026 SupStore. Built with passion for developers worldwide.</p>
         </div>
     </footer>
 
@@ -695,8 +642,21 @@
             return JSON.parse(localStorage.getItem('cart') || '[]');
         }
 
+        function saveCart(cart) {
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+        }
+
         function updateCartCount() {
             cartCount.textContent = getCart().length;
+        }
+
+        function showSuccess(msg) {
+            const el = document.createElement('div');
+            el.className = 'success-message';
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
         }
 
         async function fetchAssets() {
@@ -763,11 +723,11 @@
 <img src="${asset.image_url}" alt="${asset.title}">
 </div>
 <div class="asset-card-content">
-<div class="asset-card-tag">${asset.tag || 'Asset'}</div>
 <div class="asset-card-title">${asset.title}</div>
-<div class="asset-card-description">${asset.description.substring(0, 80)}${asset.description.length > 80 ? '...' : ''}</div>
+<div class="asset-card-description">${asset.description.substring(0, 60)}${asset.description.length > 60 ? '...' : ''}</div>
 <div class="asset-card-footer">
 <div class="asset-card-price">$${asset.price.toLocaleString()}</div>
+<div class="asset-card-tag">${asset.tag || 'Asset'}</div>
 </div>
 </div>
 `;
@@ -782,7 +742,7 @@
 
             const prev = document.createElement('button');
             prev.className = 'pagination-btn';
-            prev.textContent = '‹ Prev';
+            prev.textContent = '‹ Previous';
             prev.disabled = currentPage === 1;
             prev.onclick = () => {
                 if (currentPage > 1) {
@@ -806,6 +766,12 @@
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     };
                     pagination.appendChild(btn);
+                } else if ((i === 2 && currentPage > 3) || (i === numPages - 1 && currentPage < numPages - 2)) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    span.style.padding = '0.6rem 0.3rem';
+                    span.style.color = 'var(--subtext)';
+                    pagination.appendChild(span);
                 }
             }
 
