@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SupStore - Asset Detail</title>
+    <title>SupStore - All Assets</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -34,10 +34,11 @@
             --bg-rgb-light: 255, 255, 255;
             --shadow-dark: rgba(0, 0, 0, 0.3);
             --shadow-light: rgba(0, 0, 0, 0.1);
+            --gradient-start-dark: rgba(0, 102, 255, 0.15);
+            --gradient-end-dark: rgba(0, 212, 255, 0.1);
             --transition-fast: 0.3s ease;
             --transition-medium: 0.4s ease;
             --border-radius-medium: 12px;
-            --border-radius-large: 20px;
             --border-radius-circle: 50%;
             --spacing-small: 0.5rem;
             --spacing-medium: 1rem;
@@ -114,6 +115,11 @@
             color: var(--text);
             text-decoration: none;
             letter-spacing: -1px;
+            transition: all var(--transition-fast);
+        }
+
+        .logo:hover {
+            color: var(--accent);
         }
 
         .nav-links {
@@ -127,11 +133,27 @@
             color: var(--subtext);
             text-decoration: none;
             font-weight: 500;
-            transition: color var(--transition-fast);
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width var(--transition-fast);
         }
 
         .nav-links a:hover {
             color: var(--accent);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
         }
 
         .hamburger {
@@ -162,249 +184,201 @@
             transform: rotate(-45deg) translate(7px, -6px);
         }
 
-        .asset-detail {
-            padding: 120px var(--spacing-extra-large) 80px;
+        .all-assets {
+            padding: 100px var(--spacing-extra-large);
+            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.05), transparent 70%);
             min-height: 100vh;
         }
 
-        .asset-wrapper {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--spacing-extra-large);
-            align-items: start;
-            margin-bottom: 80px;
+        .all-assets h2 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            margin-bottom: var(--spacing-extra-large);
+            text-align: center;
+            letter-spacing: -1px;
         }
 
-        .asset-image-container {
+        .search-container {
+            max-width: 1400px;
+            margin: 0 auto var(--spacing-large);
+            text-align: center;
             display: flex;
             justify-content: center;
-            align-items: center;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-large);
-            padding: var(--spacing-large);
-            min-height: 500px;
-        }
-
-        .asset-image {
-            width: 100%;
-            max-height: 450px;
-            object-fit: contain;
-            border-radius: var(--border-radius-medium);
-        }
-
-        .asset-info {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-large);
-        }
-
-        .asset-tag {
-            display: inline-block;
-            background: rgba(0, 212, 255, 0.15);
-            color: var(--accent);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            width: fit-content;
-        }
-
-        .asset-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            line-height: 1.2;
-        }
-
-        .asset-description {
-            font-size: 1.05rem;
-            color: var(--subtext);
-            line-height: 1.8;
-        }
-
-        .asset-price {
-            font-size: 3rem;
-            font-weight: 900;
-            color: var(--accent);
-        }
-
-        .action-buttons {
-            display: flex;
             gap: var(--spacing-medium);
             flex-wrap: wrap;
         }
 
-        .btn {
-            flex: 1;
-            min-width: 150px;
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: var(--border-radius-medium);
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.8rem;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #0052cc;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.4);
-        }
-
-        .btn-secondary {
+        #search,
+        #tagFilter {
+            padding: var(--spacing-medium) var(--spacing-large);
+            width: 100%;
+            max-width: 300px;
+            border: 1px solid var(--glass-border);
             background: var(--glass-bg);
             color: var(--text);
-            border: 2px solid var(--glass-border);
+            border-radius: var(--border-radius-medium);
+            font-size: 1rem;
+            transition: all var(--transition-fast);
         }
 
-        .btn-secondary:hover {
-            background: rgba(0, 212, 255, 0.15);
+        #search:focus,
+        #tagFilter:focus {
             border-color: var(--accent);
-            transform: translateY(-3px);
+            box-shadow: 0 0 0 3px rgba(var(--accent), 0.1);
+            outline: none;
         }
 
-        .recommended-section {
-            margin-top: 100px;
+        .assets-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: var(--spacing-large);
         }
 
-        .recommended-header {
-            max-width: 1200px;
-            margin: 0 auto var(--spacing-large);
-            padding: 0 var(--spacing-extra-large);
+        .asset-card {
+            position: relative;
+            border-radius: var(--border-radius-medium);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all var(--transition-fast);
+            text-decoration: none;
+            color: var(--text);
+            cursor: pointer;
+            height: 100%;
         }
 
-        .recommended-header h3 {
-            font-size: 2rem;
-            font-weight: 800;
-            margin-bottom: var(--spacing-medium);
+        .asset-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 20px 60px rgba(0, 102, 255, 0.3);
+            border-color: var(--accent);
         }
 
-        .carousel-container {
-            padding: 0 var(--spacing-extra-large);
+        .asset-card-image {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.1), rgba(0, 212, 255, 0.05));
             position: relative;
         }
 
-        .carousel {
-            display: flex;
-            gap: var(--spacing-large);
-            overflow-x: auto;
-            scroll-behavior: smooth;
-            padding-bottom: 1rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .carousel::-webkit-scrollbar {
-            height: 6px;
-        }
-
-        .carousel::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 10px;
-        }
-
-        .carousel-item {
-            flex: 0 0 220px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-medium);
-            overflow: hidden;
-            transition: all var(--transition-fast);
-            text-decoration: none;
-            color: var(--text);
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .carousel-item:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 40px rgba(0, 102, 255, 0.3);
-            border-color: var(--accent);
-        }
-
-        .carousel-item-image {
-            width: 100%;
-            aspect-ratio: 1;
-            overflow: hidden;
-        }
-
-        .carousel-item-image img {
+        .asset-card-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform var(--transition-fast);
+            transition: transform var(--transition-medium);
         }
 
-        .carousel-item:hover .carousel-item-image img {
-            transform: scale(1.1);
+        .asset-card:hover .asset-card-image img {
+            transform: scale(1.12);
         }
 
-        .carousel-item-info {
-            padding: var(--spacing-medium);
-            flex-grow: 1;
+        .asset-card-content {
+            padding: var(--spacing-large);
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 1rem;
+            flex-grow: 1;
         }
 
-        .carousel-item-price {
-            font-weight: 700;
+        .asset-card-tag {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.15);
             color: var(--accent);
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            width: fit-content;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .asset-card-title {
             font-size: 1.1rem;
-        }
-
-        .carousel-item-title {
-            font-weight: 600;
+            font-weight: 800;
             line-height: 1.3;
+            color: var(--text);
         }
 
-        .carousel-controls {
-            position: absolute;
-            bottom: 1rem;
-            right: var(--spacing-extra-large);
-            display: flex;
-            gap: 0.5rem;
-            z-index: 10;
+        .asset-card-description {
+            font-size: 0.9rem;
+            color: var(--subtext);
+            line-height: 1.5;
+            flex-grow: 1;
         }
 
-        .carousel-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            cursor: pointer;
+        .asset-card-footer {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            transition: all var(--transition-fast);
+            padding-top: var(--spacing-medium);
+            border-top: 1px solid var(--glass-border);
         }
 
-        .carousel-btn:hover {
+        .asset-card-price {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--accent);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination-btn {
+            padding: 0.7rem 1.2rem;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: var(--text);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-weight: 600;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: var(--light);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 102, 255, 0.3);
+        }
+
+        .pagination-btn.active {
             background: var(--accent);
-            transform: scale(1.1);
+            color: var(--dark);
+            border-color: var(--accent);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         footer {
             background: rgba(10, 10, 10, 0.8);
-            backdrop-filter: blur(20px);
-            padding: 60px var(--spacing-extra-large) 40px;
+            backdrop-filter: blur(var(--blur-extra-large));
+            padding: 80px var(--spacing-extra-large) 40px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(0, 102, 255, 0.05), transparent);
+            pointer-events: none;
         }
 
         .footer-content {
@@ -414,6 +388,19 @@
             grid-template-columns: 2fr repeat(3, 1fr);
             gap: 4rem;
             margin-bottom: var(--spacing-extra-large);
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-brand h3 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: var(--spacing-medium);
+        }
+
+        .footer-brand p {
+            color: var(--subtext);
+            line-height: 1.8;
         }
 
         .footer-section h4 {
@@ -428,37 +415,41 @@
             list-style: none;
         }
 
+        .footer-links li {
+            margin-bottom: 0.8rem;
+        }
+
         .footer-links a {
             color: var(--subtext);
             text-decoration: none;
-            transition: color var(--transition-fast);
+            transition: all var(--transition-fast);
         }
 
         .footer-links a:hover {
             color: var(--accent);
+            transform: translateX(4px);
+        }
+
+        .footer-bottom {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-top: var(--spacing-large);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            color: var(--subtext);
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
         }
 
         .loader {
             border: 4px solid var(--glass-border);
             border-top: 4px solid var(--primary);
-            border-radius: 50%;
+            border-radius: var(--border-radius-circle);
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            margin: 2rem auto;
-        }
-
-        .success-message {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--primary);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px var(--shadow);
-            animation: slideIn 0.3s ease forwards;
-            z-index: 2000;
+            margin: 3rem auto;
         }
 
         .toggle-switch {
@@ -468,6 +459,7 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: var(--border-radius-medium);
             cursor: pointer;
+            transition: background var(--transition-fast);
         }
 
         .toggle-switch::before {
@@ -478,7 +470,7 @@
             width: 20px;
             height: 20px;
             background: white;
-            border-radius: 50%;
+            border-radius: var(--border-radius-circle);
             transition: transform var(--transition-fast);
         }
 
@@ -501,7 +493,6 @@
             font-size: 1.2rem;
             color: var(--text);
             text-decoration: none;
-            transition: color var(--transition-fast);
         }
 
         .cart-icon span {
@@ -516,6 +507,10 @@
             font-weight: 700;
         }
 
+        .cart-icon:hover {
+            color: var(--accent);
+        }
+
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
@@ -526,36 +521,19 @@
             }
         }
 
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
         @media (max-width: 1024px) {
-            .asset-wrapper {
-                grid-template-columns: 1fr;
-                gap: var(--spacing-large);
+            .nav-container {
+                padding: 0 2rem;
             }
 
-            .asset-title {
-                font-size: 2rem;
-            }
-
-            .asset-price {
-                font-size: 2.5rem;
+            .all-assets {
+                padding: 100px 2rem;
             }
         }
 
         @media (max-width: 768px) {
-            .asset-detail {
-                padding: 100px 1.5rem 60px;
+            .nav-container {
+                padding: 0 1.5rem;
             }
 
             .hamburger {
@@ -578,46 +556,36 @@
                 display: flex;
             }
 
-            .action-buttons {
-                flex-direction: column;
+            .all-assets {
+                padding: 80px 1.5rem;
             }
 
-            .btn {
-                width: 100%;
+            .assets-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             }
 
-            .carousel-item {
-                flex: 0 0 180px;
-            }
-
-            .recommended-header {
-                padding: 0 1.5rem;
-            }
-
-            .carousel-container {
-                padding: 0 1.5rem;
-            }
-
-            .carousel-controls {
-                right: 1.5rem;
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-large);
             }
         }
 
         @media (max-width: 480px) {
-            .asset-detail {
-                padding: 80px 1rem 40px;
+            .all-assets {
+                padding: 60px 1rem;
             }
 
-            .asset-title {
-                font-size: 1.6rem;
+            .search-container {
+                flex-direction: column;
             }
 
-            .asset-price {
-                font-size: 2rem;
+            #search,
+            #tagFilter {
+                max-width: none;
             }
 
-            .carousel-item {
-                flex: 0 0 150px;
+            .assets-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             }
         }
     </style>
@@ -631,7 +599,7 @@
                 <li><a href="/p/assets">Assets</a></li>
                 <li><a href="/#features">Features</a></li>
                 <li><a href="/#stats">Stats</a></li>
-                <li><a href="/#contact">Contact</a></li>
+                <li><a href="/p/contact">Contact</a></li>
             </ul>
             <div class="nav-actions">
                 <a href="/p/cart" class="cart-icon">
@@ -641,6 +609,7 @@
                 <div class="theme-toggle">
                     <input type="checkbox" id="themeSwitch" hidden>
                     <label for="themeSwitch" class="toggle-switch"></label>
+                    <span>Light Mode</span>
                 </div>
             </div>
             <div class="hamburger" id="hamburger">
@@ -651,28 +620,23 @@
         </div>
     </nav>
 
-    <section class="asset-detail">
-        <div id="assetDetailContainer"></div>
-    </section>
-
-    <section class="recommended-section" id="recommendedSection" style="display: none;">
-        <div class="recommended-header">
-            <h3>You Might Also Like</h3>
+    <section class="all-assets">
+        <h2>All Assets</h2>
+        <div class="search-container">
+            <input id="search" placeholder="Search assets by title or description...">
+            <select id="tagFilter">
+                <option value="">All Tags</option>
+            </select>
         </div>
-        <div class="carousel-container">
-            <div class="carousel" id="carouselItems"></div>
-            <div class="carousel-controls">
-                <button class="carousel-btn" id="prevBtn"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-btn" id="nextBtn"><i class="fas fa-chevron-right"></i></button>
-            </div>
-        </div>
+        <div class="assets-grid" id="assetsGrid"></div>
+        <div id="pagination" class="pagination"></div>
     </section>
 
     <footer>
         <div class="footer-content">
-            <div class="footer-section">
-                <h4>SupStore</h4>
-                <p style="color: var(--subtext);">Premium game assets for developers.</p>
+            <div class="footer-brand">
+                <h3>SupStore</h3>
+                <p>Premium game assets for developers who won't settle. Built by builders, for builders.</p>
             </div>
             <div class="footer-section">
                 <h4>Products</h4>
@@ -680,14 +644,18 @@
                     <li><a href="#">3D Models</a></li>
                     <li><a href="#">UI Kits</a></li>
                     <li><a href="#">Game Systems</a></li>
+                    <li><a href="#">Bundles</a></li>
+                    <li><a href="#">Animations</a></li>
+                    <li><a href="#">Sound Packs</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h4>Legal</h4>
                 <ul class="footer-links">
-                    <li><a href="#">Terms</a></li>
-                    <li><a href="#">Privacy</a></li>
+                    <li><a href="/p/terms">Terms</a></li>
+                    <li><a href="/p/privacy">Privacy</a></li>
                     <li><a href="/p/contact">Contact</a></li>
+                    <li><a href="/p/license">License</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -698,158 +666,182 @@
                 </ul>
             </div>
         </div>
+        <div class="footer-bottom">
+            <p>© 2026 SupStore. Built with passion for developers worldwide.</p>
+        </div>
     </footer>
 
     <script>
         const nav = document.getElementById('nav');
-        let selectedAsset = null;
-        let recommendedAssets = [];
-        const container = document.getElementById('assetDetailContainer');
+        const grid = document.getElementById('assetsGrid');
+        const search = document.getElementById('search');
+        const tagFilter = document.getElementById('tagFilter');
+        const pagination = document.getElementById('pagination');
         const cartCount = document.getElementById('cartCount');
+        const hamburger = document.getElementById('hamburger');
+        const navLinks = document.querySelector('.nav-links');
+
+        let assets = [];
+        let filteredAssets = [];
+        const perPage = 12;
+        let currentPage = 1;
+
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navLinks.classList.toggle('active');
+        });
 
         function getCart() {
             return JSON.parse(localStorage.getItem('cart') || '[]');
-        }
-
-        function saveCart(cart) {
-            localStorage.setItem('cart', JSON.stringify(cart));
-            updateCartCount();
-        }
-
-        function addToCart() {
-            if (!selectedAsset) return;
-            const cart = getCart();
-            if (!cart.find(item => item.id === selectedAsset.id)) {
-                cart.push({
-                    id: selectedAsset.id,
-                    title: selectedAsset.title,
-                    price: selectedAsset.price,
-                    image_url: selectedAsset.image_url,
-                    stripe_price_id: selectedAsset.stripe_price_id
-                });
-                saveCart(cart);
-                showSuccess('Added to cart!');
-            } else {
-                showSuccess('Already in cart!');
-            }
-        }
-
-        function buyNow() {
-            if (!selectedAsset) return;
-            const cart = getCart();
-            if (!cart.find(item => item.id === selectedAsset.id)) {
-                cart.push({
-                    id: selectedAsset.id,
-                    title: selectedAsset.title,
-                    price: selectedAsset.price,
-                    image_url: selectedAsset.image_url,
-                    stripe_price_id: selectedAsset.stripe_price_id
-                });
-                saveCart(cart);
-            }
-            window.location.href = '/p/cart';
-        }
-
-        function showSuccess(msg) {
-            const el = document.createElement('div');
-            el.className = 'success-message';
-            el.textContent = msg;
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 3000);
         }
 
         function updateCartCount() {
             cartCount.textContent = getCart().length;
         }
 
-        async function fetchAsset(id) {
-            const res = await fetch(`/api/assets/${id}`);
-            if (!res.ok) throw new Error('Failed to load asset');
-            return await res.json();
-        }
-
-        async function fetchRecommendedAssets() {
-            const res = await fetch('/api/assets?limit=20');
-            if (!res.ok) return [];
+        async function fetchAssets() {
+            const res = await fetch('/api/assets?limit=100');
+            if (!res.ok) throw new Error('Failed to load assets');
             const json = await res.json();
             return Array.isArray(json.data) ? json.data : [];
         }
 
-        async function loadAsset() {
-            const params = new URLSearchParams(window.location.search);
-            const id = params.get('id');
-            if (!id) {
-                container.innerHTML = '<p style="text-align: center; color: var(--subtext); padding: 2rem;">No asset ID provided.</p>';
+        function populateTags() {
+            tagFilter.innerHTML = '<option value="">All Tags</option>';
+            const allTags = new Set();
+            assets.forEach(asset => {
+                if (!asset.tag) return;
+                const tags = Array.isArray(asset.tag) ? asset.tag : asset.tag.split(',').map(t => t.trim());
+                tags.forEach(tag => allTags.add(tag));
+            });
+            Array.from(allTags).sort().forEach(tag => {
+                const opt = document.createElement('option');
+                opt.value = tag;
+                opt.textContent = tag;
+                tagFilter.appendChild(opt);
+            });
+        }
+
+        function debounce(fn, ms) {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn(...args), ms);
+            };
+        }
+
+        function filterAssets() {
+            const query = search.value.toLowerCase();
+            const selectedTag = tagFilter.value;
+            filteredAssets = assets.filter(asset => {
+                const matchesQuery = asset.title.toLowerCase().includes(query) || asset.description.toLowerCase().includes(query);
+                const matchesTag = !selectedTag || (Array.isArray(asset.tag) ? asset.tag.includes(selectedTag) : asset.tag?.split(',').map(t => t.trim()).includes(selectedTag));
+                return matchesQuery && matchesTag;
+            });
+            currentPage = 1;
+            renderPage(1);
+            renderPagination();
+        }
+
+        function renderPage(page) {
+            grid.innerHTML = '';
+            const start = (page - 1) * perPage;
+            const end = start + perPage;
+            const items = filteredAssets.slice(start, end);
+
+            if (items.length === 0) {
+                grid.innerHTML = '<p style="text-align:center; color:var(--subtext); grid-column:1/-1; padding: 2rem;">No matching assets found.</p>';
                 return;
             }
 
-            try {
-                const asset = await fetchAsset(id);
-                selectedAsset = asset;
-
-                container.innerHTML = `
-<div class="asset-wrapper">
-<div class="asset-image-container">
-<img class="asset-image" src="${asset.image_url}" alt="${asset.title}">
-</div>
-<div class="asset-info">
-<span class="asset-tag">${asset.tag || 'Asset'}</span>
-<h1 class="asset-title">${asset.title}</h1>
-<p class="asset-description">${asset.description}</p>
-<div class="asset-price">$${asset.price.toLocaleString()}</div>
-<div class="action-buttons">
-<button class="btn btn-primary" onclick="buyNow()">
-<i class="fas fa-bolt"></i> Buy Now
-</button>
-<button class="btn btn-secondary" onclick="addToCart()">
-<i class="fas fa-cart-plus"></i> Add to Cart
-</button>
-</div>
-</div>
-</div>
-`;
-
-                recommendedAssets = await fetchRecommendedAssets();
-                recommendedAssets = recommendedAssets.filter(a => a.id !== asset.id);
-                if (recommendedAssets.length > 0) {
-                    loadCarousel();
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                container.innerHTML = '<p style="text-align: center; color: var(--subtext);">Error loading asset.</p>';
-            }
-        }
-
-        function loadCarousel() {
-            const section = document.getElementById('recommendedSection');
-            const carousel = document.getElementById('carouselItems');
-            carousel.innerHTML = '';
-
-            recommendedAssets.slice(0, 15).forEach(asset => {
-                const item = document.createElement('a');
-                item.className = 'carousel-item';
-                item.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
-                item.innerHTML = `
-<div class="carousel-item-image">
+            items.forEach(asset => {
+                const el = document.createElement('a');
+                el.className = 'asset-card';
+                el.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
+                el.innerHTML = `
+<div class="asset-card-image">
 <img src="${asset.image_url}" alt="${asset.title}">
 </div>
-<div class="carousel-item-info">
-<div class="carousel-item-price">$${asset.price.toLocaleString()}</div>
-<div class="carousel-item-title">${asset.title}</div>
+<div class="asset-card-content">
+<div class="asset-card-tag">${asset.tag || 'Asset'}</div>
+<div class="asset-card-title">${asset.title}</div>
+<div class="asset-card-description">${asset.description.substring(0, 80)}${asset.description.length > 80 ? '...' : ''}</div>
+<div class="asset-card-footer">
+<div class="asset-card-price">$${asset.price.toLocaleString()}</div>
+</div>
 </div>
 `;
-                carousel.appendChild(item);
+                grid.appendChild(el);
             });
+        }
 
-            section.style.display = 'block';
+        function renderPagination() {
+            pagination.innerHTML = '';
+            const numPages = Math.ceil(filteredAssets.length / perPage);
+            if (numPages <= 1) return;
 
-            document.getElementById('prevBtn').onclick = () => {
-                carousel.scrollBy({ left: -240, behavior: 'smooth' });
+            const prev = document.createElement('button');
+            prev.className = 'pagination-btn';
+            prev.textContent = '‹ Prev';
+            prev.disabled = currentPage === 1;
+            prev.onclick = () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderPage(currentPage);
+                    renderPagination();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
             };
+            pagination.appendChild(prev);
 
-            document.getElementById('nextBtn').onclick = () => {
-                carousel.scrollBy({ left: 240, behavior: 'smooth' });
+            for (let i = 1; i <= numPages; i++) {
+                if (numPages <= 7 || i === 1 || i === numPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    const btn = document.createElement('button');
+                    btn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                    btn.textContent = i;
+                    btn.onclick = () => {
+                        currentPage = i;
+                        renderPage(currentPage);
+                        renderPagination();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+                    pagination.appendChild(btn);
+                }
+            }
+
+            const next = document.createElement('button');
+            next.className = 'pagination-btn';
+            next.textContent = 'Next ›';
+            next.disabled = currentPage === numPages;
+            next.onclick = () => {
+                if (currentPage < numPages) {
+                    currentPage++;
+                    renderPage(currentPage);
+                    renderPagination();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
             };
+            pagination.appendChild(next);
+        }
+
+        async function init() {
+            grid.innerHTML = '<div class="loader"></div>';
+            try {
+                assets = await fetchAssets();
+                if (assets.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center; color:var(--subtext); grid-column:1/-1;">No assets available.</p>';
+                    return;
+                }
+                populateTags();
+                filteredAssets = assets;
+                renderPage(1);
+                renderPagination();
+                search.addEventListener('keyup', debounce(filterAssets, 300));
+                tagFilter.addEventListener('change', filterAssets);
+            } catch (err) {
+                console.error('Error:', err);
+                grid.innerHTML = '<p style="text-align:center; color:var(--subtext); grid-column:1/-1;">Error loading assets.</p>';
+            }
         }
 
         const themeSwitch = document.getElementById('themeSwitch');
@@ -867,7 +859,7 @@
         });
 
         window.addEventListener('load', () => {
-            loadAsset();
+            init();
             updateCartCount();
         });
     </script>
