@@ -34,41 +34,14 @@
             --bg-rgb-light: 255, 255, 255;
             --shadow-dark: rgba(0, 0, 0, 0.3);
             --shadow-light: rgba(0, 0, 0, 0.1);
-            --gradient-start-dark: rgba(0, 102, 255, 0.15);
-            --gradient-end-dark: rgba(0, 212, 255, 0.1);
-            --gradient-start-light: #e0f2fe;
-            --gradient-end-light: #f9fafb;
-            --border-radius-small: 8px;
+            --transition-fast: 0.3s ease;
+            --transition-medium: 0.4s ease;
             --border-radius-medium: 12px;
-            --border-radius-large: 20px;
-            --border-radius-extra-large: 24px;
             --border-radius-circle: 50%;
-            --border-radius-pill: 9999px;
-            --font-size-small: 0.75rem;
-            --font-size-medium: 0.95rem;
-            --font-size-large: 1.5rem;
-            --font-size-extra-large: 2.5rem;
             --spacing-small: 0.5rem;
             --spacing-medium: 1rem;
             --spacing-large: 2rem;
             --spacing-extra-large: 3rem;
-            --transition-fast: 0.3s ease;
-            --transition-medium: 0.4s ease;
-            --transition-slow: 0.7s ease;
-            --animation-duration-short: 0.8s;
-            --animation-duration-medium: 1s;
-            --animation-duration-long: 8s;
-            --z-index-nav: 1000;
-            --z-index-modal: 1001;
-            --opacity-low: 0.4;
-            --opacity-medium: 0.6;
-            --opacity-high: 0.8;
-            --scale-small: 0.8;
-            --scale-medium: 1.02;
-            --scale-large: 1.1;
-            --blur-small: 3px;
-            --blur-medium: 10px;
-            --blur-large: 20px;
             --blur-extra-large: 30px;
         }
 
@@ -89,54 +62,7 @@
             --glass-bg: var(--glass-bg-light);
             --glass-border: var(--glass-border-light);
             --bg-rgb: var(--bg-rgb-light);
-            --primary: #0066ff;
-            --accent: #00d4ff;
             --shadow: var(--shadow-light);
-        }
-
-        [data-theme="light"] .all-assets {
-            background: linear-gradient(to bottom, var(--gradient-start-light), var(--gradient-end-light));
-        }
-
-        [data-theme="light"] .hero::before {
-            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.04) 0%, transparent 80%);
-        }
-
-        [data-theme="light"] .card-tag,
-        [data-theme="light"] .asset-tag {
-            background: rgba(0, 212, 255, 0.15);
-            color: var(--primary);
-        }
-
-        [data-theme="light"] .carousel-card,
-        [data-theme="light"] .feature-card,
-        [data-theme="light"] .stat-item,
-        [data-theme="light"] .modal-content {
-            box-shadow: 0 15px 50px var(--shadow);
-        }
-
-        [data-theme="light"] footer {
-            background: rgba(255, 255, 255, 0.9);
-            border-top: 1px solid rgba(0, 0, 0, 0.03);
-        }
-
-        [data-theme="light"] .asset-item::after {
-            background: rgba(255, 255, 255, 0.8);
-            color: var(--text-light);
-        }
-
-        [data-theme="light"] .pagination-btn {
-            background: rgba(0, 0, 0, 0.03);
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        [data-theme="light"] .pagination-btn:hover {
-            background: rgba(0, 0, 0, 0.05);
-        }
-
-        [data-theme="light"] .pagination-btn.active {
-            background: var(--primary);
-            color: var(--light);
         }
 
         html {
@@ -154,42 +80,6 @@
             transition: background var(--transition-fast), color var(--transition-fast);
         }
 
-        .theme-toggle {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-small);
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 50px;
-            height: 24px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: var(--border-radius-medium);
-            cursor: pointer;
-            transition: background var(--transition-fast);
-        }
-
-        .toggle-switch::before {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: var(--border-radius-circle);
-            transition: transform var(--transition-fast);
-        }
-
-        input[type="checkbox"]:checked+.toggle-switch {
-            background: var(--primary);
-        }
-
-        input[type="checkbox"]:checked+.toggle-switch::before {
-            transform: translateX(26px);
-        }
-
         nav {
             position: fixed;
             top: 0;
@@ -199,13 +89,13 @@
             backdrop-filter: blur(var(--blur-extra-large)) saturate(180%);
             -webkit-backdrop-filter: blur(var(--blur-extra-large)) saturate(180%);
             border-bottom: 1px solid var(--glass-border);
-            z-index: var(--z-index-nav);
+            z-index: 1000;
             padding: 1.2rem 0;
             transition: all var(--transition-medium);
         }
 
         nav.scrolled {
-            background: rgba(var(--bg-rgb), var(--opacity-high));
+            background: rgba(var(--bg-rgb), 0.8);
             padding: 0.9rem 0;
             box-shadow: 0 8px 32px var(--shadow);
         }
@@ -225,12 +115,6 @@
             color: var(--text);
             text-decoration: none;
             letter-spacing: -1px;
-            transition: all var(--transition-fast);
-            position: relative;
-        }
-
-        .logo:hover {
-            color: var(--accent);
         }
 
         .nav-links {
@@ -244,32 +128,10 @@
             color: var(--subtext);
             text-decoration: none;
             font-weight: 500;
-            font-size: var(--font-size-medium);
-            transition: all var(--transition-fast);
-            position: relative;
-        }
-
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--accent);
-            transition: width var(--transition-fast);
+            transition: color var(--transition-fast);
         }
 
         .nav-links a:hover {
-            color: var(--accent);
-        }
-
-        .nav-links a:hover::after {
-            width: 100%;
-        }
-
-        .nav-links a:focus {
-            outline: none;
             color: var(--accent);
         }
 
@@ -303,22 +165,19 @@
 
         .all-assets {
             padding: 100px var(--spacing-extra-large);
-            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.05), transparent 70%);
             min-height: 100vh;
         }
 
         .all-assets h2 {
-            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-size: 3rem;
             font-weight: 800;
             margin-bottom: var(--spacing-extra-large);
             text-align: center;
-            letter-spacing: -1px;
         }
 
         .search-container {
             max-width: 1400px;
             margin: 0 auto var(--spacing-large);
-            text-align: center;
             display: flex;
             justify-content: center;
             gap: var(--spacing-medium);
@@ -340,7 +199,7 @@
         #search:focus,
         #tagFilter:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(var(--accent), 0.1);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
             outline: none;
         }
 
@@ -355,26 +214,28 @@
 
         .asset-item {
             position: relative;
-            cursor: pointer;
             border-radius: var(--border-radius-medium);
-            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             overflow: hidden;
-            text-decoration: none;
             display: flex;
             flex-direction: column;
+            transition: all var(--transition-fast);
+            text-decoration: none;
+            color: var(--text);
         }
 
         .asset-item:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
             box-shadow: 0 15px 40px rgba(0, 102, 255, 0.3);
+            border-color: var(--accent);
         }
 
         .asset-item-image {
             width: 100%;
             aspect-ratio: 16 / 9;
             overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
         }
 
         .asset-item img {
@@ -385,7 +246,7 @@
         }
 
         .asset-item:hover img {
-            transform: scale(var(--scale-large));
+            transform: scale(1.1);
         }
 
         .asset-item-info {
@@ -393,31 +254,62 @@
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
+            flex-grow: 1;
         }
 
         .asset-item-price {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: 700;
-            color: var(--text);
-        }
-
-        .asset-item-price-old {
-            font-size: 0.95rem;
-            color: var(--subtext);
-            text-decoration: line-through;
-            margin-left: 0.5rem;
+            color: var(--accent);
         }
 
         .asset-item-title {
-            font-size: 1rem;
             font-weight: 600;
-            color: var(--text);
             line-height: 1.4;
         }
 
+        .asset-item-actions {
+            display: flex;
+            gap: 0.5rem;
+            padding: var(--spacing-medium);
+            padding-top: 0;
+        }
 
-        .asset-item:hover::after {
-            transform: translateY(0);
+        .asset-btn {
+            flex: 1;
+            padding: 0.6rem 0.8rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .asset-btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .asset-btn-primary:hover {
+            background: #0052cc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.4);
+        }
+
+        .asset-btn-secondary {
+            background: var(--glass-bg);
+            color: var(--text);
+            border: 1px solid var(--glass-border);
+        }
+
+        .asset-btn-secondary:hover {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--accent);
         }
 
         .pagination {
@@ -434,12 +326,12 @@
             color: var(--text);
             border-radius: 4px;
             cursor: pointer;
-            transition: background var(--transition-fast), color var(--transition-fast);
+            transition: all var(--transition-fast);
         }
 
         .pagination-btn:hover {
             background: var(--primary);
-            color: var(--light);
+            color: white;
         }
 
         .pagination-btn.active {
@@ -452,29 +344,11 @@
             cursor: not-allowed;
         }
 
-        .pagination-ellipsis {
-            padding: 0.5rem 1rem;
-            color: var(--subtext);
-        }
-
         footer {
             background: rgba(10, 10, 10, 0.8);
-            backdrop-filter: blur(var(--blur-large));
-            -webkit-backdrop-filter: blur(var(--blur-large));
-            padding: 80px var(--spacing-extra-large) 40px;
+            backdrop-filter: blur(20px);
+            padding: 60px var(--spacing-extra-large) 40px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-        }
-
-        footer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(0, 102, 255, 0.05), transparent);
-            pointer-events: none;
         }
 
         .footer-content {
@@ -484,19 +358,6 @@
             grid-template-columns: 2fr repeat(3, 1fr);
             gap: 4rem;
             margin-bottom: var(--spacing-extra-large);
-            position: relative;
-            z-index: 1;
-        }
-
-        .footer-brand h3 {
-            font-size: 1.4rem;
-            font-weight: 800;
-            margin-bottom: var(--spacing-medium);
-        }
-
-        .footer-brand p {
-            color: var(--subtext);
-            line-height: 1.8;
         }
 
         .footer-section h4 {
@@ -511,197 +372,66 @@
             list-style: none;
         }
 
-        .footer-links li {
-            margin-bottom: 0.8rem;
-        }
-
         .footer-links a {
             color: var(--subtext);
             text-decoration: none;
-            transition: all var(--transition-fast);
+            transition: color var(--transition-fast);
         }
 
         .footer-links a:hover {
             color: var(--accent);
-            transform: translateX(4px);
-        }
-
-        .footer-links a:focus {
-            outline: none;
-            color: var(--accent);
-        }
-
-        .footer-bottom {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding-top: var(--spacing-large);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            text-align: center;
-            color: var(--subtext);
-            font-size: 0.9rem;
-            position: relative;
-            z-index: 1;
         }
 
         .loader {
             border: 4px solid var(--glass-border);
             border-top: 4px solid var(--primary);
-            border-radius: var(--border-radius-circle);
+            border-radius: 50%;
             width: 40px;
             height: 40px;
-            animation: spin var(--animation-duration-medium) linear infinite;
+            animation: spin 1s linear infinite;
             margin: 0 auto;
         }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+        .success-message {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow);
+            animation: slideIn 0.3s ease forwards;
+            z-index: 2000;
         }
 
-        @media (max-width: 1024px) {
-            .nav-container {
-                padding: 0 2rem;
-            }
-
-            .all-assets {
-                padding: 100px 2rem;
-            }
-
-            .search-container {
-                padding: 0 2rem;
-            }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius-medium);
+            cursor: pointer;
         }
 
-        @media (max-width: 768px) {
-            .nav-container {
-                padding: 0 1.5rem;
-            }
-
-            .nav-links {
-                gap: 2rem;
-            }
-
-            .all-assets {
-                padding: 80px 1.5rem;
-            }
-
-            .footer-content {
-                grid-template-columns: 1fr;
-                gap: var(--spacing-large);
-            }
-
-            .assets-grid {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            }
-
-            #authBtn {
-                padding: 0.7rem;
-            }
-
-            #authBtnText {
-                display: none;
-            }
-
-            .hamburger {
-                display: flex;
-            }
-
-            .nav-links {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                flex-direction: column;
-                background: var(--bg);
-                padding: var(--spacing-medium);
-                gap: var(--spacing-medium);
-                border-bottom: 1px solid var(--glass-border);
-            }
-
-            .nav-links.active {
-                display: flex;
-            }
-
-            .nav-links a {
-                text-align: center;
-            }
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform var(--transition-fast);
         }
 
-        @media (max-width: 480px) {
-            .all-assets {
-                padding: 60px 1rem;
-            }
-
-            #search,
-            #tagFilter {
-                font-size: 0.95rem;
-            }
-
-            .nav-links {
-                gap: 1.5rem;
-            }
-
-            .nav-links a {
-                font-size: 0.85rem;
-            }
-
-            .search-container {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            #search,
-            #tagFilter {
-                max-width: none;
-            }
-
-            .assets-grid {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            }
+        input[type="checkbox"]:checked+.toggle-switch {
+            background: var(--primary);
         }
 
-        @media (max-width: 320px) {
-            .all-assets h2 {
-                font-size: 2rem;
-            }
-
-            .asset-item::after {
-                font-size: 0.85rem;
-            }
-        }
-
-        @media (min-width: 1440px) {
-
-            .nav-container,
-            .assets-grid,
-            .footer-content {
-                max-width: 1600px;
-            }
-        }
-
-        @media print {
-
-            nav,
-            footer,
-            .pagination,
-            .btn {
-                display: none;
-            }
-
-            body {
-                background: white;
-                color: black;
-            }
-
-            .all-assets {
-                background: none;
-            }
+        input[type="checkbox"]:checked+.toggle-switch::before {
+            transform: translateX(26px);
         }
 
         .nav-actions {
@@ -729,30 +459,83 @@
             font-weight: 700;
         }
 
-        .cart-icon:hover {
-            color: var(--accent);
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
-        .btn-secondary {
-            background: var(--glass-bg);
-            color: var(--text);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(10px);
-            padding: 0.7rem 1.5rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
+        @media (max-width: 768px) {
+            .all-assets {
+                padding: 80px 1.5rem;
+            }
+
+            .nav-container {
+                padding: 0 1.5rem;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                background: var(--bg);
+                padding: var(--spacing-medium);
+                border-bottom: 1px solid var(--glass-border);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .asset-item-actions {
+                flex-direction: column;
+            }
+
+            .asset-btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .all-assets {
+                padding: 60px 1rem;
+            }
+
+            .search-container {
+                flex-direction: column;
+            }
+
+            #search,
+            #tagFilter {
+                max-width: none;
+            }
+
+            .all-assets h2 {
+                font-size: 1.8rem;
+            }
         }
     </style>
 </head>
@@ -772,14 +555,9 @@
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span id="cartCount">0</span>
                 </a>
-                <a href="/p/login" id="authBtn" class="btn btn-secondary" style="display: none;">
-                    <i class="fas fa-user"></i>
-                    <span id="authBtnText">Login</span>
-                </a>
                 <div class="theme-toggle">
                     <input type="checkbox" id="themeSwitch" hidden>
                     <label for="themeSwitch" class="toggle-switch"></label>
-                    <span>Light Mode</span>
                 </div>
             </div>
             <div class="hamburger" id="hamburger">
@@ -789,6 +567,7 @@
             </div>
         </div>
     </nav>
+
     <section class="all-assets">
         <h2>All Assets</h2>
         <div class="search-container">
@@ -800,11 +579,12 @@
         <div class="assets-grid" id="assetsGrid"></div>
         <div id="pagination" class="pagination"></div>
     </section>
+
     <footer>
         <div class="footer-content">
-            <div class="footer-brand">
-                <h3>SupStore</h3>
-                <p>Premium game assets for developers who won't settle. Built by builders, for builders.</p>
+            <div class="footer-section">
+                <h4>SupStore</h4>
+                <p style="color: var(--subtext);">Premium game assets for developers.</p>
             </div>
             <div class="footer-section">
                 <h4>Products</h4>
@@ -812,18 +592,14 @@
                     <li><a href="#">3D Models</a></li>
                     <li><a href="#">UI Kits</a></li>
                     <li><a href="#">Game Systems</a></li>
-                    <li><a href="#">Bundles</a></li>
-                    <li><a href="#">Animations</a></li>
-                    <li><a href="#">Sound Packs</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h4>Legal</h4>
                 <ul class="footer-links">
-                    <li><a href="/p/terms">Terms</a></li>
-                    <li><a href="/p/privacy">Privacy</a></li>
-                    <li><a href="/p/contact">Contact</a></li>
-                    <li><a href="/p/license">License</a></li>
+                    <li><a href="#">Terms</a></li>
+                    <li><a href="#">Privacy</a></li>
+                    <li><a href="#">Contact</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -834,144 +610,169 @@
                 </ul>
             </div>
         </div>
-        <div class="footer-bottom">
-            <p>© 2026 SupStore. Built with passion for developers worldwide.</p>
-        </div>
     </footer>
+
     <script>
         const nav = document.getElementById('nav');
-        let assets = [];
-        let filteredAssets = [];
-        let selectedAsset = null;
         const grid = document.getElementById('assetsGrid');
         const search = document.getElementById('search');
         const tagFilter = document.getElementById('tagFilter');
         const pagination = document.getElementById('pagination');
-        const perPage = 16;
-        let currentPage = 1;
         const cartCount = document.getElementById('cartCount');
         const hamburger = document.getElementById('hamburger');
         const navLinks = document.querySelector('.nav-links');
+
+        let assets = [];
+        let filteredAssets = [];
+        const perPage = 16;
+        let currentPage = 1;
+
         hamburger.addEventListener('click', () => {
             hamburger.classList.toggle('active');
             navLinks.classList.toggle('active');
         });
+
         function getCart() {
             return JSON.parse(localStorage.getItem('cart') || '[]');
         }
+
         function saveCart(cart) {
             localStorage.setItem('cart', JSON.stringify(cart));
             updateCartCount();
         }
+
         function updateCartCount() {
-            const cart = getCart();
-            cartCount.textContent = cart.length;
+            cartCount.textContent = getCart().length;
         }
+
+        function addToCart(asset, e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const cart = getCart();
+            if (!cart.find(item => item.id === asset.id)) {
+                cart.push({
+                    id: asset.id,
+                    title: asset.title,
+                    price: asset.price,
+                    image_url: asset.image_url,
+                    stripe_price_id: asset.stripe_price_id
+                });
+                saveCart(cart);
+                showSuccess('Added to cart!');
+            } else {
+                showSuccess('Already in cart!');
+            }
+        }
+
+        function buyNow(asset, e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const cart = getCart();
+            if (!cart.find(item => item.id === asset.id)) {
+                cart.push({
+                    id: asset.id,
+                    title: asset.title,
+                    price: asset.price,
+                    image_url: asset.image_url,
+                    stripe_price_id: asset.stripe_price_id
+                });
+                saveCart(cart);
+            }
+            window.location.href = '/p/cart';
+        }
+
+        function showSuccess(msg) {
+            const el = document.createElement('div');
+            el.className = 'success-message';
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
         async function fetchAssets() {
             const res = await fetch('/api/assets?limit=100');
             if (!res.ok) throw new Error('Failed to load assets');
             const json = await res.json();
             return Array.isArray(json.data) ? json.data : [];
         }
-        async function initAllAssets() {
-            grid.innerHTML = '<div class="loader"></div>';
-            try {
-                assets = await fetchAssets();
-                if (assets.length === 0) {
-                    grid.innerHTML = '<p style="text-align: center; color: var(--subtext);">No assets available.</p>';
-                    return;
-                }
-                populateTagsFromDatabase();
-                filteredAssets = assets;
-                renderPage(1);
-                renderPagination();
-                search.addEventListener('keyup', debounce(filterAssets, 300));
-                tagFilter.addEventListener('change', filterAssets);
-            } catch (error) {
-                console.error('Error fetching assets:', error);
-                grid.innerHTML = '<p style="text-align: center; color: var(--subtext);">Error loading assets. Please try again later.</p>';
-            }
-        }
-        function populateTagsFromDatabase() {
+
+        function populateTags() {
             tagFilter.innerHTML = '<option value="">All Tags</option>';
             const allTags = new Set();
             assets.forEach(asset => {
                 if (!asset.tag) return;
-                let tags = [];
-                if (Array.isArray(asset.tag)) {
-                    tags = asset.tag;
-                } else if (typeof asset.tag === 'string') {
-                    tags = asset.tag.split(',').map(t => t.trim()).filter(t => t.length > 0);
-                }
+                const tags = Array.isArray(asset.tag) ? asset.tag : asset.tag.split(',').map(t => t.trim());
                 tags.forEach(tag => allTags.add(tag));
             });
-            const sortedTags = Array.from(allTags).sort((a, b) => a.localeCompare(b));
-            sortedTags.forEach(tag => {
-                const option = document.createElement('option');
-                option.value = tag;
-                option.textContent = tag;
-                tagFilter.appendChild(option);
+            Array.from(allTags).sort().forEach(tag => {
+                const opt = document.createElement('option');
+                opt.value = tag;
+                opt.textContent = tag;
+                tagFilter.appendChild(opt);
             });
         }
-        function debounce(func, delay) {
+
+        function debounce(fn, ms) {
             let timeout;
             return (...args) => {
                 clearTimeout(timeout);
-                timeout = setTimeout(() => func(...args), delay);
+                timeout = setTimeout(() => fn(...args), ms);
             };
         }
+
         function filterAssets() {
-            let query = search.value.toLowerCase();
-            let selectedTag = tagFilter.value;
+            const query = search.value.toLowerCase();
+            const selectedTag = tagFilter.value;
             filteredAssets = assets.filter(asset => {
-                const matchesQuery = asset.title.toLowerCase().includes(query) ||
-                    asset.description.toLowerCase().includes(query);
-                const matchesTag = selectedTag ?
-                    (Array.isArray(asset.tag) ? asset.tag.includes(selectedTag) :
-                        (typeof asset.tag === 'string' ? asset.tag.split(',').map(t => t.trim()).includes(selectedTag) : false))
-                    : true;
+                const matchesQuery = asset.title.toLowerCase().includes(query) || asset.description.toLowerCase().includes(query);
+                const matchesTag = !selectedTag || (Array.isArray(asset.tag) ? asset.tag.includes(selectedTag) : asset.tag?.split(',').map(t => t.trim()).includes(selectedTag));
                 return matchesQuery && matchesTag;
             });
             currentPage = 1;
-            renderPage(currentPage);
+            renderPage(1);
             renderPagination();
         }
+
         function renderPage(page) {
-    grid.innerHTML = '';
-    const data = filteredAssets;
-    const start = (page - 1) * perPage;
-    const end = Math.min(start + perPage, data.length);
-    data.slice(start, end).forEach(asset => {
-        const item = document.createElement('a');
-        item.className = 'asset-item';
-        item.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
-        item.innerHTML = `
-            <div class="asset-item-image">
-                <img src="${asset.image_url}" alt="${asset.title}">
-            </div>
-            <div class="asset-item-info">
-                <div class="asset-item-price">
-                    $${asset.price}
-                </div>
-                <div class="asset-item-title">
-                    ${asset.title}
-                </div>
-            </div>
-        `;
-        grid.appendChild(item);
-    });
-    if (data.length === 0) {
-        grid.innerHTML = `
-            <p style="text-align:center; color:var(--subtext);">
-                No matching assets found.
-            </p>
-        `;
-    }
-}
+            grid.innerHTML = '';
+            const start = (page - 1) * perPage;
+            const end = start + perPage;
+            const items = filteredAssets.slice(start, end);
+
+            if (items.length === 0) {
+                grid.innerHTML = '<p style="text-align:center; color:var(--subtext); grid-column:1/-1;">No matching assets found.</p>';
+                return;
+            }
+
+            items.forEach(asset => {
+                const el = document.createElement('div');
+                el.className = 'asset-item';
+                el.innerHTML = `
+<div class="asset-item-image">
+<img src="${asset.image_url}" alt="${asset.title}">
+</div>
+<div class="asset-item-info">
+<div class="asset-item-price">$${asset.price.toLocaleString()}</div>
+<div class="asset-item-title">${asset.title}</div>
+</div>
+<div class="asset-item-actions">
+<button class="asset-btn asset-btn-primary" onclick="buyNow(${JSON.stringify(asset).replace(/"/g, '&quot;')}, event)">
+<i class="fas fa-bolt"></i> Buy
+</button>
+<button class="asset-btn asset-btn-secondary" onclick="addToCart(${JSON.stringify(asset).replace(/"/g, '&quot;')}, event)">
+<i class="fas fa-cart-plus"></i> Cart
+</button>
+</div>
+`;
+                grid.appendChild(el);
+            });
+        }
+
         function renderPagination() {
             pagination.innerHTML = '';
             const numPages = Math.ceil(filteredAssets.length / perPage);
             if (numPages <= 1) return;
+
             const prev = document.createElement('button');
             prev.className = 'pagination-btn';
             prev.textContent = '‹';
@@ -984,25 +785,27 @@
                 }
             };
             pagination.appendChild(prev);
-            const pages = getPaginationPages(numPages);
-            pages.forEach(p => {
-                if (p === '...') {
-                    const span = document.createElement('span');
-                    span.textContent = '...';
-                    span.className = 'pagination-ellipsis';
-                    pagination.appendChild(span);
-                } else {
+
+            for (let i = 1; i <= numPages; i++) {
+                if (numPages <= 7 || i === 1 || i === numPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
                     const btn = document.createElement('button');
-                    btn.className = `pagination-btn ${p === currentPage ? 'active' : ''}`;
-                    btn.textContent = p;
+                    btn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                    btn.textContent = i;
                     btn.onclick = () => {
-                        currentPage = p;
+                        currentPage = i;
                         renderPage(currentPage);
                         renderPagination();
                     };
                     pagination.appendChild(btn);
+                } else if (i === 2 || i === numPages - 1) {
+                    const span = document.createElement('span');
+                    span.textContent = '...';
+                    span.style.padding = '0.5rem 0.5rem';
+                    span.style.color = 'var(--subtext)';
+                    pagination.appendChild(span);
                 }
-            });
+            }
+
             const next = document.createElement('button');
             next.className = 'pagination-btn';
             next.textContent = '›';
@@ -1016,25 +819,27 @@
             };
             pagination.appendChild(next);
         }
-        function getPaginationPages(numPages) {
-            let pages = [];
-            if (numPages <= 7) {
-                for (let i = 1; i <= numPages; i++) {
-                    pages.push(i);
+
+        async function init() {
+            grid.innerHTML = '<div class="loader"></div>';
+            try {
+                assets = await fetchAssets();
+                if (assets.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center; color:var(--subtext); grid-column:1/-1;">No assets available.</p>';
+                    return;
                 }
-            } else {
-                pages.push(1);
-                if (currentPage > 3) pages.push('...');
-                const start = Math.max(2, currentPage - 1);
-                const end = Math.min(numPages - 1, currentPage + 1);
-                for (let i = start; i <= end; i++) {
-                    pages.push(i);
-                }
-                if (currentPage < numPages - 2) pages.push('...');
-                pages.push(numPages);
+                populateTags();
+                filteredAssets = assets;
+                renderPage(1);
+                renderPagination();
+                search.addEventListener('keyup', debounce(filterAssets, 300));
+                tagFilter.addEventListener('change', filterAssets);
+            } catch (err) {
+                console.error('Error:', err);
+                grid.innerHTML = '<p style="text-align:center; color:var(--subtext); grid-column:1/-1;">Error loading assets.</p>';
             }
-            return pages;
         }
+
         const themeSwitch = document.getElementById('themeSwitch');
         const currentTheme = localStorage.getItem('theme') || 'dark';
         document.body.dataset.theme = currentTheme;
@@ -1044,71 +849,15 @@
             document.body.dataset.theme = theme;
             localStorage.setItem('theme', theme);
         });
+
         window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                nav.classList.add('scrolled');
-            } else {
-                nav.classList.remove('scrolled');
-            }
+            nav.classList.toggle('scrolled', window.scrollY > 50);
         });
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
+
         window.addEventListener('load', () => {
-            document.body.style.opacity = '0';
-            setTimeout(() => {
-                document.body.style.transition = 'opacity 0.5s ease';
-                document.body.style.opacity = '1';
-            }, 100);
-            initAllAssets();
+            init();
             updateCartCount();
         });
-        async function updateAuthButton() {
-            const token = localStorage.getItem('auth_token');
-            const authBtn = document.getElementById('authBtn');
-            const authBtnText = document.getElementById('authBtnText');
-            if (!token) {
-                authBtn.href = '/p/login';
-                authBtnText.textContent = 'Login';
-                authBtn.style.display = 'inline-flex';
-                return;
-            }
-            try {
-                const response = await fetch('/api/user/profile', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-                if (response.ok) {
-                    authBtn.href = '/p/dashboard';
-                    authBtnText.textContent = 'My Account';
-                    authBtn.style.display = 'inline-flex';
-                } else {
-                    localStorage.removeItem('auth_token');
-                    authBtn.href = '/p/login';
-                    authBtnText.textContent = 'Login';
-                    authBtn.style.display = 'inline-flex';
-                }
-            } catch (err) {
-                localStorage.removeItem('auth_token');
-                authBtn.href = '/p/login';
-                authBtnText.textContent = 'Login';
-                authBtn.style.display = 'inline-flex';
-            }
-        }
-        updateAuthButton();
-        console.log('%cSupStore Assets', 'font-size: 50px; font-weight: bold; background: linear-gradient(135deg, #0066ff, #00d4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;');
-        console.log('%cExplore our premium collection 🚀', 'font-size: 16px; color: #00d4ff;');
     </script>
 </body>
 

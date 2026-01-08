@@ -34,42 +34,14 @@
             --bg-rgb-light: 255, 255, 255;
             --shadow-dark: rgba(0, 0, 0, 0.3);
             --shadow-light: rgba(0, 0, 0, 0.1);
-            --gradient-start-dark: rgba(0, 102, 255, 0.15);
-            --gradient-end-dark: rgba(0, 212, 255, 0.1);
-            --gradient-start-light: #e0f2fe;
-            --gradient-end-light: #f9fafb;
-            --border-radius-small: 8px;
+            --transition-fast: 0.3s ease;
+            --transition-medium: 0.4s ease;
+            --blur-extra-large: 30px;
             --border-radius-medium: 12px;
             --border-radius-large: 20px;
-            --border-radius-extra-large: 24px;
-            --border-radius-circle: 50%;
-            --border-radius-pill: 9999px;
-            --font-size-small: 0.75rem;
-            --font-size-medium: 0.95rem;
-            --font-size-large: 1.5rem;
-            --font-size-extra-large: 2.5rem;
-            --spacing-small: 0.5rem;
             --spacing-medium: 1rem;
             --spacing-large: 2rem;
             --spacing-extra-large: 3rem;
-            --transition-fast: 0.3s ease;
-            --transition-medium: 0.4s ease;
-            --transition-slow: 0.7s ease;
-            --animation-duration-short: 0.8s;
-            --animation-duration-medium: 1s;
-            --animation-duration-long: 8s;
-            --z-index-nav: 1000;
-            --z-index-modal: 1001;
-            --opacity-low: 0.4;
-            --opacity-medium: 0.6;
-            --opacity-high: 0.8;
-            --scale-small: 0.8;
-            --scale-medium: 1.02;
-            --scale-large: 1.1;
-            --blur-small: 3px;
-            --blur-medium: 10px;
-            --blur-large: 20px;
-            --blur-extra-large: 30px;
         }
 
         [data-theme="dark"] {
@@ -89,54 +61,7 @@
             --glass-bg: var(--glass-bg-light);
             --glass-border: var(--glass-border-light);
             --bg-rgb: var(--bg-rgb-light);
-            --primary: #0066ff;
-            --accent: #00d4ff;
             --shadow: var(--shadow-light);
-        }
-
-        [data-theme="light"] .asset-detail {
-            background: linear-gradient(to bottom, var(--gradient-start-light), var(--gradient-end-light));
-        }
-
-        [data-theme="light"] .hero::before {
-            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.04) 0%, transparent 80%);
-        }
-
-        [data-theme="light"] .card-tag,
-        [data-theme="light"] .asset-tag {
-            background: rgba(0, 212, 255, 0.15);
-            color: var(--primary);
-        }
-
-        [data-theme="light"] .carousel-card,
-        [data-theme="light"] .feature-card,
-        [data-theme="light"] .stat-item,
-        [data-theme="light"] .modal-content {
-            box-shadow: 0 15px 50px var(--shadow);
-        }
-
-        [data-theme="light"] footer {
-            background: rgba(255, 255, 255, 0.9);
-            border-top: 1px solid rgba(0, 0, 0, 0.03);
-        }
-
-        [data-theme="light"] .asset-item::after {
-            background: rgba(255, 255, 255, 0.8);
-            color: var(--text-light);
-        }
-
-        [data-theme="light"] .pagination-btn {
-            background: rgba(0, 0, 0, 0.03);
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        [data-theme="light"] .pagination-btn:hover {
-            background: rgba(0, 0, 0, 0.05);
-        }
-
-        [data-theme="light"] .pagination-btn.active {
-            background: var(--primary);
-            color: var(--light);
         }
 
         html {
@@ -154,42 +79,6 @@
             transition: background var(--transition-fast), color var(--transition-fast);
         }
 
-        .theme-toggle {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-small);
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 50px;
-            height: 24px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: var(--border-radius-medium);
-            cursor: pointer;
-            transition: background var(--transition-fast);
-        }
-
-        .toggle-switch::before {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: var(--border-radius-circle);
-            transition: transform var(--transition-fast);
-        }
-
-        input[type="checkbox"]:checked+.toggle-switch {
-            background: var(--primary);
-        }
-
-        input[type="checkbox"]:checked+.toggle-switch::before {
-            transform: translateX(26px);
-        }
-
         nav {
             position: fixed;
             top: 0;
@@ -199,13 +88,13 @@
             backdrop-filter: blur(var(--blur-extra-large)) saturate(180%);
             -webkit-backdrop-filter: blur(var(--blur-extra-large)) saturate(180%);
             border-bottom: 1px solid var(--glass-border);
-            z-index: var(--z-index-nav);
+            z-index: 1000;
             padding: 1.2rem 0;
             transition: all var(--transition-medium);
         }
 
         nav.scrolled {
-            background: rgba(var(--bg-rgb), var(--opacity-high));
+            background: rgba(var(--bg-rgb), 0.8);
             padding: 0.9rem 0;
             box-shadow: 0 8px 32px var(--shadow);
         }
@@ -225,246 +114,6 @@
             color: var(--text);
             text-decoration: none;
             letter-spacing: -1px;
-            transition: all var(--transition-fast);
-            position: relative;
-        }
-
-        .logo:hover {
-            color: var(--accent);
-        }
-
-        .nav-links {
-            display: flex;
-            gap: var(--spacing-extra-large);
-            list-style: none;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--subtext);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: var(--font-size-medium);
-            transition: all var(--transition-fast);
-            position: relative;
-        }
-
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: var(--accent);
-            transition: width var(--transition-fast);
-        }
-
-        .nav-links a:hover {
-            color: var(--accent);
-        }
-
-        .nav-links a:hover::after {
-            width: 100%;
-        }
-
-        .nav-links a:focus {
-            outline: none;
-            color: var(--accent);
-        }
-
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            justify-content: space-around;
-            width: 30px;
-            height: 25px;
-            cursor: pointer;
-        }
-
-        .hamburger span {
-            width: 100%;
-            height: 3px;
-            background: var(--text);
-            transition: all var(--transition-fast);
-        }
-
-        .hamburger.active span:nth-child(1) {
-            transform: rotate(45deg) translate(5px, 5px);
-        }
-
-        .hamburger.active span:nth-child(2) {
-            opacity: 0;
-        }
-
-        .hamburger.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(7px, -6px);
-        }
-
-        .asset-detail {
-            padding: 120px var(--spacing-extra-large);
-            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.05), transparent 70%);
-            min-height: 100vh;
-        }
-
-        .asset-detail-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .asset-image {
-            width: 100%;
-            max-height: 400px;
-            object-fit: contain;
-            border-radius: var(--border-radius-large);
-            margin-bottom: var(--spacing-large);
-        }
-
-        .asset-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: var(--spacing-medium);
-        }
-
-        .asset-tag {
-            display: inline-block;
-            background: rgba(0, 212, 255, 0.1);
-            color: var(--accent);
-            padding: var(--spacing-small) var(--spacing-medium);
-            border-radius: var(--border-radius-small);
-            font-size: 0.85rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .asset-description {
-            font-size: 1.1rem;
-            color: var(--subtext);
-            line-height: 1.8;
-            margin-bottom: var(--spacing-large);
-        }
-
-        .asset-price {
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: var(--accent);
-            margin-bottom: var(--spacing-large);
-        }
-
-        .buy-btn {
-            width: 100%;
-            max-width: 300px;
-        }
-
-        .error-message {
-            text-align: center;
-            color: var(--subtext);
-            font-size: 1.2rem;
-        }
-
-        footer {
-            background: rgba(10, 10, 10, 0.8);
-            backdrop-filter: blur(var(--blur-large));
-            -webkit-backdrop-filter: blur(var(--blur-large));
-            padding: 80px var(--spacing-extra-large) 40px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-        }
-
-        footer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(0, 102, 255, 0.05), transparent);
-            pointer-events: none;
-        }
-
-        .footer-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 2fr repeat(3, 1fr);
-            gap: 4rem;
-            margin-bottom: var(--spacing-extra-large);
-            position: relative;
-            z-index: 1;
-        }
-
-        .footer-brand h3 {
-            font-size: 1.4rem;
-            font-weight: 800;
-            margin-bottom: var(--spacing-medium);
-        }
-
-        .footer-brand p {
-            color: var(--subtext);
-            line-height: 1.8;
-        }
-
-        .footer-section h4 {
-            font-size: 0.85rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .footer-links {
-            list-style: none;
-        }
-
-        .footer-links li {
-            margin-bottom: 0.8rem;
-        }
-
-        .footer-links a {
-            color: var(--subtext);
-            text-decoration: none;
-            transition: all var(--transition-fast);
-        }
-
-        .footer-links a:hover {
-            color: var(--accent);
-            transform: translateX(4px);
-        }
-
-        .footer-links a:focus {
-            outline: none;
-            color: var(--accent);
-        }
-
-        .footer-bottom {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding-top: var(--spacing-large);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            text-align: center;
-            color: var(--subtext);
-            font-size: 0.9rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .loader {
-            border: 4px solid var(--glass-border);
-            border-top: 4px solid var(--primary);
-            border-radius: var(--border-radius-circle);
-            width: 40px;
-            height: 40px;
-            animation: spin var(--animation-duration-medium) linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
         }
 
         .nav-actions {
@@ -480,21 +129,6 @@
             text-decoration: none;
         }
 
-        .add-to-cart-btn {
-            background: var(--primary);
-            color: var(--light);
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: var(--border-radius-medium);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .add-to-cart-btn:hover {
-            background: var(--accent);
-        }
-
         .cart-icon span {
             position: absolute;
             top: -8px;
@@ -507,95 +141,383 @@
             font-weight: 700;
         }
 
-        .cart-icon:hover {
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform var(--transition-fast);
+        }
+
+        input[type="checkbox"]:checked+.toggle-switch {
+            background: var(--primary);
+        }
+
+        input[type="checkbox"]:checked+.toggle-switch::before {
+            transform: translateX(26px);
+        }
+
+        .asset-detail {
+            padding: 120px var(--spacing-extra-large) 80px;
+            min-height: 100vh;
+        }
+
+        .asset-detail-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-extra-large);
+            align-items: start;
+            margin-bottom: 80px;
+        }
+
+        .asset-image-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-large);
+            padding: var(--spacing-large);
+            min-height: 500px;
+        }
+
+        .asset-image {
+            width: 100%;
+            max-width: 100%;
+            max-height: 450px;
+            object-fit: contain;
+            border-radius: var(--border-radius-medium);
+        }
+
+        .asset-info {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-large);
+        }
+
+        .asset-header {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-medium);
+        }
+
+        .asset-tag {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.15);
             color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .asset-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .asset-description {
+            font-size: 1.05rem;
+            color: var(--subtext);
+            line-height: 1.8;
+        }
+
+        .asset-price {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--accent);
+            margin: var(--spacing-medium) 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-medium);
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.9rem 2rem;
+            border: none;
+            border-radius: var(--border-radius-medium);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--light);
+        }
+
+        .btn-primary:hover {
+            background: #0052cc;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.4);
         }
 
         .btn-secondary {
             background: var(--glass-bg);
             color: var(--text);
             border: 1px solid var(--glass-border);
-            backdrop-filter: blur(10px);
-            padding: 0.7rem 1.5rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--accent);
             transform: translateY(-2px);
         }
 
-        @media (max-width: 1024px) {
-            .nav-container {
-                padding: 0 2rem;
-            }
+        .recommended-section {
+            margin-top: 80px;
+        }
 
-            .asset-detail {
-                padding: 100px 2rem;
-            }
+        .recommended-header {
+            max-width: 1200px;
+            margin: 0 auto var(--spacing-large);
+            padding: 0 var(--spacing-extra-large);
+        }
 
-            .asset-image {
-                max-height: 350px;
+        .recommended-header h3 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: var(--spacing-medium);
+        }
+
+        .recommended-header p {
+            color: var(--subtext);
+            font-size: 1.05rem;
+        }
+
+        .carousel-container {
+            padding: 0 var(--spacing-extra-large);
+            position: relative;
+        }
+
+        .carousel {
+            display: flex;
+            gap: var(--spacing-large);
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding-bottom: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .carousel::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .carousel::-webkit-scrollbar-track {
+            background: var(--glass-bg);
+            border-radius: 10px;
+        }
+
+        .carousel::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        .carousel-item {
+            flex: 0 0 220px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-medium);
+            overflow: hidden;
+            transition: all var(--transition-fast);
+            text-decoration: none;
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .carousel-item:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 102, 255, 0.3);
+            border-color: var(--accent);
+        }
+
+        .carousel-item-image {
+            width: 100%;
+            aspect-ratio: 1;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .carousel-item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform var(--transition-fast);
+        }
+
+        .carousel-item:hover .carousel-item-image img {
+            transform: scale(1.1);
+        }
+
+        .carousel-item-info {
+            padding: var(--spacing-medium);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .carousel-item-price {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        .carousel-item-title {
+            font-weight: 600;
+            line-height: 1.3;
+            flex-grow: 1;
+        }
+
+        .carousel-controls {
+            position: absolute;
+            bottom: 1rem;
+            right: var(--spacing-extra-large);
+            display: flex;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+
+        .carousel-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-fast);
+            font-size: 1.2rem;
+        }
+
+        .carousel-btn:hover {
+            background: var(--accent);
+            transform: scale(1.1);
+        }
+
+        footer {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(var(--blur-extra-large));
+            padding: 60px var(--spacing-extra-large) 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr repeat(3, 1fr);
+            gap: 4rem;
+            margin-bottom: var(--spacing-extra-large);
+        }
+
+        .footer-section h4 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: var(--subtext);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        .loader {
+            border: 4px solid var(--glass-border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow);
+            animation: slideIn 0.3s ease forwards;
+            z-index: 2000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
             }
         }
 
-        @media (max-width: 768px) {
-            .hamburger {
-                display: flex;
-            }
-
-            #authBtn {
-                padding: 0.7rem;
-            }
-
-            #authBtnText {
-                display: none;
-            }
-
-            .nav-links {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                flex-direction: column;
-                background: var(--bg);
-                padding: var(--spacing-medium);
-                gap: var(--spacing-medium);
-                border-bottom: 1px solid var(--glass-border);
-            }
-
-            .nav-links.active {
-                display: flex;
-            }
-
-            .nav-links a {
-                text-align: center;
-            }
-
-            .nav-container {
-                padding: 0 1.5rem;
-            }
-
-            .asset-detail {
-                padding: 80px 1.5rem;
-            }
-
-            .footer-content {
+        @media (max-width: 1024px) {
+            .asset-detail-wrapper {
                 grid-template-columns: 1fr;
                 gap: var(--spacing-large);
-            }
-
-            .asset-detail-container {
-                max-width: 100%;
             }
 
             .asset-title {
@@ -603,86 +525,77 @@
             }
 
             .asset-price {
-                font-size: 2rem;
+                font-size: 2.5rem;
             }
 
-            .asset-description {
-                font-size: 1rem;
+            .carousel-item {
+                flex: 0 0 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .asset-detail {
+                padding: 100px 1.5rem 60px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                min-width: unset;
+            }
+
+            .asset-image-container {
+                min-height: 300px;
+                padding: var(--spacing-medium);
             }
 
             .asset-image {
                 max-height: 300px;
             }
 
-            .add-to-cart-btn {
-                width: 100%;
-                max-width: none;
+            .carousel-item {
+                flex: 0 0 180px;
+            }
+
+            .recommended-header {
+                padding: 0 1.5rem;
+            }
+
+            .carousel-container {
+                padding: 0 1.5rem;
+            }
+
+            .carousel-controls {
+                right: 1.5rem;
             }
         }
 
         @media (max-width: 480px) {
             .asset-detail {
-                padding: 60px 1rem;
+                padding: 80px 1rem 40px;
             }
 
-            .asset-title {
-                font-size: 1.8rem;
-            }
-
-            .asset-price {
-                font-size: 1.8rem;
-            }
-
-            .nav-links a {
-                font-size: 0.85rem;
-            }
-
-            .asset-image {
-                max-height: 250px;
-            }
-        }
-
-        @media (max-width: 320px) {
             .asset-title {
                 font-size: 1.6rem;
             }
 
             .asset-price {
-                font-size: 1.6rem;
+                font-size: 2rem;
             }
 
-            .asset-image {
-                max-height: 200px;
-            }
-        }
-
-        @media (min-width: 1440px) {
-
-            .nav-container,
-            .footer-content {
-                max-width: 1600px;
+            .carousel-item {
+                flex: 0 0 160px;
             }
 
-            .asset-detail-container {
-                max-width: 900px;
-            }
-        }
-
-        @media print {
-
-            nav,
-            footer,
-            .btn {
-                display: none;
+            .recommended-header h3 {
+                font-size: 1.5rem;
             }
 
-            body {
-                background: white;
-                color: black;
-            }
-
-            .asset-detail {
-                background: none;
+            .nav-container {
+                padding: 0 1rem;
             }
         }
     </style>
@@ -692,44 +605,42 @@
     <nav id="nav">
         <div class="nav-container">
             <a href="/" class="logo">SupStore</a>
-            <ul class="nav-links">
-                <li><a href="/p/assets">Assets</a></li>
-                <li><a href="/#features">Features</a></li>
-                <li><a href="/#stats">Stats</a></li>
-                <li><a href="/#contact">Contact</a></li>
-            </ul>
             <div class="nav-actions">
                 <a href="/p/cart" class="cart-icon">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span id="cartCount">0</span>
                 </a>
-                <a href="/p/login" id="authBtn" class="btn btn-secondary" style="display: none;">
-                    <i class="fas fa-user"></i>
-                    <span id="authBtnText">Login</span>
-                </a>
                 <div class="theme-toggle">
                     <input type="checkbox" id="themeSwitch" hidden>
                     <label for="themeSwitch" class="toggle-switch"></label>
-                    <span>Light Mode</span>
                 </div>
-            </div>
-            <div class="hamburger" id="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
             </div>
         </div>
     </nav>
+
     <section class="asset-detail">
-        <div class="asset-detail-container" id="assetDetailContainer">
-            <div class="loader"></div>
+        <div id="assetDetailContainer"></div>
+    </section>
+
+    <section class="recommended-section" id="recommendedSection" style="display: none;">
+        <div class="recommended-header">
+            <h3>You Might Also Like</h3>
+            <p>Explore more assets that complement your selection</p>
+        </div>
+        <div class="carousel-container">
+            <div class="carousel" id="carouselItems"></div>
+            <div class="carousel-controls">
+                <button class="carousel-btn" id="prevBtn"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn" id="nextBtn"><i class="fas fa-chevron-right"></i></button>
+            </div>
         </div>
     </section>
+
     <footer>
         <div class="footer-content">
-            <div class="footer-brand">
-                <h3>SupStore</h3>
-                <p>Premium game assets for developers who won't settle. Built by builders, for builders.</p>
+            <div class="footer-section">
+                <h4>SupStore</h4>
+                <p style="color: var(--subtext);">Premium game assets for developers.</p>
             </div>
             <div class="footer-section">
                 <h4>Products</h4>
@@ -737,50 +648,42 @@
                     <li><a href="#">3D Models</a></li>
                     <li><a href="#">UI Kits</a></li>
                     <li><a href="#">Game Systems</a></li>
-                    <li><a href="#">Bundles</a></li>
-                    <li><a href="#">Animations</a></li>
-                    <li><a href="#">Sound Packs</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h4>Legal</h4>
                 <ul class="footer-links">
-                    <li><a href="/p/terms">Terms</a></li>
-                    <li><a href="/p/privacy">Privacy</a></li>
-                    <li><a href="/p/contact">Contact</a></li>
-                    <li><a href="/p/license">License</a></li>
+                    <li><a href="#">Terms</a></li>
+                    <li><a href="#">Privacy</a></li>
+                    <li><a href="#">Contact</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h4>Resources</h4>
                 <ul class="footer-links">
-                    <li><a href="https://discord.gg/X4B3zPMbNE">Discord</a></li>
+                    <li><a href="#">Discord</a></li>
                     <li><a href="#">Support</a></li>
                 </ul>
             </div>
         </div>
-        <div class="footer-bottom">
-            <p>© 2025 SupStore. Built with passion for developers worldwide.</p>
-        </div>
     </footer>
+
     <script>
         const nav = document.getElementById('nav');
         let selectedAsset = null;
+        let recommendedAssets = [];
         const container = document.getElementById('assetDetailContainer');
         const cartCount = document.getElementById('cartCount');
-        const hamburger = document.getElementById('hamburger');
-        const navLinks = document.querySelector('.nav-links');
-        hamburger.addEventListener('click', () => {
-            hamburger.classList.toggle('active');
-            navLinks.classList.toggle('active');
-        });
+
         function getCart() {
             return JSON.parse(localStorage.getItem('cart') || '[]');
         }
+
         function saveCart(cart) {
             localStorage.setItem('cart', JSON.stringify(cart));
             updateCartCount();
         }
+
         function addToCart() {
             if (!selectedAsset) return;
             const cart = getCart();
@@ -794,42 +697,137 @@
                     stripe_price_id: selectedAsset.stripe_price_id
                 });
                 saveCart(cart);
-                alert('Added to cart!');
+                showSuccess('Added to cart!');
             } else {
-                alert('Already in cart!');
+                showSuccess('Already in cart!');
             }
         }
+
+        function buyNow() {
+            if (!selectedAsset) return;
+            const cart = getCart();
+            const existingItem = cart.find(item => item.id === selectedAsset.id);
+            if (!existingItem) {
+                cart.push({
+                    id: selectedAsset.id,
+                    title: selectedAsset.title,
+                    price: selectedAsset.price,
+                    image_url: selectedAsset.image_url,
+                    stripe_price_id: selectedAsset.stripe_price_id
+                });
+                saveCart(cart);
+            }
+            window.location.href = '/p/cart';
+        }
+
+        function showSuccess(message) {
+            const msg = document.createElement('div');
+            msg.className = 'success-message';
+            msg.textContent = message;
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 3000);
+        }
+
         function updateCartCount() {
             const cart = getCart();
             cartCount.textContent = cart.length;
         }
+
         async function fetchAsset(id) {
             const res = await fetch(`/api/assets/${id}`);
-            if (!res.ok) throw new Error('Failed to load assets');
+            if (!res.ok) throw new Error('Failed to load asset');
             return await res.json();
         }
+
+        async function fetchRecommendedAssets() {
+            const res = await fetch('/api/assets?limit=20');
+            if (!res.ok) return [];
+            const json = await res.json();
+            return Array.isArray(json.data) ? json.data : [];
+        }
+
         async function loadAsset() {
-            console.log("loadAsset() called");
-            console.log("search:", window.location.search);
-            console.log("id:", new URLSearchParams(window.location.search).get('id'));
             const params = new URLSearchParams(window.location.search);
             const id = params.get('id');
             if (!id) {
-                container.innerHTML = '<p class="error-message">No asset ID provided. <a href="/p/assets">Back to all assets</a></p>';
+                container.innerHTML = '<p style="text-align: center; color: var(--subtext); padding: 2rem;">No asset ID provided. <a href="/p/assets">Back to all assets</a></p>';
                 return;
             }
-            const asset = await fetchAsset(id);
-            if (!asset) return;
-            selectedAsset = asset;
-            container.innerHTML = `
-                <img id="assetImage" class="asset-image" src="${asset.image_url}" alt="${asset.title}">
-                <span id="assetTag" class="asset-tag">${asset.tag}</span>
-                <h2 id="assetTitle" class="asset-title">${asset.title}</h2>
-                <p id="assetDescription" class="asset-description">${asset.description}</p>
-                <div id="assetPrice" class="asset-price">$${asset.price.toLocaleString()}</div>
-                <button class="add-to-cart-btn btn-primary" onclick="addToCart()">Add to Cart</button>
-            `;
+
+            try {
+                const asset = await fetchAsset(id);
+                if (!asset) return;
+                selectedAsset = asset;
+
+                container.innerHTML = `
+                    <div class="asset-detail-wrapper">
+                        <div class="asset-image-container">
+                            <img id="assetImage" class="asset-image" src="${asset.image_url}" alt="${asset.title}">
+                        </div>
+                        <div class="asset-info">
+                            <div class="asset-header">
+                                <span class="asset-tag">${asset.tag || 'Asset'}</span>
+                                <h1 class="asset-title">${asset.title}</h1>
+                                <p class="asset-description">${asset.description}</p>
+                            </div>
+                            <div class="asset-price">$${asset.price.toLocaleString()}</div>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary" onclick="buyNow()">
+                                    <i class="fas fa-lightning-bolt"></i> Buy Now
+                                </button>
+                                <button class="btn btn-secondary" onclick="addToCart()">
+                                    <i class="fas fa-cart-plus"></i> Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Load recommended assets
+                recommendedAssets = await fetchRecommendedAssets();
+                recommendedAssets = recommendedAssets.filter(a => a.id !== asset.id);
+                if (recommendedAssets.length > 0) {
+                    loadCarousel();
+                }
+            } catch (error) {
+                console.error('Error loading asset:', error);
+                container.innerHTML = '<p style="text-align: center; color: var(--subtext);">Error loading asset. Please try again.</p>';
+            }
         }
+
+        function loadCarousel() {
+            const section = document.getElementById('recommendedSection');
+            const carousel = document.getElementById('carouselItems');
+            carousel.innerHTML = '';
+
+            recommendedAssets.slice(0, 15).forEach(asset => {
+                const item = document.createElement('a');
+                item.className = 'carousel-item';
+                item.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
+                item.innerHTML = `
+                    <div class="carousel-item-image">
+                        <img src="${asset.image_url}" alt="${asset.title}">
+                    </div>
+                    <div class="carousel-item-info">
+                        <div class="carousel-item-price">$${asset.price.toLocaleString()}</div>
+                        <div class="carousel-item-title">${asset.title}</div>
+                    </div>
+                `;
+                carousel.appendChild(item);
+            });
+
+            section.style.display = 'block';
+
+            document.getElementById('prevBtn').onclick = () => {
+                carousel.scrollBy({ left: -240, behavior: 'smooth' });
+            };
+
+            document.getElementById('nextBtn').onclick = () => {
+                carousel.scrollBy({ left: 240, behavior: 'smooth' });
+            };
+        }
+
+        // Theme switching
         const themeSwitch = document.getElementById('themeSwitch');
         const currentTheme = localStorage.getItem('theme') || 'dark';
         document.body.dataset.theme = currentTheme;
@@ -839,6 +837,8 @@
             document.body.dataset.theme = theme;
             localStorage.setItem('theme', theme);
         });
+
+        // Navbar scroll effect
         window.addEventListener('scroll', () => {
             if (window.scrollY > 50) {
                 nav.classList.add('scrolled');
@@ -846,62 +846,12 @@
                 nav.classList.remove('scrolled');
             }
         });
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
+
+        // Initialize
         window.addEventListener('load', () => {
-            document.body.style.opacity = '0';
-            setTimeout(() => {
-                document.body.style.transition = 'opacity 0.5s ease';
-                document.body.style.opacity = '1';
-            }, 100);
             loadAsset();
             updateCartCount();
         });
-        async function updateAuthButton() {
-            const token = localStorage.getItem('auth_token');
-            const authBtn = document.getElementById('authBtn');
-            const authBtnText = document.getElementById('authBtnText');
-            if (!token) {
-                authBtn.href = '/p/login';
-                authBtnText.textContent = 'Login';
-                authBtn.style.display = 'inline-flex';
-                return;
-            }
-            try {
-                const response = await fetch('/api/user/profile', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-                if (response.ok) {
-                    authBtn.href = '/p/dashboard';
-                    authBtnText.textContent = 'My Account';
-                    authBtn.style.display = 'inline-flex';
-                } else {
-                    localStorage.removeItem('auth_token');
-                    authBtn.href = '/p/login';
-                    authBtnText.textContent = 'Login';
-                    authBtn.style.display = 'inline-flex';
-                }
-            } catch (err) {
-                localStorage.removeItem('auth_token');
-                authBtn.href = '/p/login';
-                authBtnText.textContent = 'Login';
-                authBtn.style.display = 'inline-flex';
-            }
-        }
-        updateAuthButton();
     </script>
 </body>
 
