@@ -70,17 +70,25 @@
             top: 0;
             left: 0;
             right: 0;
-            background: rgba(var(--bg-rgb), 0.8);
-            backdrop-filter: blur(30px);
+            background: rgba(var(--bg-rgb), 0.5);
+            backdrop-filter: blur(var(--blur-extra-large)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--blur-extra-large)) saturate(180%);
             border-bottom: 1px solid var(--glass-border);
-            z-index: 1000;
+            z-index: var(--z-index-nav);
             padding: 1.2rem 0;
+            transition: all var(--transition-medium);
+        }
+
+        nav.scrolled {
+            background: rgba(var(--bg-rgb), var(--opacity-high));
+            padding: 0.9rem 0;
+            box-shadow: 0 8px 32px var(--shadow);
         }
 
         .nav-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 0 3rem;
+            padding: 0 var(--spacing-extra-large);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -91,9 +99,52 @@
             font-weight: 700;
             color: var(--text);
             text-decoration: none;
+            letter-spacing: -1px;
+            transition: all var(--transition-fast);
+            position: relative;
         }
 
         .logo:hover {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--spacing-extra-large);
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--subtext);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: var(--font-size-medium);
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width var(--transition-fast);
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-links a:focus {
+            outline: none;
             color: var(--accent);
         }
 
@@ -424,7 +475,7 @@
             </div>
         </div>
     </nav>
-    
+
     <div class="content-wrapper">
         <div class="page-header">
             <span class="page-badge">Get in Touch</span>

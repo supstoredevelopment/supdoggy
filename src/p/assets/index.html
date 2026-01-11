@@ -278,14 +278,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 0.5rem;
             padding-top: var(--spacing-medium);
             border-top: 1px solid var(--glass-border);
         }
 
         .asset-card-price {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             font-weight: 800;
             color: var(--accent);
+            white-space: nowrap;
         }
 
         .asset-card-tag {
@@ -298,22 +300,25 @@
             font-weight: 600;
         }
 
-        /* Add these new styles after .asset-card-tag */
         .add-to-cart-btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 0.6rem 1.2rem;
+            padding: 0.5rem 0.8rem;
             border-radius: 8px;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            justify-content: center;
+            gap: 0.3rem;
             transition: all var(--transition-fast);
             position: relative;
             overflow: hidden;
+            white-space: nowrap;
+            min-width: 100px;
+            flex-shrink: 0;
         }
 
         .add-to-cart-btn::before {
@@ -828,10 +833,10 @@
                 <div class="asset-card-description">${asset.description.substring(0, 60)}${asset.description.length > 60 ? '...' : ''}</div>
                 <div class="asset-card-footer">
                     <div class="asset-card-price">$${asset.price.toLocaleString()}</div>
-                    <button class="add-to-cart-btn" onclick="event.preventDefault(); event.stopPropagation(); addToCartFromGrid('${asset.id}', '${asset.title.replace(/'/g, "\\'")}', ${asset.price}, '${asset.image_url}', '${asset.stripe_price_id || ''}', this)">
-                        <i class="fas fa-cart-plus"></i>
-                        <span>Add to Cart</span>
-                    </button>
+                  <button class="add-to-cart-btn" onclick="event.preventDefault(); event.stopPropagation(); addToCartFromGrid('${asset.id}', '${asset.title.replace(/'/g, "\\'")}', ${asset.price}, '${asset.image_url}', '${asset.stripe_price_id || ''}', this)">
+    <i class="fas fa-cart-plus"></i>
+    <span>Add</span>
+</button>
                 </div>
             </div>
         </a>
