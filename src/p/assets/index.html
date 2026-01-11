@@ -298,6 +298,77 @@
             font-weight: 600;
         }
 
+        /* Add these new styles after .asset-card-tag */
+        .add-to-cart-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .add-to-cart-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .add-to-cart-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .add-to-cart-btn:hover {
+            background: #0052cc;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 102, 255, 0.4);
+        }
+
+        .add-to-cart-btn:active {
+            transform: translateY(0) scale(0.95);
+        }
+
+        .add-to-cart-btn i {
+            position: relative;
+            z-index: 1;
+            transition: transform var(--transition-fast);
+        }
+
+        .add-to-cart-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .add-to-cart-btn:hover i {
+            transform: scale(1.2);
+        }
+
+        .add-to-cart-btn.added {
+            background: #00d400;
+            pointer-events: none;
+        }
+
+        .add-to-cart-btn.added::before {
+            width: 300px;
+            height: 300px;
+        }
+
         .pagination {
             display: flex;
             justify-content: center;
@@ -714,25 +785,61 @@
                 return;
             }
 
+            // Replace the renderPage function's items.forEach with this:
             items.forEach(asset => {
-                const el = document.createElement('a');
+                const el = document.createElement('div');
                 el.className = 'asset-card';
-                el.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
                 el.innerHTML = `
-<div class="asset-card-image">
-<img src="${asset.image_url}" alt="${asset.title}">
-</div>
-<div class="asset-card-content">
-<div class="asset-card-title">${asset.title}</div>
-<div class="asset-card-description">${asset.description.substring(0, 60)}${asset.description.length > 60 ? '...' : ''}</div>
-<div class="asset-card-footer">
-<div class="asset-card-price">$${asset.price.toLocaleString()}</div>
-<div class="asset-card-tag">${asset.tag || 'Asset'}</div>
-</div>
-</div>
-`;
+        <a href="/p/asset/?id=${encodeURIComponent(asset.id)}" style="text-decoration: none; color: inherit; display: contents;">
+            <div class="asset-card-image">
+                <img src="${asset.image_url}" alt="${asset.title}">
+            </div>
+            <div class="asset-card-content">
+                <div class="asset-card-title">${asset.title}</div>
+                <div class="asset-card-description">${asset.description.substring(0, 60)}${asset.description.length > 60 ? '...' : ''}</div>
+                <div class="asset-card-footer">
+                    <div class="asset-card-price">$${asset.price.toLocaleString()}</div>
+                    <button class="add-to-cart-btn" onclick="event.preventDefault(); event.stopPropagation(); addToCartFromGrid('${asset.id}', '${asset.title.replace(/'/g, "\\'")}', ${asset.price}, '${asset.image_url}', '${asset.stripe_price_id || ''}', this)">
+                        <i class="fas fa-cart-plus"></i>
+                        <span>Add to Cart</span>
+                    </button>
+                </div>
+            </div>
+        </a>
+    `;
                 grid.appendChild(el);
             });
+
+            // Add this new function after updateCartCount():
+            function addToCartFromGrid(id, title, price, imageUrl, stripePriceId, btnElement) {
+                const cart = getCart();
+                const existingItem = cart.find(item => item.id === id);
+
+                if (!existingItem) {
+                    cart.push({
+                        id: id,
+                        title: title,
+                        price: price,
+                        image_url: imageUrl,
+                        stripe_price_id: stripePriceId
+                    });
+                    saveCart(cart);
+
+                    // Animate button
+                    btnElement.classList.add('added');
+                    const originalHTML = btnElement.innerHTML;
+                    btnElement.innerHTML = '<i class="fas fa-check"></i><span>Added!</span>';
+
+                    setTimeout(() => {
+                        btnElement.classList.remove('added');
+                        btnElement.innerHTML = originalHTML;
+                    }, 2000);
+
+                    showSuccess('Added to cart!');
+                } else {
+                    showSuccess('Already in cart!');
+                }
+            }
         }
 
         function renderPagination() {
