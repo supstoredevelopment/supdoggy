@@ -722,6 +722,36 @@
             cartCount.textContent = getCart().length;
         }
 
+        function addToCartFromGrid(id, title, price, imageUrl, stripePriceId, btnElement) {
+            const cart = getCart();
+            const existingItem = cart.find(item => item.id === id);
+
+            if (!existingItem) {
+                cart.push({
+                    id: id,
+                    title: title,
+                    price: price,
+                    image_url: imageUrl,
+                    stripe_price_id: stripePriceId
+                });
+                saveCart(cart);
+
+                // Animate button
+                btnElement.classList.add('added');
+                const originalHTML = btnElement.innerHTML;
+                btnElement.innerHTML = '<i class="fas fa-check"></i><span>Added!</span>';
+
+                setTimeout(() => {
+                    btnElement.classList.remove('added');
+                    btnElement.innerHTML = originalHTML;
+                }, 2000);
+
+                showSuccess('Added to cart!');
+            } else {
+                showSuccess('Already in cart!');
+            }
+        }
+
         function showSuccess(msg) {
             const el = document.createElement('div');
             el.className = 'success-message';
@@ -785,7 +815,6 @@
                 return;
             }
 
-            // Replace the renderPage function's items.forEach with this:
             items.forEach(asset => {
                 const el = document.createElement('div');
                 el.className = 'asset-card';
@@ -810,36 +839,6 @@
                 grid.appendChild(el);
             });
 
-            // Add this new function after updateCartCount():
-            function addToCartFromGrid(id, title, price, imageUrl, stripePriceId, btnElement) {
-                const cart = getCart();
-                const existingItem = cart.find(item => item.id === id);
-
-                if (!existingItem) {
-                    cart.push({
-                        id: id,
-                        title: title,
-                        price: price,
-                        image_url: imageUrl,
-                        stripe_price_id: stripePriceId
-                    });
-                    saveCart(cart);
-
-                    // Animate button
-                    btnElement.classList.add('added');
-                    const originalHTML = btnElement.innerHTML;
-                    btnElement.innerHTML = '<i class="fas fa-check"></i><span>Added!</span>';
-
-                    setTimeout(() => {
-                        btnElement.classList.remove('added');
-                        btnElement.innerHTML = originalHTML;
-                    }, 2000);
-
-                    showSuccess('Added to cart!');
-                } else {
-                    showSuccess('Already in cart!');
-                }
-            }
         }
 
         function renderPagination() {
