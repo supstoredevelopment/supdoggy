@@ -275,14 +275,15 @@ app.use(
           "https:",
           "blob:",
         ],
-        connectSrc: [
-          "'self'",
-          "https://api.stripe.com",
-          process.env.SUPABASE_URL,
-          process.env.FRONTEND_URL || "'self'",
-          "http://localhost:3000",
-          "http://localhost:3001",
-        ].filter(Boolean),
+connectSrc: [
+  "'self'",
+  "https://api.stripe.com",
+  "https://api.emailjs.com",
+  process.env.SUPABASE_URL,
+  process.env.FRONTEND_URL || "'self'",
+  "http://localhost:3000",
+  "http://localhost:3001",
+].filter(Boolean),
         frameSrc: [
           "'self'",
           "https://js.stripe.com",
