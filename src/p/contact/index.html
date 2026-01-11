@@ -664,7 +664,7 @@
                         placeholder="Tell us how we can help you..."></textarea>
                 </div>
 
-                <button type="submit" class="btn" id="submitBtn" onclick="sendMail()">
+               <button type="submit" class="btn" id="submitBtn">
                     <span id="btnText">Send Message</span>
                     <span id="btnLoader" style="display: none;">Sending...</span>
                 </button>
@@ -742,31 +742,36 @@
         updateCartCount();
         updateAuthButton();
 
-        document.getElementById('contactForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+       document.getElementById('contactForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-            const submitBtn = document.getElementById('submitBtn');
-            const btnText = document.getElementById('btnText');
-            const btnLoader = document.getElementById('btnLoader');
-            const successMessage = document.getElementById('successMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnLoader = document.getElementById('btnLoader');
+    const successMessage = document.getElementById('successMessage');
 
-            submitBtn.disabled = true;
-            btnText.style.display = 'none';
-            btnLoader.style.display = 'inline';
+    submitBtn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'inline';
 
-            await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+        await sendMail(); // ← ACTUALLY SEND EMAIL
 
-            successMessage.classList.add('show');
-            e.target.reset();
+        successMessage.classList.add('show');
+        e.target.reset();
+    } catch (err) {
+        alert("Failed to send message. Check console.");
+        console.error("EmailJS Error:", err);
+    }
 
-            submitBtn.disabled = false;
-            btnText.style.display = 'inline';
-            btnLoader.style.display = 'none';
+    submitBtn.disabled = false;
+    btnText.style.display = 'inline';
+    btnLoader.style.display = 'none';
 
-            setTimeout(() => {
-                successMessage.classList.remove('show');
-            }, 5000);
-        });
+    setTimeout(() => {
+        successMessage.classList.remove('show');
+    }, 5000);
+});
 
     </script>
 </body>
