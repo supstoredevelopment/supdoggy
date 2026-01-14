@@ -810,25 +810,22 @@
                 const currencyCode = data.currency;
 
                 if (currencyCode) {
-                    const rate = currencyCode === 'USD' ? 1 : await getExchangeRate(currencyCode);
                     userCurrency = {
                         code: currencyCode,
                         symbol: getCurrencySymbol(currencyCode),
-                        rate: rate
+                        rate: data.exchangeRate
                     };
                     console.log('💱 Currency set to:', userCurrency);
                     localStorage.setItem('userCurrency', JSON.stringify(userCurrency));
                 }
             } catch (err) {
                 console.error('❌ Location detection error:', err);
-                // Try to load from localStorage
                 const saved = localStorage.getItem('userCurrency');
                 if (saved) {
                     userCurrency = JSON.parse(saved);
                 }
             }
         }
-
         function getCurrencySymbol(code) {
             const symbols = {
                 'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'CAD': 'C$',
@@ -902,7 +899,7 @@
             summaryItems.innerHTML = '';
             let total = 0;
             if (cart.length === 0) {
-                summaryItems.innerHTML = '<p style="color: var(--subtext);">Your cart is empty</p>';
+                summaryItems.innerHTML = '<p style="color: var(--subtext); text-align: center; padding: 1rem 0;">Your cart is empty</p>';
                 checkoutBtn.disabled = true;
                 checkoutBtn.style.opacity = '0.5';
                 summaryTotal.textContent = formatPrice(0);
@@ -911,15 +908,25 @@
             cart.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'summary-item';
+                div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); gap: 1rem;';
                 const price = typeof item.price === 'number' ? item.price : parseFloat(item.price);
                 div.innerHTML = `
-            <span>${item.title || item.name}</span>
-            <span>${formatPrice(price)}</span>
+            <span style="flex: 1; text-align: left;">${item.title || item.name}</span>
+            <span style="text-align: right; white-space: nowrap; font-weight: 500;">${formatPrice(price)}</span>
         `;
                 summaryItems.appendChild(div);
                 total += price;
             });
-            summaryTotal.textContent = formatPrice(total);
+
+            summaryTotal.style.cssText = 'padding-top: 1rem; font-size: 1.2rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 1rem;';
+            const totalContainer = document.createElement('div');
+            totalContainer.style.cssText = 'display: flex; justify-content: space-between; width: 100%;';
+            totalContainer.innerHTML = `
+        <span>Total:</span>
+        <span>${formatPrice(total)}</span>
+    `;
+            summaryTotal.innerHTML = '';
+            summaryTotal.appendChild(totalContainer);
 
             // Remove old currency notes
             const oldNotes = summaryTotal.parentElement.querySelectorAll('.currency-note');
@@ -929,8 +936,8 @@
             if (userCurrency.code !== 'USD') {
                 const currencyNote = document.createElement('div');
                 currencyNote.className = 'currency-note';
-                currencyNote.style.cssText = 'font-size: 0.85rem; color: var(--subtext); margin-top: 0.5rem; text-align: right;';
-                currencyNote.textContent = `Prices shown in ${userCurrency.code} (estimated)`;
+                currencyNote.style.cssText = 'font-size: 0.75rem; color: var(--subtext); margin-top: 0.5rem; text-align: right;';
+                currencyNote.textContent = `Prices in ${userCurrency.code} (estimated)`;
                 summaryTotal.parentElement.appendChild(currencyNote);
             }
 
@@ -938,7 +945,6 @@
             checkoutBtn.style.opacity = '1';
             return total;
         }
-
         async function checkAuthForCheckout() {
             const token = localStorage.getItem('auth_token');
             if (!token) {

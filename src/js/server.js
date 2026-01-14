@@ -279,7 +279,7 @@ app.use(
           "'self'",
           "https://api.stripe.com",
           "https://api.emailjs.com",
-          "https://ipapi.co",
+          "https://api.exchangerate-api.com",
           process.env.SUPABASE_URL,
           process.env.FRONTEND_URL || "'self'",
           "http://localhost:3000",
@@ -655,26 +655,36 @@ app.get('/api/user/orders', authenticateToken, async (req, res) => {
 
 app.get('/api/user-location', async (req, res) => {
   try {
-    // Get client IP from request headers
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim()
-      || req.headers['x-real-ip']
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() 
+      || req.headers['x-real-ip'] 
       || req.connection.remoteAddress;
-
+    
     console.log('Client IP:', clientIp);
-
+    
     const response = await fetch(`https://ipwhois.app/json/${clientIp}`);
     const data = await response.json();
-
+    
+    let rate = 1;
+    if (data.currency_code && data.currency_code !== 'USD') {
+      try {
+        const rateResponse = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        const rateData = await rateResponse.json();
+        rate = rateData.rates[data.currency_code] || 1;
+      } catch (rateErr) {
+        console.error('Exchange rate error:', rateErr);
+      }
+    }
+    
     res.json({
       currency: data.currency_code || 'USD',
-      country_code: data.country_code || 'US'
+      country_code: data.country_code || 'US',
+      exchangeRate: rate
     });
   } catch (err) {
     console.error('Location detection error:', err);
-    res.json({ currency: 'USD', country_code: 'US' });
+    res.json({ currency: 'USD', country_code: 'US', exchangeRate: 1 });
   }
 });
-
 app.get('/api/user/assets', authenticateToken, async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
