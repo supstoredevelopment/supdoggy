@@ -792,6 +792,7 @@
         const hamburger = document.getElementById('hamburger');
         const navLinks = document.querySelector('.nav-links');
 
+        // Currency configuration
         let userCurrency = { code: 'USD', symbol: '$', rate: 1 };
 
         hamburger.addEventListener('click', () => {
@@ -812,9 +813,15 @@
                         symbol: getCurrencySymbol(currencyCode),
                         rate: rate
                     };
+                    localStorage.setItem('userCurrency', JSON.stringify(userCurrency));
                 }
             } catch (err) {
                 console.error('Location detection error:', err);
+                // Try to load from localStorage
+                const saved = localStorage.getItem('userCurrency');
+                if (saved) {
+                    userCurrency = JSON.parse(saved);
+                }
             }
         }
 
@@ -869,6 +876,7 @@
         function formatPrice(usdPrice) {
             const convertedPrice = usdPrice * userCurrency.rate;
 
+            // Format based on currency
             if (userCurrency.code === 'JPY' || userCurrency.code === 'KRW') {
                 return `${userCurrency.symbol}${Math.round(convertedPrice).toLocaleString()}`;
             }
@@ -893,6 +901,7 @@
                 summaryItems.innerHTML = '<p style="color: var(--subtext);">Your cart is empty</p>';
                 checkoutBtn.disabled = true;
                 checkoutBtn.style.opacity = '0.5';
+                summaryTotal.textContent = formatPrice(0);
                 return 0;
             }
             cart.forEach(item => {
@@ -908,8 +917,14 @@
             });
             summaryTotal.textContent = formatPrice(total);
 
+            // Remove old currency notes
+            const oldNotes = summaryTotal.parentElement.querySelectorAll('.currency-note');
+            oldNotes.forEach(note => note.remove());
+
+            // Add currency indicator
             if (userCurrency.code !== 'USD') {
                 const currencyNote = document.createElement('div');
+                currencyNote.className = 'currency-note';
                 currencyNote.style.cssText = 'font-size: 0.85rem; color: var(--subtext); margin-top: 0.5rem; text-align: right;';
                 currencyNote.textContent = `Prices shown in ${userCurrency.code} (estimated)`;
                 summaryTotal.parentElement.appendChild(currencyNote);
@@ -1028,12 +1043,19 @@
         });
 
         window.addEventListener('load', () => {
+            // Load currency from localStorage first
+            const saved = localStorage.getItem('userCurrency');
+            if (saved) {
+                userCurrency = JSON.parse(saved);
+            }
+
             document.body.style.opacity = '0';
             setTimeout(() => {
                 document.body.style.transition = 'opacity 0.5s ease';
                 document.body.style.opacity = '1';
             }, 100);
 
+            // Initialize currency and render
             detectUserLocation().then(() => {
                 renderSummary();
                 updateCartCount();
