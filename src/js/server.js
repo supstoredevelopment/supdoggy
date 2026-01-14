@@ -655,15 +655,16 @@ app.get('/api/user/orders', authenticateToken, async (req, res) => {
 
 app.get('/api/user-location', async (req, res) => {
   try {
-    const response = await fetch('https://ipapi.co/json/');
+    const response = await fetch('https://ipwhois.app/json/');
     const data = await response.json();
+    
     res.json({
-      currency: data.currency,
-      country_code: data.country_code
+      currency: data.currency_code || 'USD',
+      country_code: data.country_code || 'US'
     });
   } catch (err) {
     console.error('Location detection error:', err);
-    res.status(500).json({ error: 'Failed to detect location' });
+    res.json({ currency: 'USD', country_code: 'US' });
   }
 });
 
