@@ -684,32 +684,37 @@ app.get('/api/user/orders', authenticateToken, async (req, res) => {
 
 app.get('/api/user-location', async (req, res) => {
   try {
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim()
-      || req.headers['x-real-ip']
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() 
+      || req.headers['x-real-ip'] 
       || req.connection.remoteAddress;
-
+    
     console.log('Client IP:', clientIp);
-
+    
     const response = await fetch(`https://ipwhois.app/json/${clientIp}`);
     const data = await response.json();
-
+    
     let rate = 1;
     if (data.currency_code && data.currency_code !== 'USD') {
       try {
-        const rateResponse = await fetch('https://open.er-api.com/v6/latest/USD');
+        // Fetch Stripe's exchange rates instead
+        const rateResponse = await fetch('https://api.stripe.com/v1/exchange_rates', {
+          headers: {
+            'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`
+          }
+        });
         const rateData = await rateResponse.json();
-        console.log('Exchange rate response:', rateData);
-
+        console.log('Stripe exchange rates:', rateData.rates);
+        
         const currencyCode = data.currency_code.toUpperCase();
         if (rateData.rates && rateData.rates[currencyCode]) {
           rate = rateData.rates[currencyCode];
           console.log(`Exchange rate USD to ${currencyCode}: ${rate}`);
         }
       } catch (rateErr) {
-        console.error('Exchange rate error:', rateErr);
+        console.error('Stripe exchange rate error:', rateErr);
       }
     }
-
+    
     res.json({
       currency: data.currency_code || 'USD',
       country_code: data.country_code || 'US',
