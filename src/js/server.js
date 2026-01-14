@@ -668,24 +668,17 @@ app.get('/api/user-location', async (req, res) => {
     let rate = 1;
     if (data.currency_code && data.currency_code !== 'USD') {
       try {
-        const rateResponse = await fetch('https://api.stripe.com/v1/exchange_rates/usd', {
-          headers: {
-            'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`
-          }
-        });
+        const rateResponse = await fetch('https://open.er-api.com/v6/latest/USD');
         const rateData = await rateResponse.json();
-        console.log('Stripe response:', rateData);
-        console.log('Available rates:', Object.keys(rateData.rates || {}));
+        console.log('Exchange rate response:', rateData);
         
-        const currencyCode = data.currency_code.toLowerCase();
+        const currencyCode = data.currency_code.toUpperCase();
         if (rateData.rates && rateData.rates[currencyCode]) {
           rate = rateData.rates[currencyCode];
           console.log(`Exchange rate USD to ${currencyCode}: ${rate}`);
-        } else {
-          console.log(`Currency ${currencyCode} not found in rates`);
         }
       } catch (rateErr) {
-        console.error('Stripe exchange rate error:', rateErr);
+        console.error('Exchange rate error:', rateErr);
       }
     }
     
