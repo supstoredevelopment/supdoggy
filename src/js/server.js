@@ -653,6 +653,20 @@ app.get('/api/user/orders', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/user-location', async (req, res) => {
+  try {
+    const response = await fetch('https://ipapi.co/json/');
+    const data = await response.json();
+    res.json({
+      currency: data.currency,
+      country_code: data.country_code
+    });
+  } catch (err) {
+    console.error('Location detection error:', err);
+    res.status(500).json({ error: 'Failed to detect location' });
+  }
+});
+
 app.get('/api/user/assets', authenticateToken, async (req, res) => {
   try {
     const { data, error } = await supabaseAdmin
