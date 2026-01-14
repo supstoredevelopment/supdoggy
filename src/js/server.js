@@ -343,13 +343,14 @@ const validateUserId = (userId) => {
 };
 
 const validateCartItem = (item) => {
-  // if (!Number.isInteger(item.id) || item.id < 1) {
-  //   throw new Error('Invalid item ID');
-  // }
+  const id = parseInt(item.id);
+  if (!Number.isInteger(id) || id < 1) {
+    throw new Error('Invalid item ID');
+  }
   if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) {
     throw new Error('Invalid quantity');
   }
-  return { id: item.id, quantity: item.quantity };
+  return { id: id, quantity: item.quantity };  // ← Now guaranteed to be an integer
 };
 
 const authenticateToken = async (req, res, next) => {
