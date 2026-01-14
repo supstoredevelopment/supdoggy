@@ -975,51 +975,49 @@
             }
         }
 
-        async function handleCheckout(e) {
-            e.preventDefault();
-            const isAuthed = await checkAuthForCheckout();
-            if (!isAuthed) return;
-            const token = localStorage.getItem('auth_token');
-            const cart = getCart();
-            if (cart.length === 0) {
-                errorMessage.innerHTML = '<div class="error-message">Your cart is empty</div>';
-                return;
-            }
-            checkoutBtn.disabled = true;
-            checkoutBtn.innerHTML = '<div class="loading"></div> Processing...';
-            try {
-                const response = await fetch('/api/create-checkout-session', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        cart: cart.map(item => ({
-                            id: item.id,
-                            quantity: 1
-                        })),
-                        currency: userCurrency.code,
-                        exchangeRate: userCurrency.rate
-                    })
-                });
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const session = await response.json();
-                if (session.url) {
-                    window.location.href = session.url;
-                } else {
-                    throw new Error('No checkout URL received');
-                }
-            } catch (err) {
-                console.error('Checkout error:', err);
-                errorMessage.innerHTML = `<div class="error-message">Error: ${err.message}</div>`;
-                checkoutBtn.disabled = false;
-                checkoutBtn.innerHTML = '<i class="fas fa-lock"></i> Pay with Stripe';
-            }
+async function handleCheckout(e) {
+    e.preventDefault();
+    const isAuthed = await checkAuthForCheckout();
+    if (!isAuthed) return;
+    const token = localStorage.getItem('auth_token');
+    const cart = getCart();
+    if (cart.length === 0) {
+        errorMessage.innerHTML = '<div class="error-message">Your cart is empty</div>';
+        return;
+    }
+    checkoutBtn.disabled = true;
+    checkoutBtn.innerHTML = '<div class="loading"></div> Processing...';
+    try {
+        const response = await fetch('/api/create-checkout-session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                cart: cart.map(item => ({
+                    id: item.id,
+                    quantity: 1
+                })),
+                currency: userCurrency.code
+            })
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-
+        const session = await response.json();
+        if (session.url) {
+            window.location.href = session.url;
+        } else {
+            throw new Error('No checkout URL received');
+        }
+    } catch (err) {
+        console.error('Checkout error:', err);
+        errorMessage.innerHTML = `<div class="error-message">Error: ${err.message}</div>`;
+        checkoutBtn.disabled = false;
+        checkoutBtn.innerHTML = '<i class="fas fa-lock"></i> Pay with Stripe';
+    }
+}
         checkoutBtn.addEventListener('click', handleCheckout);
         const themeSwitch = document.getElementById('themeSwitch');
         const currentTheme = localStorage.getItem('theme') || 'dark';

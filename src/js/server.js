@@ -547,7 +547,7 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
 
 app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, async (req, res) => {
   try {
-    const { cart } = req.body;
+    const { cart, currency } = req.body;
     const userId = req.userId;
     const userEmail = req.user.email;
 
@@ -598,6 +598,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       customer_email: userEmail,
       line_items: lineItems,
       mode: 'payment',
+      currency: (currency || 'USD').toLowerCase(),
       success_url: `${process.env.FRONTEND_URL}/p/success/?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/p/cancel`,
       allow_promotion_codes: true,
@@ -613,6 +614,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         session_id: session.id,
         total_amount: Math.round(totalAmount * 100) / 100,
         status: 'pending',
+        currency: currency || 'USD'
       });
 
     if (orderError) {
@@ -626,7 +628,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         resource: 'order',
         resource_id: session.id,
         status: 'initiated',
-        details: { items_count: cart.length, total_amount: totalAmount },
+        details: { items_count: cart.length, total_amount: totalAmount, currency },
       });
     } catch (logErr) { }
 
