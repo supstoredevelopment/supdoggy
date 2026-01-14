@@ -894,57 +894,66 @@
             cartCount.textContent = cart.length;
         }
 
-        function renderSummary() {
-            const cart = getCart();
-            summaryItems.innerHTML = '';
-            let total = 0;
-            if (cart.length === 0) {
-                summaryItems.innerHTML = '<p style="color: var(--subtext); text-align: center; padding: 1rem 0;">Your cart is empty</p>';
-                checkoutBtn.disabled = true;
-                checkoutBtn.style.opacity = '0.5';
-                summaryTotal.textContent = formatPrice(0);
-                return 0;
-            }
-            cart.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'summary-item';
-                div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); gap: 1rem;';
-                const price = typeof item.price === 'number' ? item.price : parseFloat(item.price);
-                div.innerHTML = `
+function renderSummary() {
+    const cart = getCart();
+    summaryItems.innerHTML = '';
+    let totalUSD = 0;
+    
+    if (cart.length === 0) {
+        summaryItems.innerHTML = '<p style="color: var(--subtext); text-align: center; padding: 1rem 0;">Your cart is empty</p>';
+        checkoutBtn.disabled = true;
+        checkoutBtn.style.opacity = '0.5';
+        summaryTotal.textContent = formatPrice(0);
+        return 0;
+    }
+    
+    cart.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'summary-item';
+        div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); gap: 1rem;';
+        const price = typeof item.price === 'number' ? item.price : parseFloat(item.price);
+        div.innerHTML = `
             <span style="flex: 1; text-align: left;">${item.title || item.name}</span>
             <span style="text-align: right; white-space: nowrap; font-weight: 500;">${formatPrice(price)}</span>
         `;
-                summaryItems.appendChild(div);
-                total += price;
-            });
+        summaryItems.appendChild(div);
+        totalUSD += price;
+    });
+    
+    // Calculate total in user's currency
+    const totalInUserCurrency = totalUSD * userCurrency.rate;
+    
+    summaryTotal.style.cssText = 'padding-top: 1rem; font-size: 1.2rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 1rem;';
+    const totalContainer = document.createElement('div');
+    totalContainer.style.cssText = 'display: flex; justify-content: space-between; width: 100%;';
+    
+    let totalText = `Total: ${formatPrice(totalUSD)}`;
+    if (userCurrency.code !== 'USD') {
+        totalText = `Total: ${formatPrice(totalUSD)} (≈ ${userCurrency.symbol}${totalInUserCurrency.toFixed(2)})`;
+    }
+    
+    totalContainer.innerHTML = totalText;
+    summaryTotal.innerHTML = '';
+    summaryTotal.appendChild(totalContainer);
+    
+    // Remove old currency notes
+    const oldNotes = summaryTotal.parentElement.querySelectorAll('.currency-note');
+    oldNotes.forEach(note => note.remove());
+    
+    // Add currency indicator
+    if (userCurrency.code !== 'USD') {
+        const currencyNote = document.createElement('div');
+        currencyNote.className = 'currency-note';
+        currencyNote.style.cssText = 'font-size: 0.75rem; color: var(--subtext); margin-top: 0.5rem; text-align: right;';
+        currencyNote.textContent = `You will be charged in ${userCurrency.code} at Stripe's rate`;
+        summaryTotal.parentElement.appendChild(currencyNote);
+    }
+    
+    checkoutBtn.disabled = false;
+    checkoutBtn.style.opacity = '1';
+    return totalUSD;
+}
 
-            summaryTotal.style.cssText = 'padding-top: 1rem; font-size: 1.2rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; gap: 1rem;';
-            const totalContainer = document.createElement('div');
-            totalContainer.style.cssText = 'display: flex; justify-content: space-between; width: 100%;';
-            totalContainer.innerHTML = `
-        <span>Total:</span>
-        <span>${formatPrice(total)}</span>
-    `;
-            summaryTotal.innerHTML = '';
-            summaryTotal.appendChild(totalContainer);
-
-            // Remove old currency notes
-            const oldNotes = summaryTotal.parentElement.querySelectorAll('.currency-note');
-            oldNotes.forEach(note => note.remove());
-
-            // Add currency indicator
-            if (userCurrency.code !== 'USD') {
-                const currencyNote = document.createElement('div');
-                currencyNote.className = 'currency-note';
-                currencyNote.style.cssText = 'font-size: 0.75rem; color: var(--subtext); margin-top: 0.5rem; text-align: right;';
-                currencyNote.textContent = `Prices in ${userCurrency.code} (estimated)`;
-                summaryTotal.parentElement.appendChild(currencyNote);
-            }
-
-            checkoutBtn.disabled = false;
-            checkoutBtn.style.opacity = '1';
-            return total;
-        }
         async function checkAuthForCheckout() {
             const token = localStorage.getItem('auth_token');
             if (!token) {
