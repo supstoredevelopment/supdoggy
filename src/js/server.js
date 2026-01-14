@@ -549,20 +549,27 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
 
 app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, async (req, res) => {
   try {
+    console.log('🛒 Checkout request received:', req.body);
+    
     const { cart, currency } = req.body;
     const userId = req.userId;
     const userEmail = req.user.email;
+
+    console.log('User:', userId, 'Currency:', currency);
 
     if (!Array.isArray(cart) || cart.length === 0 || cart.length > 100) {
       return res.status(400).json({ error: 'Invalid cart' });
     }
 
     const validatedCart = cart.map(validateCartItem);
+    console.log('Validated cart:', validatedCart);
 
     const { data: products, error: productsError } = await supabase
       .from('assets')
-      .select('id, title, price, stripe_product_id, stripe_prices_multi')
+      .select('id, title, price, stripe_product_id, stripe_price_id, stripe_prices_multi')
       .in('id', validatedCart.map(item => item.id));
+
+    console.log('Products fetched:', products?.length, 'Error:', productsError);
 
     if (productsError || !products) {
       return res.status(400).json({ error: 'Failed to fetch products' });
@@ -573,6 +580,8 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     let totalAmount = 0;
     const checkoutCurrency = (currency || 'usd').toLowerCase();
 
+    console.log('Checkout currency:', checkoutCurrency);
+
     for (const item of validatedCart) {
       const product = productMap.get(item.id);
       if (!product) {
@@ -580,29 +589,31 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         return res.status(400).json({ error: `Product ${item.id} not found` });
       }
 
-      let stripePriceId;
+      console.log(`Processing product ${item.id}:`, {
+        stripe_prices_multi: product.stripe_prices_multi,
+        stripe_price_id: product.stripe_price_id
+      });
 
-      // Try to get price for requested currency
+      let stripePriceId;
+      
       if (product.stripe_prices_multi && typeof product.stripe_prices_multi === 'object') {
         stripePriceId = product.stripe_prices_multi[checkoutCurrency];
+        console.log(`✅ Found multi-currency price for ${checkoutCurrency}:`, stripePriceId);
       }
-
-      // Fallback to USD if currency not available
+      
       if (!stripePriceId) {
         if (product.stripe_prices_multi && typeof product.stripe_prices_multi === 'object') {
           stripePriceId = product.stripe_prices_multi['usd'];
+          console.log(`⚠️ Fallback to USD:`, stripePriceId);
         } else {
           stripePriceId = product.stripe_price_id;
+          console.log(`⚠️ Using default stripe_price_id:`, stripePriceId);
         }
       }
 
       if (!stripePriceId) {
-        console.error(`Product ${item.id} has no stripe price for ${checkoutCurrency}`);
-        return res.status(400).json({ error: `Product ${item.id} not available in ${checkoutCurrency.toUpperCase()}` });
-      }
-
-      if (product.price < 0 || !Number.isFinite(product.price)) {
-        return res.status(400).json({ error: 'Invalid product price' });
+        console.error(`❌ No price found for product ${item.id}`);
+        return res.status(400).json({ error: `Product ${item.id} not available` });
       }
 
       lineItems.push({
@@ -612,6 +623,8 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
       totalAmount += product.price * item.quantity;
     }
+
+    console.log('📦 Creating Stripe session with', lineItems.length, 'items');
 
     const session = await stripe.checkout.sessions.create({
       customer_email: userEmail,
@@ -625,6 +638,8 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       },
     });
 
+    console.log('✅ Stripe session created:', session.id);
+
     const { error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -636,26 +651,19 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       });
 
     if (orderError) {
+      console.error('❌ Order insert error:', orderError);
       return res.status(500).json({ error: 'Failed to create order record' });
     }
 
-    try {
-      await supabaseAdmin.from('audit_logs').insert({
-        user_id: userId,
-        action: 'checkout',
-        resource: 'order',
-        resource_id: session.id,
-        status: 'initiated',
-        details: { items_count: cart.length, total_amount: totalAmount, currency: checkoutCurrency },
-      });
-    } catch (logErr) { }
+    console.log('✅ Order created');
 
     res.json({ url: session.url });
   } catch (err) {
-    console.error('Checkout error:', err);
-    res.status(500).json({ error: 'Checkout failed' });
+    console.error('❌ Checkout error:', err.message, err.stack);
+    res.status(500).json({ error: 'Checkout failed', message: err.message });
   }
 });
+
 
 app.get('/api/user/orders', authenticateToken, async (req, res) => {
   try {
