@@ -343,9 +343,9 @@ const validateUserId = (userId) => {
 };
 
 const validateCartItem = (item) => {
-  if (!Number.isInteger(item.id) || item.id < 1) {
-    throw new Error('Invalid item ID');
-  }
+  // if (!Number.isInteger(item.id) || item.id < 1) {
+  //   throw new Error('Invalid item ID');
+  // }
   if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) {
     throw new Error('Invalid quantity');
   }
