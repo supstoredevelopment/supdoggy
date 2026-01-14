@@ -275,16 +275,16 @@ app.use(
           "https:",
           "blob:",
         ],
-connectSrc: [
-  "'self'",
-  "https://api.stripe.com",
-  "https://api.emailjs.com",
-  "https://ipapi.co",
-  process.env.SUPABASE_URL,
-  process.env.FRONTEND_URL || "'self'",
-  "http://localhost:3000",
-  "http://localhost:3001",
-].filter(Boolean),
+        connectSrc: [
+          "'self'",
+          "https://api.stripe.com",
+          "https://api.emailjs.com",
+          "https://ipapi.co",
+          process.env.SUPABASE_URL,
+          process.env.FRONTEND_URL || "'self'",
+          "http://localhost:3000",
+          "http://localhost:3001",
+        ].filter(Boolean),
         frameSrc: [
           "'self'",
           "https://js.stripe.com",
@@ -655,9 +655,16 @@ app.get('/api/user/orders', authenticateToken, async (req, res) => {
 
 app.get('/api/user-location', async (req, res) => {
   try {
-    const response = await fetch('https://ipwhois.app/json/');
+    // Get client IP from request headers
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim()
+      || req.headers['x-real-ip']
+      || req.connection.remoteAddress;
+
+    console.log('Client IP:', clientIp);
+
+    const response = await fetch(`https://ipwhois.app/json/${clientIp}`);
     const data = await response.json();
-    
+
     res.json({
       currency: data.currency_code || 'USD',
       country_code: data.country_code || 'US'
