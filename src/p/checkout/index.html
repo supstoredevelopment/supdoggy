@@ -801,9 +801,12 @@
         });
 
         async function detectUserLocation() {
+            console.log('🔍 Detecting user location...');
             try {
                 const response = await fetch('/api/user-location');
+                console.log('📍 Location response:', response);
                 const data = await response.json();
+                console.log('📍 Location data:', data);
                 const currencyCode = data.currency;
 
                 if (currencyCode) {
@@ -813,10 +816,11 @@
                         symbol: getCurrencySymbol(currencyCode),
                         rate: rate
                     };
+                    console.log('💱 Currency set to:', userCurrency);
                     localStorage.setItem('userCurrency', JSON.stringify(userCurrency));
                 }
             } catch (err) {
-                console.error('Location detection error:', err);
+                console.error('❌ Location detection error:', err);
                 // Try to load from localStorage
                 const saved = localStorage.getItem('userCurrency');
                 if (saved) {
