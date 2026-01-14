@@ -674,11 +674,13 @@ app.get('/api/user-location', async (req, res) => {
           }
         });
         const rateData = await rateResponse.json();
-        console.log('Stripe rates response:', rateData);
+        console.log('Full Stripe rates response:', JSON.stringify(rateData));
+        
         const currencyCode = data.currency_code.toUpperCase();
-        if (rateData.rates && rateData.rates[currencyCode]) {
+        if (rateData.rates) {
           rate = rateData.rates[currencyCode];
-          console.log(`Exchange rate for ${currencyCode}: ${rate}`);
+          console.log(`Rate object keys: ${Object.keys(rateData.rates).slice(0, 5)}`);
+          console.log(`Looking for: ${currencyCode}, Found: ${rate}`);
         }
       } catch (rateErr) {
         console.error('Stripe exchange rate error:', rateErr);
@@ -692,7 +694,7 @@ app.get('/api/user-location', async (req, res) => {
     });
   } catch (err) {
     console.error('Location detection error:', err);
-    res.json({ currency: 'USD', country_code: 'US', exchangeRate: 1 });
+    res.json({ currency: 'USD', country_code: 'US', exchangeRate: 1 };
   }
 });
 
