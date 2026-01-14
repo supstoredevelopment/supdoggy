@@ -20,6 +20,8 @@ dotenv.config();
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const supabase = createClient(
