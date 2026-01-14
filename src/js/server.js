@@ -279,6 +279,7 @@ connectSrc: [
   "'self'",
   "https://api.stripe.com",
   "https://api.emailjs.com",
+  "https://ipapi.co",
   process.env.SUPABASE_URL,
   process.env.FRONTEND_URL || "'self'",
   "http://localhost:3000",
