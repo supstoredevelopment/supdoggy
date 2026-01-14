@@ -674,13 +674,15 @@ app.get('/api/user-location', async (req, res) => {
           }
         });
         const rateData = await rateResponse.json();
-        console.log('Full Stripe rates response:', JSON.stringify(rateData));
+        console.log('Stripe response:', rateData);
+        console.log('Available rates:', Object.keys(rateData.rates || {}));
         
-        const currencyCode = data.currency_code.toUpperCase();
-        if (rateData.rates) {
+        const currencyCode = data.currency_code.toLowerCase();
+        if (rateData.rates && rateData.rates[currencyCode]) {
           rate = rateData.rates[currencyCode];
-          console.log(`Rate object keys: ${Object.keys(rateData.rates).slice(0, 5)}`);
-          console.log(`Looking for: ${currencyCode}, Found: ${rate}`);
+          console.log(`Exchange rate USD to ${currencyCode}: ${rate}`);
+        } else {
+          console.log(`Currency ${currencyCode} not found in rates`);
         }
       } catch (rateErr) {
         console.error('Stripe exchange rate error:', rateErr);
