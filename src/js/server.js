@@ -694,7 +694,7 @@ app.get('/api/user-location', async (req, res) => {
     });
   } catch (err) {
     console.error('Location detection error:', err);
-    res.json({ currency: 'USD', country_code: 'US', exchangeRate: 1 };
+    res.json({ currency: 'USD', country_code: 'US', exchangeRate: 1 });
   }
 });
 
