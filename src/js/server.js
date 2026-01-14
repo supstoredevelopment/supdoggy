@@ -559,7 +559,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     const { data: products, error: productsError } = await supabase
       .from('assets')
-      .select('id, title, price, stripe_product_id, stripe_price_id')
+      .select('id, title, price, stripe_product_id, stripe_prices_multi')
       .in('id', validatedCart.map(item => item.id));
 
     if (productsError || !products) {
@@ -569,6 +569,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     const productMap = new Map(products.map(p => [p.id, p]));
     const lineItems = [];
     let totalAmount = 0;
+    const checkoutCurrency = (currency || 'usd').toLowerCase();
 
     for (const item of validatedCart) {
       const product = productMap.get(item.id);
@@ -577,9 +578,25 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         return res.status(400).json({ error: `Product ${item.id} not found` });
       }
 
-      if (!product.stripe_price_id) {
-        console.error(`Product ${item.id} has no stripe_price_id:`, product);
-        return res.status(400).json({ error: `Product ${item.id} not available for purchase` });
+      let stripePriceId;
+
+      // Try to get price for requested currency
+      if (product.stripe_prices_multi && typeof product.stripe_prices_multi === 'object') {
+        stripePriceId = product.stripe_prices_multi[checkoutCurrency];
+      }
+
+      // Fallback to USD if currency not available
+      if (!stripePriceId) {
+        if (product.stripe_prices_multi && typeof product.stripe_prices_multi === 'object') {
+          stripePriceId = product.stripe_prices_multi['usd'];
+        } else {
+          stripePriceId = product.stripe_price_id;
+        }
+      }
+
+      if (!stripePriceId) {
+        console.error(`Product ${item.id} has no stripe price for ${checkoutCurrency}`);
+        return res.status(400).json({ error: `Product ${item.id} not available in ${checkoutCurrency.toUpperCase()}` });
       }
 
       if (product.price < 0 || !Number.isFinite(product.price)) {
@@ -587,7 +604,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       }
 
       lineItems.push({
-        price: product.stripe_price_id,
+        price: stripePriceId,
         quantity: item.quantity,
       });
 
@@ -598,7 +615,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       customer_email: userEmail,
       line_items: lineItems,
       mode: 'payment',
-      currency: (currency || 'USD').toLowerCase(),
       success_url: `${process.env.FRONTEND_URL}/p/success/?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/p/cancel`,
       allow_promotion_codes: true,
@@ -614,7 +630,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         session_id: session.id,
         total_amount: Math.round(totalAmount * 100) / 100,
         status: 'pending',
-        currency: currency || 'USD'
+        currency: checkoutCurrency.toUpperCase()
       });
 
     if (orderError) {
@@ -628,7 +644,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         resource: 'order',
         resource_id: session.id,
         status: 'initiated',
-        details: { items_count: cart.length, total_amount: totalAmount, currency },
+        details: { items_count: cart.length, total_amount: totalAmount, currency: checkoutCurrency },
       });
     } catch (logErr) { }
 
@@ -658,22 +674,22 @@ app.get('/api/user/orders', authenticateToken, async (req, res) => {
 
 app.get('/api/user-location', async (req, res) => {
   try {
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() 
-      || req.headers['x-real-ip'] 
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim()
+      || req.headers['x-real-ip']
       || req.connection.remoteAddress;
-    
+
     console.log('Client IP:', clientIp);
-    
+
     const response = await fetch(`https://ipwhois.app/json/${clientIp}`);
     const data = await response.json();
-    
+
     let rate = 1;
     if (data.currency_code && data.currency_code !== 'USD') {
       try {
         const rateResponse = await fetch('https://open.er-api.com/v6/latest/USD');
         const rateData = await rateResponse.json();
         console.log('Exchange rate response:', rateData);
-        
+
         const currencyCode = data.currency_code.toUpperCase();
         if (rateData.rates && rateData.rates[currencyCode]) {
           rate = rateData.rates[currencyCode];
@@ -683,7 +699,7 @@ app.get('/api/user-location', async (req, res) => {
         console.error('Exchange rate error:', rateErr);
       }
     }
-    
+
     res.json({
       currency: data.currency_code || 'USD',
       country_code: data.country_code || 'US',
@@ -946,6 +962,20 @@ app.use((err, req, res, next) => {
 async function syncAssetsWithStripe() {
   console.log('🔄 Starting Stripe synchronization...');
 
+  const currencies = ['usd', 'eur', 'gbp', 'jpy', 'cad', 'aud', 'chf', 'sek', 'nok', 'dkk'];
+  const exchangeRates = {
+    'usd': 1,
+    'eur': 0.92,
+    'gbp': 0.79,
+    'jpy': 149.50,
+    'cad': 1.36,
+    'aud': 1.53,
+    'chf': 0.88,
+    'sek': 10.50,
+    'nok': 10.70,
+    'dkk': 6.86
+  };
+
   try {
     const { data: assets, error } = await supabaseAdmin
       .from('assets')
@@ -997,42 +1027,55 @@ async function syncAssetsWithStripe() {
           console.log(`✨ Created new product for asset ${asset.id}: ${productId}`);
         }
 
-        // Check if price exists and is correct
-        if (priceId) {
-          try {
-            const price = await stripe.prices.retrieve(priceId);
-            const dbPriceCents = Math.round(asset.price * 100);
+        // Create prices for all currencies
+        const priceIds = {};
 
-            if (price.unit_amount !== dbPriceCents || !price.active) {
-              console.log(`⚠️  Price mismatch for asset ${asset.id}. DB: $${asset.price}, Stripe: $${price.unit_amount / 100}, Active: ${price.active}`);
-              priceId = null;
-            } else {
-              console.log(`✅ Price correct for asset ${asset.id}: ${priceId}`);
+        for (const currency of currencies) {
+          const rate = exchangeRates[currency];
+          const amount = Math.round(asset.price * rate * 100);
+
+          try {
+            // Check if price already exists
+            const existingPrices = await stripe.prices.list({
+              product: productId,
+              currency: currency,
+              limit: 1
+            });
+
+            if (existingPrices.data.length > 0) {
+              const existingPrice = existingPrices.data[0];
+              if (existingPrice.unit_amount === amount && existingPrice.active) {
+                console.log(`✅ Price correct for asset ${asset.id} in ${currency.toUpperCase()}: ${existingPrice.id}`);
+                priceIds[currency] = existingPrice.id;
+                continue;
+              } else {
+                // Deactivate old price
+                await stripe.prices.update(existingPrice.id, { active: false });
+              }
             }
+
+            // Create new price
+            const price = await stripe.prices.create({
+              product: productId,
+              unit_amount: amount,
+              currency: currency,
+              metadata: {
+                asset_id: asset.id.toString(),
+              },
+            });
+            priceIds[currency] = price.id;
+            updatedCount++;
+            console.log(`✨ Created new price for asset ${asset.id} in ${currency.toUpperCase()}: ${price.id} (${asset.price * rate})`);
           } catch (err) {
-            if (err.code === 'resource_missing') {
-              console.log(`⚠️  Price ${priceId} not found in Stripe, creating new one...`);
-              priceId = null;
-            } else {
-              throw err;
-            }
+            console.error(`❌ Error creating price for ${currency}:`, err.message);
+            errorCount++;
           }
         }
 
-        // Create or update price if needed
-        if (!priceId) {
-          const price = await stripe.prices.create({
-            product: productId,
-            unit_amount: Math.round(asset.price * 100),
-            currency: 'usd',
-            metadata: {
-              asset_id: asset.id.toString(),
-            },
-          });
-          priceId = price.id;
+        // Use USD price as the default stripe_price_id
+        if (priceIds['usd']) {
+          priceId = priceIds['usd'];
           needsUpdate = true;
-          updatedCount++;
-          console.log(`✨ Created new price for asset ${asset.id}: ${priceId} ($${asset.price})`);
         }
 
         // Update database if needed
@@ -1042,6 +1085,7 @@ async function syncAssetsWithStripe() {
             .update({
               stripe_product_id: productId,
               stripe_price_id: priceId,
+              stripe_prices_multi: priceIds // Store all currency prices
             })
             .eq('id', asset.id);
 
