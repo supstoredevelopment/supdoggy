@@ -550,7 +550,7 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
 app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, async (req, res) => {
   try {
     console.log('🛒 Checkout request received:', req.body);
-    
+
     const { cart, currency } = req.body;
     const userId = req.userId;
     const userEmail = req.user.email;
@@ -595,12 +595,12 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       });
 
       let stripePriceId;
-      
+
       if (product.stripe_prices_multi && typeof product.stripe_prices_multi === 'object') {
         stripePriceId = product.stripe_prices_multi[checkoutCurrency];
         console.log(`✅ Found multi-currency price for ${checkoutCurrency}:`, stripePriceId);
       }
-      
+
       if (!stripePriceId) {
         if (product.stripe_prices_multi && typeof product.stripe_prices_multi === 'object') {
           stripePriceId = product.stripe_prices_multi['usd'];
@@ -684,15 +684,15 @@ app.get('/api/user/orders', authenticateToken, async (req, res) => {
 
 app.get('/api/user-location', async (req, res) => {
   try {
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() 
-      || req.headers['x-real-ip'] 
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim()
+      || req.headers['x-real-ip']
       || req.connection.remoteAddress;
-    
+
     console.log('Client IP:', clientIp);
-    
+
     const response = await fetch(`https://ipwhois.app/json/${clientIp}`);
     const data = await response.json();
-    
+
     let rate = 1;
     if (data.currency_code && data.currency_code !== 'USD') {
       try {
@@ -704,7 +704,7 @@ app.get('/api/user-location', async (req, res) => {
         });
         const rateData = await rateResponse.json();
         console.log('Stripe exchange rates:', rateData.rates);
-        
+
         const currencyCode = data.currency_code.toUpperCase();
         if (rateData.rates && rateData.rates[currencyCode]) {
           rate = rateData.rates[currencyCode];
@@ -714,7 +714,7 @@ app.get('/api/user-location', async (req, res) => {
         console.error('Stripe exchange rate error:', rateErr);
       }
     }
-    
+
     res.json({
       currency: data.currency_code || 'USD',
       country_code: data.country_code || 'US',
