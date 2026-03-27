@@ -302,18 +302,22 @@
             text-decoration: none;
             letter-spacing: -1px;
             transition: all var(--transition-fast);
-            position: relative;
         }
 
         .logo:hover {
             color: var(--accent);
         }
 
+        /* ── Truly centered nav links ── */
         .nav-links {
             display: flex;
             gap: var(--spacing-extra-large);
             list-style: none;
             align-items: center;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .nav-links a {
@@ -388,7 +392,6 @@
             background: radial-gradient(ellipse at top, var(--gradient-start-dark), transparent 50%),
                 radial-gradient(ellipse at bottom, var(--gradient-end-dark), transparent 50%);
         }
-
 
         .faq-section {
             padding: 120px var(--spacing-extra-large);
@@ -722,18 +725,6 @@
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .hero p {
@@ -1346,7 +1337,6 @@
             font-weight: 700;
         }
 
-
         .cart-icon:hover {
             color: var(--accent);
         }
@@ -1393,12 +1383,14 @@
                 display: flex;
             }
 
+            /* Reset absolute centering; show as full-width dropdown */
             .nav-links {
                 display: none;
-                position: absolute;
-                top: 100%;
+                position: fixed;
+                top: 57px;
                 left: 0;
                 right: 0;
+                transform: none;
                 flex-direction: column;
                 background: var(--bg);
                 padding: var(--spacing-medium);
@@ -1616,12 +1608,10 @@
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span id="cartCount">0</span>
                 </a>
-
                 <a href="/p/login" id="authBtn" class="btn btn-secondary" style="display: none;">
                     <i class="fas fa-user"></i>
                     <span id="authBtnText">Login</span>
                 </a>
-
                 <div class="theme-toggle">
                     <input type="checkbox" id="themeSwitch" hidden>
                     <label for="themeSwitch" class="toggle-switch"></label>
@@ -1643,9 +1633,7 @@
             <p>Stop wasting time with broken models and low-quality systems. Get production-ready game assets that scale
                 with your vision.</p>
             <div class="hero-buttons">
-                <button class="btn btn-primary"
-                    onclick="document.getElementById('carousel').scrollIntoView({behavior: 'smooth'})">Browse
-                    Assets</button>
+                <button class="btn btn-primary" onclick="window.location.href='/p/assets'">Browse Assets</button>
                 <a href="#features" class="btn btn-secondary">Learn More</a>
             </div>
         </div>
@@ -1695,7 +1683,6 @@
                 <div class="stat-number">50K+</div>
                 <div class="stat-label">Active Developers</div>
             </div>
-
             <div class="stat-item">
                 <div class="stat-number">$50M+</div>
                 <div class="stat-label">Games Revenue</div>
@@ -1724,7 +1711,6 @@
             <h2>Questions? We've Got Answers</h2>
             <p>Everything you need to know about SupStore assets and licensing</p>
         </div>
-
         <div class="faq-container">
             <div class="faq-item">
                 <div class="faq-question">
@@ -1737,9 +1723,6 @@
                         required.</p>
                 </div>
             </div>
-
-
-
             <div class="faq-item">
                 <div class="faq-question">
                     <h3>Are the assets optimized for mobile devices?</h3>
@@ -1772,7 +1755,6 @@
                 </div>
             </div>
         </div>
-
         <div class="contact-cta">
             <h3>Still have questions?</h3>
             <p>Our support team is here to help. Get in touch and we'll respond within 24 hours.</p>
@@ -1818,16 +1800,16 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>© 2025 SupStore. Built with passion for developers worldwide.</p>
+            <p>© 2026 SupStore. Built with passion for developers worldwide.</p>
         </div>
     </footer>
+
     <script>
         let currentIndex = 0;
         const carousel = document.getElementById('carouselWrapper');
         const nav = document.getElementById('nav');
         let cards = [];
         let assets = [];
-        let selectedAsset = null;
         const cartCount = document.getElementById('cartCount');
         const hamburger = document.getElementById('hamburger');
         const navLinks = document.querySelector('.nav-links');
@@ -1837,22 +1819,9 @@
             navLinks.classList.toggle('active');
         });
 
-        function getCart() {
-            return JSON.parse(localStorage.getItem('cart') || '[]');
-        }
-
-
-
-
-        function saveCart(cart) {
-            localStorage.setItem('cart', JSON.stringify(cart));
-            updateCartCount();
-        }
-
-        function updateCartCount() {
-            const cart = getCart(); 
-            cartCount.textContent = cart.length;
-        }
+        function getCart() { return JSON.parse(localStorage.getItem('cart') || '[]'); }
+        function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); updateCartCount(); }
+        function updateCartCount() { cartCount.textContent = getCart().length; }
 
         async function fetchAssets() {
             const res = await fetch('/api/assets/top-selling');
@@ -1860,36 +1829,26 @@
             return await res.json();
         }
 
-
         async function initCarousel() {
             assets = await fetchAssets();
-            if (assets.length === 0) {
-                console.warn('No assets fetched from Supabase.');
-                return;
-            }
+            if (assets.length === 0) { console.warn('No assets fetched.'); return; }
 
             assets.forEach((asset, index) => {
                 const card = document.createElement('div');
                 card.className = 'carousel-card';
                 card.dataset.index = index;
-
                 card.innerHTML = `
-    <div class="card-content">
-        <img src="${asset.image_url}" alt="${asset.title}" class="card-image">
-        <span class="card-tag">${asset.tag}</span>
-        <h3 class="card-title">${asset.title}</h3>
-        <p class="card-description scalable-text">${asset.description}</p>
-        <div class="card-price">$${asset.price.toLocaleString()}</div>
-    </div>
-`;
-
-
+                    <div class="card-content">
+                        <img src="${asset.image_url}" alt="${asset.title}" class="card-image">
+                        <span class="card-tag">${asset.tag}</span>
+                        <h3 class="card-title">${asset.title}</h3>
+                        <p class="card-description scalable-text">${asset.description}</p>
+                        <div class="card-price">$${asset.price.toLocaleString()}</div>
+                    </div>`;
                 card.addEventListener('click', () => {
-                    if (card.classList.contains('center')) {
+                    if (card.classList.contains('center'))
                         window.location.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
-                    }
                 });
-
                 cards.push(card);
                 carousel.appendChild(card);
             });
@@ -1901,53 +1860,33 @@
                 const position = (i - currentIndex + cards.length) % cards.length;
                 card.classList.remove('center', 'left', 'right', 'hidden');
                 void card.offsetHeight;
-                if (position === 0) {
-                    card.classList.add('center');
-                } else if (position === 1) {
-                    card.classList.add('right');
-                } else if (position === cards.length - 1) {
-                    card.classList.add('left');
-                } else {
-                    card.classList.add('hidden');
-                }
+                if (position === 0) card.classList.add('center');
+                else if (position === 1) card.classList.add('right');
+                else if (position === cards.length - 1) card.classList.add('left');
+                else card.classList.add('hidden');
             });
             scaleTextToFit();
         }
 
         const faqItems = document.querySelectorAll('.faq-item');
-
         faqItems.forEach(item => {
-            const question = item.querySelector('.faq-question');
-
-            question.addEventListener('click', () => {
+            item.querySelector('.faq-question').addEventListener('click', () => {
                 const isActive = item.classList.contains('active');
-
-                faqItems.forEach(otherItem => {
-                    otherItem.classList.remove('active');
-                });
-
-                if (!isActive) {
-                    item.classList.add('active');
-                }
+                faqItems.forEach(o => o.classList.remove('active'));
+                if (!isActive) item.classList.add('active');
             });
         });
 
-
         function scaleTextToFit() {
-            const elements = document.querySelectorAll('.scalable-text');
-            elements.forEach(el => {
+            document.querySelectorAll('.scalable-text').forEach(el => {
                 let fontSize = parseFloat(window.getComputedStyle(el).fontSize);
-                const originalFontSize = fontSize;
+                const orig = fontSize;
                 el.style.fontSize = `${fontSize}px`;
-
                 while (el.scrollHeight > el.clientHeight && fontSize > 8) {
                     fontSize -= 0.5;
                     el.style.fontSize = `${fontSize}px`;
                 }
-
-                if (el.scrollHeight <= el.clientHeight) {
-                    el.style.fontSize = `${originalFontSize}px`;
-                }
+                if (el.scrollHeight <= el.clientHeight) el.style.fontSize = `${orig}px`;
             });
         }
 
@@ -1955,8 +1894,7 @@
         const currentTheme = localStorage.getItem('theme') || 'dark';
         document.body.dataset.theme = currentTheme;
         themeSwitch.checked = currentTheme === 'light';
-
-        themeSwitch.addEventListener('change', (e) => {
+        themeSwitch.addEventListener('change', e => {
             const theme = e.target.checked ? 'light' : 'dark';
             document.body.dataset.theme = theme;
             localStorage.setItem('theme', theme);
@@ -1966,100 +1904,51 @@
             currentIndex = (currentIndex - 1 + cards.length) % cards.length;
             updateCarousel();
         });
-
         document.getElementById('nextBtn').addEventListener('click', () => {
             currentIndex = (currentIndex + 1) % cards.length;
             updateCarousel();
         });
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') {
-                currentIndex = (currentIndex - 1 + cards.length) % cards.length;
-                updateCarousel();
-            } else if (e.key === 'ArrowRight') {
-                currentIndex = (currentIndex + 1) % cards.length;
-                updateCarousel();
-            }
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft') { currentIndex = (currentIndex - 1 + cards.length) % cards.length; updateCarousel(); }
+            else if (e.key === 'ArrowRight') { currentIndex = (currentIndex + 1) % cards.length; updateCarousel(); }
         });
 
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                nav.classList.add('scrolled');
-            } else {
-                nav.classList.remove('scrolled');
-            }
-        });
+        window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 50));
 
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
 
         window.addEventListener('load', scaleTextToFit);
         window.addEventListener('resize', scaleTextToFit);
 
-        let touchStartX = 0;
-        let touchEndX = 0;
-
-        carousel.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-        }, false);
-
-        carousel.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        }, false);
+        let touchStartX = 0, touchEndX = 0;
+        carousel.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, false);
+        carousel.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }, false);
 
         function handleSwipe() {
-            if (touchEndX < touchStartX - 50) {
-                currentIndex = (currentIndex + 1) % cards.length;
-                updateCarousel();
-            }
-            if (touchEndX > touchStartX + 50) {
-                currentIndex = (currentIndex - 1 + cards.length) % cards.length;
-                updateCarousel();
-            }
+            if (touchEndX < touchStartX - 50) { currentIndex = (currentIndex + 1) % cards.length; updateCarousel(); }
+            if (touchEndX > touchStartX + 50) { currentIndex = (currentIndex - 1 + cards.length) % cards.length; updateCarousel(); }
         }
-
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            const parallaxElements = document.querySelectorAll('.hero::before, .stats::before');
-
-            parallaxElements.forEach(element => {
-                const speed = 0.5;
-                element.style.transform = `translateY(${scrolled * speed}px)`;
-            });
-        });
 
         window.addEventListener('load', () => {
             document.body.style.opacity = '0';
-            setTimeout(() => {
-                document.body.style.transition = 'opacity 0.5s ease';
-                document.body.style.opacity = '1';
-            }, 100);
+            setTimeout(() => { document.body.style.transition = 'opacity 0.5s ease'; document.body.style.opacity = '1'; }, 100);
         });
 
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -100px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
+        const observer = new IntersectionObserver(entries => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.style.opacity = '1';
                     entry.target.style.transform = 'translateY(0)';
                 }
             });
-        }, observerOptions);
+        }, { threshold: 0.1, rootMargin: '0px 0px -100px 0px' });
 
         document.querySelectorAll('.feature-card, .stat-item').forEach(el => {
             el.style.opacity = '0';
@@ -2082,36 +1971,26 @@
                 authBtn.style.display = 'inline-flex';
                 return;
             }
-
             try {
-                const response = await fetch('/api/user/profile', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-
-                if (response.ok) {
+                const res = await fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
                     authBtn.href = '/p/dashboard';
                     authBtnText.textContent = 'My Account';
-                    authBtn.style.display = 'inline-flex';
                 } else {
                     localStorage.removeItem('auth_token');
                     authBtn.href = '/p/login';
                     authBtnText.textContent = 'Login';
-                    authBtn.style.display = 'inline-flex';
                 }
-            } catch (err) {
+            } catch {
                 localStorage.removeItem('auth_token');
                 authBtn.href = '/p/login';
                 authBtnText.textContent = 'Login';
-                authBtn.style.display = 'inline-flex';
             }
+            authBtn.style.display = 'inline-flex';
         }
 
         updateAuthButton();
     </script>
-
 </body>
 
 </html>

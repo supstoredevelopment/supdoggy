@@ -350,7 +350,7 @@
             border-color: rgba(255, 255, 255, 0.2);
         }
 
-               .btn-secondary {
+        .btn-secondary {
             background: var(--glass-bg);
             color: var(--text);
             border: 1px solid var(--glass-border);
@@ -470,7 +470,7 @@
             min-height: 150px;
         }
 
- .btn {
+        .btn {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
@@ -664,7 +664,7 @@
                         placeholder="Tell us how we can help you..."></textarea>
                 </div>
 
-               <button type="submit" class="btn" id="submitBtn">
+                <button type="submit" class="btn" id="submitBtn">
                     <span id="btnText">Send Message</span>
                     <span id="btnLoader" style="display: none;">Sending...</span>
                 </button>
@@ -673,7 +673,7 @@
     </div>
 
     <footer>
-        <p>© 2025 SupStore. Built with passion for developers worldwide.</p>
+        <p>© 2026 SupStore. Built with passion for developers worldwide.</p>
     </footer>
 
     <script>
@@ -742,36 +742,36 @@
         updateCartCount();
         updateAuthButton();
 
-       document.getElementById('contactForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+        document.getElementById('contactForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-    const submitBtn = document.getElementById('submitBtn');
-    const btnText = document.getElementById('btnText');
-    const btnLoader = document.getElementById('btnLoader');
-    const successMessage = document.getElementById('successMessage');
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            const successMessage = document.getElementById('successMessage');
 
-    submitBtn.disabled = true;
-    btnText.style.display = 'none';
-    btnLoader.style.display = 'inline';
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'inline';
 
-    try {
-        await sendMail(); // ← ACTUALLY SEND EMAIL
+            try {
+                await sendMail(); // ← ACTUALLY SEND EMAIL
 
-        successMessage.classList.add('show');
-        e.target.reset();
-    } catch (err) {
-        alert("Failed to send message. Check console.");
-        console.error("EmailJS Error:", err);
-    }
+                successMessage.classList.add('show');
+                e.target.reset();
+            } catch (err) {
+                alert("Failed to send message. Check console.");
+                console.error("EmailJS Error:", err);
+            }
 
-    submitBtn.disabled = false;
-    btnText.style.display = 'inline';
-    btnLoader.style.display = 'none';
+            submitBtn.disabled = false;
+            btnText.style.display = 'inline';
+            btnLoader.style.display = 'none';
 
-    setTimeout(() => {
-        successMessage.classList.remove('show');
-    }, 5000);
-});
+            setTimeout(() => {
+                successMessage.classList.remove('show');
+            }, 5000);
+        });
 
     </script>
 </body>
