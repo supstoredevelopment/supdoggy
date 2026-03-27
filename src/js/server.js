@@ -697,19 +697,28 @@ app.get('/api/user-location', async (req, res) => {
     if (data.currency_code && data.currency_code !== 'USD') {
       try {
         // Fetch Stripe's exchange rates instead
-        const rateResponse = await fetch('https://api.stripe.com/v1/exchange_rates', {
+        // NEW — FX Quotes API (preview)
+        const currencyCode = data.currency_code.toLowerCase();
+        const quoteResponse = await fetch('https://api.stripe.com/v1/fx_quotes', {
+          method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`
-          }
+            'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+            'Stripe-Version': '2025-04-30.preview',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            'to_currency': currencyCode,
+            'from_currencies[]': 'usd',
+            'lock_duration': 'none',
+            'usage[type]': 'payment',
+          }),
         });
-        const rateData = await rateResponse.json();
-        console.log('Stripe exchange rates:', rateData.rates);
-
-        const currencyCode = data.currency_code.toUpperCase();
-        if (rateData.rates && rateData.rates[currencyCode]) {
-          rate = rateData.rates[currencyCode];
-          console.log(`Exchange rate USD to ${currencyCode}: ${rate}`);
+        const quoteData = await quoteResponse.json();
+        const rateInfo = quoteData?.rates?.usd;
+        if (rateInfo?.exchange_rate) {
+          rate = rateInfo.exchange_rate;
         }
+
       } catch (rateErr) {
         console.error('Stripe exchange rate error:', rateErr);
       }
@@ -978,18 +987,34 @@ async function syncAssetsWithStripe() {
   console.log('🔄 Starting Stripe synchronization...');
 
   const currencies = ['usd', 'eur', 'gbp', 'jpy', 'cad', 'aud', 'chf', 'sek', 'nok', 'dkk'];
-  const exchangeRates = {
-    'usd': 1,
-    'eur': 0.92,
-    'gbp': 0.79,
-    'jpy': 149.50,
-    'cad': 1.36,
-    'aud': 1.53,
-    'chf': 0.88,
-    'sek': 10.50,
-    'nok': 10.70,
-    'dkk': 6.86
-  };
+  // NEW — fetch live rates from FX Quotes API once at sync start
+  const exchangeRates = { 'usd': 1 };
+  try {
+    const fxBody = new URLSearchParams({ 'to_currency': 'usd', 'lock_duration': 'none', 'usage[type]': 'payment' });
+    for (const c of currencies.filter(c => c !== 'usd')) {
+      fxBody.append('from_currencies[]', c);
+    }
+    const fxRes = await fetch('https://api.stripe.com/v1/fx_quotes', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+        'Stripe-Version': '2025-04-30.preview',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: fxBody,
+    });
+    const fxData = await fxRes.json();
+    for (const [fromCurrency, info] of Object.entries(fxData?.rates || {})) {
+      // rates[from_currency].exchange_rate = how many USD you get per 1 unit of from_currency
+      // We need USD→target, so invert: 1 USD = 1/rate target units
+      exchangeRates[fromCurrency] = 1 / info.exchange_rate;
+    }
+    console.log('✅ Live FX rates fetched from Stripe FX Quotes API');
+  } catch (fxErr) {
+    console.error('⚠️ FX Quotes fetch failed, falling back to hardcoded rates:', fxErr.message);
+    // fallback static rates
+    Object.assign(exchangeRates, { eur: 0.92, gbp: 0.79, jpy: 149.50, cad: 1.36, aud: 1.53, chf: 0.88, sek: 10.50, nok: 10.70, dkk: 6.86 });
+  }
 
   try {
     const { data: assets, error } = await supabaseAdmin
