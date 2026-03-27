@@ -34,14 +34,27 @@
             --bg-rgb-light: 255, 255, 255;
             --shadow-dark: rgba(0, 0, 0, 0.3);
             --shadow-light: rgba(0, 0, 0, 0.1);
+            --gradient-start-dark: rgba(0, 102, 255, 0.15);
+            --gradient-end-dark: rgba(0, 212, 255, 0.1);
+            --gradient-start-light: #e0f2fe;
+            --gradient-end-light: #f9fafb;
+            --border-radius-small: 8px;
+            --border-radius-medium: 12px;
+            --border-radius-large: 20px;
+            --border-radius-extra-large: 24px;
+            --border-radius-circle: 50%;
+            --border-radius-pill: 9999px;
             --transition-fast: 0.3s ease;
             --transition-medium: 0.4s ease;
             --blur-extra-large: 30px;
-            --border-radius-medium: 12px;
-            --border-radius-large: 20px;
+            --blur-large: 20px;
+            --blur-medium: 10px;
+            --spacing-small: 0.5rem;
             --spacing-medium: 1rem;
             --spacing-large: 2rem;
             --spacing-extra-large: 3rem;
+            --z-index-nav: 1000;
+            --opacity-high: 0.8;
         }
 
         [data-theme="dark"] {
@@ -68,6 +81,15 @@
             --card-hover-bg: rgba(0, 0, 0, 0.06);
         }
 
+        [data-theme="light"] footer {
+            background: rgba(255, 255, 255, 0.9);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="light"] .footer-bottom {
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
         html {
             scroll-behavior: smooth;
         }
@@ -82,7 +104,7 @@
             transition: background var(--transition-fast), color var(--transition-fast);
         }
 
-        /* ── NAV ── */
+        /* ── NAV (matches home page) ── */
         nav {
             position: fixed;
             top: 0;
@@ -92,13 +114,13 @@
             backdrop-filter: blur(var(--blur-extra-large)) saturate(180%);
             -webkit-backdrop-filter: blur(var(--blur-extra-large)) saturate(180%);
             border-bottom: 1px solid var(--glass-border);
-            z-index: 1000;
+            z-index: var(--z-index-nav);
             padding: 1.2rem 0;
             transition: all var(--transition-medium);
         }
 
         nav.scrolled {
-            background: rgba(var(--bg-rgb), 0.8);
+            background: rgba(var(--bg-rgb), var(--opacity-high));
             padding: 0.9rem 0;
             box-shadow: 0 8px 32px var(--shadow);
         }
@@ -110,6 +132,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
         }
 
         .logo {
@@ -118,6 +141,50 @@
             color: var(--text);
             text-decoration: none;
             letter-spacing: -1px;
+            transition: all var(--transition-fast);
+        }
+
+        .logo:hover {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--spacing-extra-large);
+            list-style: none;
+            align-items: center;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .nav-links a {
+            color: var(--subtext);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width var(--transition-fast);
+        }
+
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
         }
 
         .nav-actions {
@@ -131,6 +198,11 @@
             font-size: 1.2rem;
             color: var(--text);
             text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .cart-icon:hover {
+            color: var(--accent);
         }
 
         .cart-icon span {
@@ -145,10 +217,32 @@
             font-weight: 700;
         }
 
+        .btn-secondary-nav {
+            background: var(--glass-bg);
+            color: var(--text);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            padding: 0.7rem 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary-nav:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
         .theme-toggle {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: var(--spacing-small);
         }
 
         .toggle-switch {
@@ -156,8 +250,9 @@
             width: 50px;
             height: 24px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            border-radius: var(--border-radius-medium);
             cursor: pointer;
+            transition: background var(--transition-fast);
         }
 
         .toggle-switch::before {
@@ -168,7 +263,7 @@
             width: 20px;
             height: 20px;
             background: white;
-            border-radius: 50%;
+            border-radius: var(--border-radius-circle);
             transition: transform var(--transition-fast);
         }
 
@@ -178,6 +273,34 @@
 
         input[type="checkbox"]:checked+.toggle-switch::before {
             transform: translateX(26px);
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 30px;
+            height: 25px;
+            cursor: pointer;
+        }
+
+        .hamburger span {
+            width: 100%;
+            height: 3px;
+            background: var(--text);
+            transition: all var(--transition-fast);
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -6px);
         }
 
         /* ── ASSET DETAIL ── */
@@ -205,6 +328,8 @@
             border-radius: var(--border-radius-large);
             padding: var(--spacing-large);
             min-height: 500px;
+            position: sticky;
+            top: 100px;
         }
 
         .asset-image {
@@ -243,6 +368,7 @@
             font-weight: 800;
             margin: 0;
             line-height: 1.2;
+            letter-spacing: -1px;
         }
 
         .asset-description {
@@ -256,6 +382,7 @@
             font-weight: 900;
             color: var(--accent);
             margin: var(--spacing-medium) 0;
+            letter-spacing: -1px;
         }
 
         .action-buttons {
@@ -279,17 +406,34 @@
             text-decoration: none;
             flex: 1;
             min-width: 150px;
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn:hover::before {
+            transform: translateX(100%);
         }
 
         .btn-primary {
             background: var(--primary);
             color: var(--light);
+            box-shadow: 0 10px 40px rgba(0, 102, 255, 0.4);
         }
 
         .btn-primary:hover {
             background: #0052cc;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 50px rgba(0, 102, 255, 0.6);
         }
 
         .btn-secondary {
@@ -301,26 +445,29 @@
         .btn-secondary:hover {
             background: rgba(0, 212, 255, 0.15);
             border-color: var(--accent);
-            transform: translateY(-2px);
+            transform: translateY(-3px);
         }
 
-        /* ── RECOMMENDED SECTION ── */
+        /* ── RECOMMENDED — Improved Carousel ── */
         .recommended-section {
+            padding: 0 var(--spacing-extra-large) 100px;
+        }
+
+        .recommended-inner {
             max-width: 1200px;
-            margin: 0 auto 80px;
-            padding: 0 var(--spacing-extra-large);
+            margin: 0 auto;
         }
 
         .recommended-head {
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
-            margin-bottom: 1.8rem;
+            margin-bottom: 2rem;
             gap: 1rem;
         }
 
         .recommended-head-text h3 {
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 800;
             letter-spacing: -0.5px;
         }
@@ -328,10 +475,9 @@
         .recommended-head-text p {
             color: var(--subtext);
             font-size: 0.95rem;
-            margin-top: 0.2rem;
+            margin-top: 0.3rem;
         }
 
-        /* arrow buttons beside the heading */
         .carousel-arrows {
             display: flex;
             gap: 0.5rem;
@@ -339,8 +485,8 @@
         }
 
         .carousel-arrow-btn {
-            width: 38px;
-            height: 38px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
@@ -349,7 +495,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             transition: all var(--transition-fast);
         }
 
@@ -357,67 +503,78 @@
             background: var(--primary);
             border-color: var(--primary);
             color: #fff;
-            transform: scale(1.08);
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(0, 102, 255, 0.4);
         }
 
-        /* track wrapper — clips overflow */
+        .carousel-arrow-btn:disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Track with fade edges */
         .carousel-track-wrapper {
             overflow: hidden;
             position: relative;
+            border-radius: var(--border-radius-medium);
         }
 
-        /* gradient fade edges */
         .carousel-track-wrapper::before,
         .carousel-track-wrapper::after {
             content: '';
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 60px;
+            width: 80px;
             z-index: 2;
             pointer-events: none;
         }
 
         .carousel-track-wrapper::before {
             left: 0;
-            background: linear-gradient(to right, var(--bg), transparent);
+            background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
         }
 
         .carousel-track-wrapper::after {
             right: 0;
-            background: linear-gradient(to left, var(--bg), transparent);
+            background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
         }
 
         .carousel-track {
             display: flex;
-            gap: 1rem;
-            transition: transform 0.45s cubic-bezier(0.25, 0.8, 0.25, 1);
+            gap: 1.25rem;
+            transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
             will-change: transform;
+            padding: 8px 4px 16px;
+            /* room for hover lift + shadow */
         }
 
-        /* ── CAROUSEL CARD ── */
+        /* ── IMPROVED CAROUSEL CARD ── */
         .carousel-card {
-            flex: 0 0 200px;
+            flex: 0 0 210px;
             background: var(--card-bg);
             border: 1px solid var(--glass-border);
-            border-radius: 14px;
+            border-radius: 16px;
             overflow: hidden;
             text-decoration: none;
             color: var(--text);
-            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.35s ease,
+                border-color 0.35s ease;
             display: flex;
             flex-direction: column;
+            cursor: pointer;
         }
 
         .carousel-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 16px 40px rgba(0, 102, 255, 0.25);
-            border-color: rgba(0, 212, 255, 0.4);
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 48px rgba(0, 102, 255, 0.28);
+            border-color: rgba(0, 212, 255, 0.45);
         }
 
         .carousel-card-thumb {
             width: 100%;
-            aspect-ratio: 1 / 1;
+            aspect-ratio: 4 / 3;
             overflow: hidden;
             background: rgba(255, 255, 255, 0.04);
             position: relative;
@@ -427,30 +584,74 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.4s ease;
+            transition: transform 0.5s ease;
         }
 
         .carousel-card:hover .carousel-card-thumb img {
-            transform: scale(1.08);
+            transform: scale(1.1);
         }
 
-        /* tag badge on image */
+        /* gradient overlay on image */
+        .carousel-card-thumb::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+
+        .carousel-card:hover .carousel-card-thumb::after {
+            opacity: 1;
+        }
+
         .card-badge {
             position: absolute;
-            top: 8px;
-            left: 8px;
-            background: rgba(0, 212, 255, 0.15);
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 212, 255, 0.18);
             color: var(--accent);
-            font-size: 0.68rem;
+            font-size: 0.7rem;
             font-weight: 700;
-            padding: 3px 8px;
+            padding: 3px 9px;
             border-radius: 6px;
             backdrop-filter: blur(8px);
             letter-spacing: 0.3px;
+            z-index: 1;
+        }
+
+        /* quick-add button on hover */
+        .card-quick-add {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%) translateY(8px);
+            opacity: 0;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 16px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            white-space: nowrap;
+            z-index: 3;
+            font-family: inherit;
+        }
+
+        .carousel-card:hover .card-quick-add {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .card-quick-add:hover {
+            background: #0052cc;
         }
 
         .carousel-card-body {
-            padding: 0.85rem 0.9rem 1rem;
+            padding: 0.9rem 1rem 1.1rem;
             display: flex;
             flex-direction: column;
             gap: 0.3rem;
@@ -458,29 +659,73 @@
         }
 
         .carousel-card-title {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 600;
-            line-height: 1.3;
+            line-height: 1.35;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
 
-        .carousel-card-price {
-            font-size: 1rem;
-            font-weight: 800;
-            color: var(--accent);
+        .carousel-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             margin-top: auto;
-            padding-top: 0.4rem;
+            padding-top: 0.5rem;
         }
 
-        /* dot indicators */
+        .carousel-card-price {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .carousel-card-arrow {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: var(--subtext);
+            transition: all 0.25s ease;
+            flex-shrink: 0;
+        }
+
+        .carousel-card:hover .carousel-card-arrow {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            transform: translateX(2px);
+        }
+
+        /* Progress bar */
+        .carousel-progress-bar {
+            height: 3px;
+            background: var(--glass-border);
+            border-radius: 2px;
+            margin-top: 1.4rem;
+            overflow: hidden;
+        }
+
+        .carousel-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 2px;
+            transition: width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        /* Dot indicators */
         .carousel-dots {
             display: flex;
             justify-content: center;
             gap: 6px;
-            margin-top: 1.4rem;
+            margin-top: 1.2rem;
         }
 
         .carousel-dot {
@@ -490,29 +735,56 @@
             background: var(--glass-border);
             transition: all 0.3s ease;
             cursor: pointer;
+            border: none;
         }
 
         .carousel-dot.active {
             background: var(--primary);
-            width: 20px;
+            width: 22px;
             border-radius: 3px;
         }
 
-        /* ── FOOTER ── */
+        /* ── FOOTER (matches home page) ── */
         footer {
             background: rgba(10, 10, 10, 0.8);
-            backdrop-filter: blur(var(--blur-extra-large));
-            padding: 60px var(--spacing-extra-large) 40px;
+            backdrop-filter: blur(var(--blur-large));
+            -webkit-backdrop-filter: blur(var(--blur-large));
+            padding: 80px var(--spacing-extra-large) 40px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(0, 102, 255, 0.05), transparent);
+            pointer-events: none;
         }
 
         .footer-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: grid;
             grid-template-columns: 2fr repeat(3, 1fr);
             gap: 4rem;
             margin-bottom: var(--spacing-extra-large);
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-brand h3 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: var(--spacing-medium);
+        }
+
+        .footer-brand p {
+            color: var(--subtext);
+            line-height: 1.8;
         }
 
         .footer-section h4 {
@@ -527,33 +799,54 @@
             list-style: none;
         }
 
+        .footer-links li {
+            margin-bottom: 0.8rem;
+        }
+
         .footer-links a {
             color: var(--subtext);
             text-decoration: none;
-            transition: color var(--transition-fast);
+            transition: all var(--transition-fast);
         }
 
         .footer-links a:hover {
             color: var(--accent);
+            transform: translateX(4px);
         }
 
-        /* ── MISC ── */
+        .footer-bottom {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-top: var(--spacing-large);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            color: var(--subtext);
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── SUCCESS TOAST ── */
         .success-message {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            bottom: 24px;
+            right: 24px;
             background: var(--primary);
             color: white;
             padding: 1rem 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px var(--shadow);
-            animation: slideIn 0.3s ease forwards;
+            border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(0, 102, 255, 0.4);
+            animation: slideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
             z-index: 2000;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         @keyframes slideIn {
             from {
-                transform: translateX(400px);
+                transform: translateX(420px);
                 opacity: 0;
             }
 
@@ -570,6 +863,11 @@
                 gap: var(--spacing-large);
             }
 
+            .asset-image-container {
+                position: static;
+                min-height: 350px;
+            }
+
             .asset-title {
                 font-size: 2rem;
             }
@@ -578,12 +876,43 @@
                 font-size: 2.5rem;
             }
 
-            .carousel-card {
-                flex: 0 0 180px;
+            .footer-content {
+                grid-template-columns: 1fr 1fr;
+                gap: 2.5rem;
             }
         }
 
         @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+
+            .nav-links {
+                display: none;
+                position: fixed;
+                top: 57px;
+                left: 0;
+                right: 0;
+                transform: none;
+                flex-direction: column;
+                background: var(--bg);
+                padding: var(--spacing-medium);
+                gap: var(--spacing-medium);
+                border-bottom: 1px solid var(--glass-border);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .nav-links a {
+                text-align: center;
+            }
+
+            .nav-container {
+                padding: 0 1.5rem;
+            }
+
             .asset-detail {
                 padding: 100px 1.5rem 60px;
             }
@@ -598,20 +927,29 @@
             }
 
             .asset-image-container {
-                min-height: 300px;
+                min-height: 280px;
                 padding: var(--spacing-medium);
             }
 
             .asset-image {
-                max-height: 300px;
+                max-height: 280px;
             }
 
             .recommended-section {
-                padding: 0 1.5rem;
+                padding: 0 1.5rem 60px;
             }
 
             .carousel-card {
-                flex: 0 0 160px;
+                flex: 0 0 175px;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-large);
+            }
+
+            footer {
+                padding: 60px 1.5rem 30px;
             }
         }
 
@@ -628,45 +966,66 @@
                 font-size: 2rem;
             }
 
-            .carousel-card {
-                flex: 0 0 145px;
+            .recommended-section {
+                padding: 0 1rem 40px;
             }
 
-            .recommended-section {
-                padding: 0 1rem;
+            .carousel-card {
+                flex: 0 0 155px;
             }
 
             .nav-container {
                 padding: 0 1rem;
+            }
+
+            footer {
+                padding: 50px 1rem 25px;
             }
         }
     </style>
 </head>
 
 <body data-theme="dark">
+
+    <!-- ── NAV (home page style) ── -->
     <nav id="nav">
         <div class="nav-container">
             <a href="/" class="logo">SupStore</a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="/p/assets">Assets</a></li>
+                <li><a href="/#features">Features</a></li>
+                <li><a href="/#stats">Stats</a></li>
+                <li><a href="/p/contact">Contact</a></li>
+            </ul>
             <div class="nav-actions">
                 <a href="/p/cart" class="cart-icon">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span id="cartCount">0</span>
                 </a>
+                <a href="/p/login" id="authBtn" class="btn-secondary-nav" style="display:none;">
+                    <i class="fas fa-user"></i>
+                    <span id="authBtnText">Login</span>
+                </a>
                 <div class="theme-toggle">
                     <input type="checkbox" id="themeSwitch" hidden>
                     <label for="themeSwitch" class="toggle-switch"></label>
+                    <span>Light Mode</span>
                 </div>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <span></span><span></span><span></span>
             </div>
         </div>
     </nav>
 
+    <!-- ── ASSET DETAIL ── -->
     <section class="asset-detail">
         <div id="assetDetailContainer"></div>
     </section>
 
-    <!-- ── RECOMMENDED SECTION ── -->
-    <section id="recommendedSection" style="display:none;">
-        <div class="recommended-section">
+    <!-- ── RECOMMENDED / CAROUSEL ── -->
+    <section id="recommendedSection" style="display:none;" class="recommended-section">
+        <div class="recommended-inner">
             <div class="recommended-head">
                 <div class="recommended-head-text">
                     <h3>Recommended For You</h3>
@@ -686,15 +1045,20 @@
                 <div class="carousel-track" id="carouselTrack"></div>
             </div>
 
+            <div class="carousel-progress-bar">
+                <div class="carousel-progress-fill" id="carouselProgress"></div>
+            </div>
+
             <div class="carousel-dots" id="carouselDots"></div>
         </div>
     </section>
 
+    <!-- ── FOOTER (home page style) ── -->
     <footer>
         <div class="footer-content">
-            <div class="footer-section">
-                <h4>SupStore</h4>
-                <p style="color:var(--subtext);">Premium game assets for developers.</p>
+            <div class="footer-brand">
+                <h3>SupStore</h3>
+                <p>Premium game assets for developers who won't settle. Built by builders, for builders.</p>
             </div>
             <div class="footer-section">
                 <h4>Products</h4>
@@ -702,39 +1066,48 @@
                     <li><a href="#">3D Models</a></li>
                     <li><a href="#">UI Kits</a></li>
                     <li><a href="#">Game Systems</a></li>
+                    <li><a href="#">Bundles</a></li>
+                    <li><a href="#">Animations</a></li>
+                    <li><a href="#">Sound Packs</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h4>Legal</h4>
                 <ul class="footer-links">
-                    <li><a href="#">Terms</a></li>
-                    <li><a href="#">Privacy</a></li>
-                    <li><a href="#">Contact</a></li>
+                    <li><a href="/p/terms">Terms</a></li>
+                    <li><a href="/p/privacy">Privacy</a></li>
+                    <li><a href="/p/contact">Contact</a></li>
+                    <li><a href="/p/license">License</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h4>Resources</h4>
                 <ul class="footer-links">
-                    <li><a href="#">Discord</a></li>
+                    <li><a href="https://discord.gg/X4B3zPMbNE">Discord</a></li>
                     <li><a href="#">Support</a></li>
                 </ul>
             </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 SupStore. Built with passion for developers worldwide.</p>
         </div>
     </footer>
 
     <script>
         /* ────────────────────────────────────
-           CAROUSEL ENGINE
+           CAROUSEL ENGINE (improved)
         ──────────────────────────────────── */
-        const CARD_WIDTH = 200;  // px  (must match CSS flex-basis)
-        const CARD_GAP = 16;   // px  (1rem)
-        const CARDS_PER_PAGE = 5;  // how many cards to jump per arrow click
+        const CARD_WIDTH = 210;  // px (matches CSS flex-basis)
+        const CARD_GAP = 20;   // px (1.25rem)
+        const CARDS_PER_PAGE = 5;
 
         let carouselIndex = 0;
         let maxCarouselIndex = 0;
         let totalCards = 0;
+        let carouselData = [];
 
         function buildCarousel(assets) {
+            carouselData = assets;
             const track = document.getElementById('carouselTrack');
             const dotsEl = document.getElementById('carouselDots');
             const section = document.getElementById('recommendedSection');
@@ -742,7 +1115,7 @@
             track.innerHTML = '';
             dotsEl.innerHTML = '';
 
-            assets.forEach(asset => {
+            assets.forEach((asset, idx) => {
                 const a = document.createElement('a');
                 a.className = 'carousel-card';
                 a.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
@@ -750,29 +1123,55 @@
                     <div class="carousel-card-thumb">
                         <img src="${asset.image_url}" alt="${asset.title}" loading="lazy">
                         ${asset.tag ? `<span class="card-badge">${asset.tag}</span>` : ''}
+                        <button class="card-quick-add" data-id="${idx}">
+                            <i class="fas fa-cart-plus"></i> Add to Cart
+                        </button>
                     </div>
                     <div class="carousel-card-body">
                         <div class="carousel-card-title">${asset.title}</div>
-                        <div class="carousel-card-price">$${asset.price.toLocaleString()}</div>
+                        <div class="carousel-card-footer">
+                            <div class="carousel-card-price">$${asset.price.toLocaleString()}</div>
+                            <div class="carousel-card-arrow"><i class="fas fa-arrow-right"></i></div>
+                        </div>
                     </div>
                 `;
+
+                // Quick-add button intercepts click without navigating
+                a.querySelector('.card-quick-add').addEventListener('click', e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addAssetToCart(asset);
+                });
+
                 track.appendChild(a);
             });
 
             totalCards = assets.length;
             maxCarouselIndex = Math.max(0, totalCards - CARDS_PER_PAGE);
 
-            // dots = one per page
             const pages = Math.ceil(totalCards / CARDS_PER_PAGE);
             for (let i = 0; i < pages; i++) {
-                const dot = document.createElement('span');
+                const dot = document.createElement('button');
                 dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+                dot.setAttribute('aria-label', `Page ${i + 1}`);
                 dot.addEventListener('click', () => goToPage(i));
                 dotsEl.appendChild(dot);
             }
 
             section.style.display = 'block';
             updateCarouselPosition();
+
+            // Touch/swipe support
+            let touchStartX = 0;
+            track.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+            track.addEventListener('touchend', e => {
+                const diff = touchStartX - e.changedTouches[0].screenX;
+                if (Math.abs(diff) > 50) {
+                    if (diff > 0) carouselIndex = Math.min(maxCarouselIndex, carouselIndex + CARDS_PER_PAGE);
+                    else carouselIndex = Math.max(0, carouselIndex - CARDS_PER_PAGE);
+                    updateCarouselPosition();
+                }
+            }, { passive: true });
         }
 
         function goToPage(pageIndex) {
@@ -782,13 +1181,22 @@
 
         function updateCarouselPosition() {
             const track = document.getElementById('carouselTrack');
+            const progress = document.getElementById('carouselProgress');
             const offset = carouselIndex * (CARD_WIDTH + CARD_GAP);
             track.style.transform = `translateX(-${offset}px)`;
 
-            // sync dots
-            const dots = document.querySelectorAll('.carousel-dot');
+            // Progress bar
+            const pct = totalCards <= CARDS_PER_PAGE ? 100 : (carouselIndex / maxCarouselIndex) * 100;
+            progress.style.width = `${Math.max(8, pct)}%`;
+
+            // Dots
             const page = Math.round(carouselIndex / CARDS_PER_PAGE);
-            dots.forEach((d, i) => d.classList.toggle('active', i === page));
+            document.querySelectorAll('.carousel-dot').forEach((d, i) =>
+                d.classList.toggle('active', i === page));
+
+            // Arrow state
+            document.getElementById('prevBtn').disabled = carouselIndex === 0;
+            document.getElementById('nextBtn').disabled = carouselIndex >= maxCarouselIndex;
         }
 
         document.getElementById('prevBtn').addEventListener('click', () => {
@@ -810,11 +1218,10 @@
         function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); updateCartCount(); }
         function updateCartCount() { document.getElementById('cartCount').textContent = getCart().length; }
 
-        function addToCart() {
-            if (!selectedAsset) return;
+        function addAssetToCart(asset) {
             const cart = getCart();
-            if (!cart.find(i => i.id === selectedAsset.id)) {
-                cart.push({ id: selectedAsset.id, title: selectedAsset.title, price: selectedAsset.price, image_url: selectedAsset.image_url, stripe_price_id: selectedAsset.stripe_price_id });
+            if (!cart.find(i => i.id === asset.id)) {
+                cart.push({ id: asset.id, title: asset.title, price: asset.price, image_url: asset.image_url, stripe_price_id: asset.stripe_price_id });
                 saveCart(cart);
                 showSuccess('Added to cart!');
             } else {
@@ -822,20 +1229,18 @@
             }
         }
 
+        function addToCart() { if (selectedAsset) addAssetToCart(selectedAsset); }
+
         function buyNow() {
             if (!selectedAsset) return;
-            const cart = getCart();
-            if (!cart.find(i => i.id === selectedAsset.id)) {
-                cart.push({ id: selectedAsset.id, title: selectedAsset.title, price: selectedAsset.price, image_url: selectedAsset.image_url, stripe_price_id: selectedAsset.stripe_price_id });
-                saveCart(cart);
-            }
+            addAssetToCart(selectedAsset);
             window.location.href = '/p/cart';
         }
 
         function showSuccess(message) {
             const msg = document.createElement('div');
             msg.className = 'success-message';
-            msg.textContent = message;
+            msg.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
             document.body.appendChild(msg);
             setTimeout(() => msg.remove(), 3000);
         }
@@ -894,7 +1299,6 @@
                     </div>
                 `;
 
-                // Load recommended
                 let recs = await fetchRecommended();
                 recs = recs.filter(a => a.id !== asset.id).slice(0, 15);
                 if (recs.length > 0) buildCarousel(recs);
@@ -903,6 +1307,48 @@
                 console.error(err);
                 container.innerHTML = '<p style="text-align:center;color:var(--subtext);">Error loading asset. Please try again.</p>';
             }
+        }
+
+        /* ────────────────────────────────────
+           NAV — hamburger
+        ──────────────────────────────────── */
+        const hamburger = document.getElementById('hamburger');
+        const navLinks = document.getElementById('navLinks');
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navLinks.classList.toggle('active');
+        });
+
+        /* ────────────────────────────────────
+           AUTH BUTTON
+        ──────────────────────────────────── */
+        async function updateAuthButton() {
+            const token = localStorage.getItem('auth_token');
+            const authBtn = document.getElementById('authBtn');
+            const authBtnText = document.getElementById('authBtnText');
+
+            if (!token) {
+                authBtn.href = '/p/login';
+                authBtnText.textContent = 'Login';
+                authBtn.style.display = 'inline-flex';
+                return;
+            }
+            try {
+                const res = await fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    authBtn.href = '/p/dashboard';
+                    authBtnText.textContent = 'My Account';
+                } else {
+                    localStorage.removeItem('auth_token');
+                    authBtn.href = '/p/login';
+                    authBtnText.textContent = 'Login';
+                }
+            } catch {
+                localStorage.removeItem('auth_token');
+                authBtn.href = '/p/login';
+                authBtnText.textContent = 'Login';
+            }
+            authBtn.style.display = 'inline-flex';
         }
 
         /* ────────────────────────────────────
@@ -918,10 +1364,14 @@
             localStorage.setItem('theme', t);
         });
 
-        const nav = document.getElementById('nav');
-        window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 50));
+        const navEl = document.getElementById('nav');
+        window.addEventListener('scroll', () => navEl.classList.toggle('scrolled', window.scrollY > 50));
 
-        window.addEventListener('load', () => { loadAsset(); updateCartCount(); });
+        window.addEventListener('load', () => {
+            loadAsset();
+            updateCartCount();
+            updateAuthButton();
+        });
     </script>
 </body>
 
