@@ -173,6 +173,12 @@
             font-size: 0.9rem;
         }
 
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
         .form-group input {
             width: 100%;
             padding: 0.9rem 1rem;
@@ -185,10 +191,33 @@
             transition: all 0.3s ease;
         }
 
+        .input-wrapper input {
+            padding-right: 3rem;
+        }
+
         .form-group input:focus {
             outline: none;
             border-color: var(--accent);
             background: rgba(255, 255, 255, 0.05);
+        }
+
+        .eye-toggle {
+            position: absolute;
+            right: 0.9rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--subtext);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.2rem;
+            transition: color 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        .eye-toggle:hover {
+            color: var(--accent);
         }
 
         .btn {
@@ -338,7 +367,12 @@
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required placeholder="Enter your password">
+                    <div class="input-wrapper">
+                        <input type="password" id="password" name="password" required placeholder="Enter your password">
+                        <button type="button" class="eye-toggle" id="eyeToggle" aria-label="Toggle password visibility">
+                            <i class="fa-regular fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
@@ -352,103 +386,116 @@
         </div>
     </section>
 
-<script>
-const themeSwitch = document.getElementById('themeSwitch');
-const currentTheme = localStorage.getItem('theme') || 'dark';
-document.body.dataset.theme = currentTheme;
-themeSwitch.checked = currentTheme === 'light';
+    <script>
+        const themeSwitch = document.getElementById('themeSwitch');
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        document.body.dataset.theme = currentTheme;
+        themeSwitch.checked = currentTheme === 'light';
 
-themeSwitch.addEventListener('change', (e) => {
-    const theme = e.target.checked ? 'light' : 'dark';
-    document.body.dataset.theme = theme;
-    localStorage.setItem('theme', theme);
-});
-
-const form = document.getElementById('loginForm');
-const submitBtn = document.getElementById('submitBtn');
-const btnText = document.getElementById('btnText');
-const errorMessage = document.getElementById('errorMessage');
-const successMessage = document.getElementById('successMessage');
-
-function showError(message) {
-    errorMessage.textContent = message;
-    errorMessage.classList.add('show');
-    successMessage.classList.remove('show');
-}
-
-function showSuccess(message) {
-    successMessage.textContent = message;
-    successMessage.classList.add('show');
-    errorMessage.classList.remove('show');
-}
-
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-
-    submitBtn.disabled = true;
-    btnText.textContent = 'Signing in...';
-    errorMessage.classList.remove('show');
-
-    try {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
+        themeSwitch.addEventListener('change', (e) => {
+            const theme = e.target.checked ? 'light' : 'dark';
+            document.body.dataset.theme = theme;
+            localStorage.setItem('theme', theme);
         });
 
-        const data = await response.json();
+        // Password visibility toggle
+        const eyeToggle = document.getElementById('eyeToggle');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const passwordInput = document.getElementById('password');
 
-        if (!response.ok) {
-            throw new Error(data.error || 'Login failed');
-        }
-
-        if (data.token) {
-            localStorage.setItem('auth_token', data.token);
-        }
-
-        showSuccess('Login successful! Redirecting...');
-        setTimeout(() => {
-            const redirect = localStorage.getItem('redirectAfterLogin') || '/';
-            localStorage.removeItem('redirectAfterLogin');
-            window.location.href = redirect;
-        }, 1000);
-
-    } catch (error) {
-        showError(error.message || 'Failed to sign in. Check your credentials.');
-        submitBtn.disabled = false;
-        btnText.textContent = 'Sign In';
-    }
-});
-
-async function checkAuth() {
-    const token = localStorage.getItem('auth_token');
-    if (!token) return;
-
-    try {
-        const response = await fetch('/api/user/profile', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
+        eyeToggle.addEventListener('click', () => {
+            const isHidden = passwordInput.type === 'password';
+            passwordInput.type = isHidden ? 'text' : 'password';
+            eyeIcon.classList.toggle('fa-eye', !isHidden);
+            eyeIcon.classList.toggle('fa-eye-slash', isHidden);
+            eyeToggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
         });
 
-        if (response.ok) {
-            window.location.href = '/';
-        } else {
-            localStorage.removeItem('auth_token');
-        }
-    } catch (err) {
-        localStorage.removeItem('auth_token');
-    }
-}
+        const form = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
 
-checkAuth();
-</script>
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            successMessage.classList.remove('show');
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.add('show');
+            errorMessage.classList.remove('show');
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            submitBtn.disabled = true;
+            btnText.textContent = 'Signing in...';
+            errorMessage.classList.remove('show');
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Login failed');
+                }
+
+                if (data.token) {
+                    localStorage.setItem('auth_token', data.token);
+                }
+
+                showSuccess('Login successful! Redirecting...');
+                setTimeout(() => {
+                    const redirect = localStorage.getItem('redirectAfterLogin') || '/';
+                    localStorage.removeItem('redirectAfterLogin');
+                    window.location.href = redirect;
+                }, 1000);
+
+            } catch (error) {
+                showError(error.message || 'Failed to sign in. Check your credentials.');
+                submitBtn.disabled = false;
+                btnText.textContent = 'Sign In';
+            }
+        });
+
+        async function checkAuth() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/user/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    localStorage.removeItem('auth_token');
+                }
+            } catch (err) {
+                localStorage.removeItem('auth_token');
+            }
+        }
+
+        checkAuth();
+    </script>
 
 </body>
 

@@ -173,16 +173,10 @@
             font-size: 0.9rem;
         }
 
-        .form-group input {
-            width: 100%;
-            padding: 0.9rem 1rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: var(--text);
-            font-family: inherit;
-            font-size: 1rem;
-            transition: all 0.3s ease;
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
         }
 
         .btn-secondary {
@@ -207,10 +201,45 @@
             transform: translateY(-2px);
         }
 
+        .form-group input {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper input {
+            padding-right: 3rem;
+        }
+
         .form-group input:focus {
             outline: none;
             border-color: var(--accent);
             background: rgba(255, 255, 255, 0.05);
+        }
+
+        .eye-toggle {
+            position: absolute;
+            right: 0.9rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--subtext);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.2rem;
+            transition: color 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        .eye-toggle:hover {
+            color: var(--accent);
         }
 
         .btn {
@@ -343,15 +372,27 @@
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required
-                        placeholder="Create a strong password">
+                    <div class="input-wrapper">
+                        <input type="password" id="password" name="password" required
+                            placeholder="Create a strong password">
+                        <button type="button" class="eye-toggle" id="eyeToggle1"
+                            aria-label="Toggle password visibility">
+                            <i class="fa-regular fa-eye" id="eyeIcon1"></i>
+                        </button>
+                    </div>
                     <div class="password-requirements">Minimum 8 characters</div>
                 </div>
 
                 <div class="form-group">
                     <label for="confirmPassword">Confirm Password</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required
-                        placeholder="Re-enter your password">
+                    <div class="input-wrapper">
+                        <input type="password" id="confirmPassword" name="confirmPassword" required
+                            placeholder="Re-enter your password">
+                        <button type="button" class="eye-toggle" id="eyeToggle2"
+                            aria-label="Toggle confirm password visibility">
+                            <i class="fa-regular fa-eye" id="eyeIcon2"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn" id="submitBtn">
@@ -376,6 +417,24 @@
             document.body.dataset.theme = theme;
             localStorage.setItem('theme', theme);
         });
+
+        // Password visibility toggles
+        function setupEyeToggle(toggleId, iconId, inputId) {
+            const toggle = document.getElementById(toggleId);
+            const icon = document.getElementById(iconId);
+            const input = document.getElementById(inputId);
+
+            toggle.addEventListener('click', () => {
+                const isHidden = input.type === 'password';
+                input.type = isHidden ? 'text' : 'password';
+                icon.classList.toggle('fa-eye', !isHidden);
+                icon.classList.toggle('fa-eye-slash', isHidden);
+                toggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+            });
+        }
+
+        setupEyeToggle('eyeToggle1', 'eyeIcon1', 'password');
+        setupEyeToggle('eyeToggle2', 'eyeIcon2', 'confirmPassword');
 
         const form = document.getElementById('signupForm');
         const submitBtn = document.getElementById('submitBtn');
