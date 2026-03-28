@@ -1156,6 +1156,83 @@ async function syncAssetsWithStripe() {
   }
 }
 
+app.post('/api/auth/google', async (req, res) => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${process.env.FRONTEND_URL}/p/login`,
+        // Optionally request extra scopes:
+        // scopes: 'email profile',
+      },
+    });
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ url: data.url });
+  } catch (err) {
+    console.error('Google OAuth error:', err);
+    res.status(500).json({ error: 'Google sign-in failed' });
+  }
+});
+
+// 2. Exchanges the Supabase access_token (from the URL hash after redirect)
+//    for a server-side JWT so your existing auth flow stays intact
+app.post('/api/auth/oauth-callback', async (req, res) => {
+  try {
+    const { access_token, refresh_token } = req.body;
+
+    if (!access_token) {
+      return res.status(400).json({ error: 'Missing access token' });
+    }
+
+    // Verify the token with Supabase and get the user
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(access_token);
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid OAuth token' });
+    }
+
+    // Issue your own JWT (same as the email/password login flow)
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Set httpOnly cookies
+    res.cookie('auth_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    // Audit log
+    try {
+      await supabaseAdmin.from('audit_logs').insert({
+        user_id: user.id,
+        action: 'login',
+        resource: 'auth',
+        status: 'success',
+        details: { provider: 'google' },
+      });
+    } catch (logErr) { /* non-fatal */ }
+
+    res.json({ token, message: 'Logged in successfully' });
+  } catch (err) {
+    console.error('OAuth callback error:', err);
+    res.status(500).json({ error: 'OAuth callback failed' });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`✅ Server running on port ${PORT}`);
