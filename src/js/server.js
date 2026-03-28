@@ -372,8 +372,16 @@ const authenticateToken = async (req, res, next) => {
 
     const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(decoded.userId);
 
-    if (error || !user || !user.email_confirmed_at) {
+    if (error || !user) {
       return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Allow if email confirmed OR if they signed in via OAuth provider (Google etc.)
+    const isEmailConfirmed = !!user.email_confirmed_at;
+    const isOAuthUser = user.app_metadata?.provider && user.app_metadata.provider !== 'email';
+
+    if (!isEmailConfirmed && !isOAuthUser) {
+      return res.status(401).json({ error: 'Email not confirmed' });
     }
 
     req.user = user;
@@ -564,31 +572,30 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-// 2. Frontend calls this after it reads the access_token from the URL hash.
-//    We verify it with Supabase, then issue our own JWT — same as email login.
 app.post('/api/auth/oauth-callback', async (req, res) => {
   try {
+    console.log('📨 /api/auth/oauth-callback hit');
+
     const { access_token, refresh_token } = req.body;
 
     if (!access_token) {
+      console.log('❌ No access_token in request body');
       return res.status(400).json({ error: 'Missing access token' });
     }
 
-    // Validate the Supabase access token and get the user
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(access_token);
+    console.log('Supabase getUser result — user:', user?.id, 'error:', error?.message);
 
     if (error || !user) {
       return res.status(401).json({ error: 'Invalid OAuth token' });
     }
 
-    // Issue your standard JWT (same structure as email/password login)
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    // Set the same httpOnly cookies as the email login flow
     res.cookie('auth_token', access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -603,23 +610,25 @@ app.post('/api/auth/oauth-callback', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    // Audit log (non-fatal)
     try {
       await supabaseAdmin.from('audit_logs').insert({
         user_id: user.id,
         action: 'login',
         resource: 'auth',
         status: 'success',
-        details: { provider: 'google' },
+        details: { provider: user.app_metadata?.provider || 'oauth' },
       });
-    } catch (logErr) { /* ignore */ }
+    } catch (logErr) { /* non-fatal */ }
 
+    console.log('✅ OAuth callback success for user:', user.id);
     res.json({ token, message: 'Logged in successfully' });
+
   } catch (err) {
-    console.error('OAuth callback error:', err);
+    console.error('❌ OAuth callback error:', err);
     res.status(500).json({ error: 'OAuth callback failed' });
   }
 });
+
 
 app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, async (req, res) => {
   try {
