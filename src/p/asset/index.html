@@ -1218,15 +1218,25 @@
         function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); updateCartCount(); }
         function updateCartCount() { document.getElementById('cartCount').textContent = getCart().length; }
 
+        function setAddedState() {
+            const btn = document.querySelector('.btn-secondary[onclick="addToCart()"]');
+            if (!btn) return;
+            btn.innerHTML = '<i class="fas fa-check"></i> Added!';
+            btn.style.background = 'rgba(0, 212, 255, 0.15)';
+            btn.style.borderColor = 'var(--accent)';
+            btn.style.color = 'var(--accent)';
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.8';
+        }
+
         function addAssetToCart(asset) {
             const cart = getCart();
             if (!cart.find(i => i.id === asset.id)) {
                 cart.push({ id: asset.id, title: asset.title, price: asset.price, image_url: asset.image_url, stripe_price_id: asset.stripe_price_id });
                 saveCart(cart);
                 showSuccess('Added to cart!');
-            } else {
-                showSuccess('Already in cart!');
             }
+            setAddedState();
         }
 
         function addToCart() { if (selectedAsset) addAssetToCart(selectedAsset); }
@@ -1298,6 +1308,10 @@
                         </div>
                     </div>
                 `;
+
+                if (getCart().find(i => i.id === asset.id)) {
+                    setAddedState();
+                }
 
                 let recs = await fetchRecommended();
                 recs = recs.filter(a => a.id !== asset.id).slice(0, 15);

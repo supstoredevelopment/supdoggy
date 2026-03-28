@@ -903,6 +903,15 @@
             cartCount.textContent = getCart().length;
         }
 
+        function setAddedState(btn) {
+            btn.innerHTML = '<i class="fas fa-check"></i><span>Added!</span>';
+            btn.style.background = 'rgba(0, 212, 255, 0.15)';
+            btn.style.border = '1px solid var(--accent)';
+            btn.style.color = 'var(--accent)';
+            btn.style.pointerEvents = 'none';
+            btn.classList.remove('added');
+        }
+
         function addToCartFromGrid(id, title, price, imageUrl, stripePriceId, btnElement) {
             const cart = getCart();
             const existingItem = cart.find(item => item.id === id);
@@ -991,24 +1000,30 @@
             items.forEach(asset => {
                 const el = document.createElement('div');
                 el.className = 'asset-card';
+                const inCart = !!getCart().find(i => i.id === asset.id);
+                const btnStyle = inCart
+                    ? `style="background:rgba(0,212,255,0.15);border:1px solid var(--accent);color:var(--accent);pointer-events:none;"`
+                    : '';
+                const btnContent = inCart
+                    ? `<i class="fas fa-check"></i><span>Added!</span>`
+                    : `<i class="fas fa-cart-plus"></i><span>Add</span>`;
                 el.innerHTML = `
-                    <a href="/p/asset/?id=${encodeURIComponent(asset.id)}" style="text-decoration: none; color: inherit; display: contents;">
-                        <div class="asset-card-image">
-                            <img src="${asset.image_url}" alt="${asset.title}">
-                        </div>
-                        <div class="asset-card-content">
-                            <div class="asset-card-title">${asset.title}</div>
-                            <div class="asset-card-description">${asset.description.substring(0, 60)}${asset.description.length > 60 ? '...' : ''}</div>
-                            <div class="asset-card-footer">
-                                <div class="asset-card-price">$${asset.price.toLocaleString()}</div>
-                                <button class="add-to-cart-btn" onclick="event.preventDefault(); event.stopPropagation(); addToCartFromGrid('${asset.id}', '${asset.title.replace(/'/g, "\\'")}', ${asset.price}, '${asset.image_url}', '${asset.stripe_price_id || ''}', this)">
-                                    <i class="fas fa-cart-plus"></i>
-                                    <span>Add</span>
-                                </button>
-                            </div>
-                        </div>
-                    </a>
-                `;
+        <a href="/p/asset/?id=${encodeURIComponent(asset.id)}" style="text-decoration: none; color: inherit; display: contents;">
+            <div class="asset-card-image">
+                <img src="${asset.image_url}" alt="${asset.title}">
+            </div>
+            <div class="asset-card-content">
+                <div class="asset-card-title">${asset.title}</div>
+                <div class="asset-card-description">${asset.description.substring(0, 60)}${asset.description.length > 60 ? '...' : ''}</div>
+                <div class="asset-card-footer">
+                    <div class="asset-card-price">$${asset.price.toLocaleString()}</div>
+                    <button class="add-to-cart-btn" ${btnStyle} onclick="event.preventDefault(); event.stopPropagation(); addToCartFromGrid('${asset.id}', '${asset.title.replace(/'/g, "\\'")}', ${asset.price}, '${asset.image_url}', '${asset.stripe_price_id || ''}', this)">
+                        ${btnContent}
+                    </button>
+                </div>
+            </div>
+        </a>
+    `;
                 grid.appendChild(el);
             });
         }
