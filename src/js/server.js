@@ -1156,14 +1156,14 @@ async function syncAssetsWithStripe() {
   }
 }
 
+// 1. Kick off Google OAuth — returns the Supabase-generated Google URL
 app.post('/api/auth/google', async (req, res) => {
   try {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
+        // After Google auth, Supabase redirects here with #access_token in the hash
         redirectTo: `${process.env.FRONTEND_URL}/p/login`,
-        // Optionally request extra scopes:
-        // scopes: 'email profile',
       },
     });
 
@@ -1176,8 +1176,8 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-// 2. Exchanges the Supabase access_token (from the URL hash after redirect)
-//    for a server-side JWT so your existing auth flow stays intact
+// 2. Frontend calls this after it reads the access_token from the URL hash.
+//    We verify it with Supabase, then issue our own JWT — same as email login.
 app.post('/api/auth/oauth-callback', async (req, res) => {
   try {
     const { access_token, refresh_token } = req.body;
@@ -1186,21 +1186,21 @@ app.post('/api/auth/oauth-callback', async (req, res) => {
       return res.status(400).json({ error: 'Missing access token' });
     }
 
-    // Verify the token with Supabase and get the user
+    // Validate the Supabase access token and get the user
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(access_token);
 
     if (error || !user) {
       return res.status(401).json({ error: 'Invalid OAuth token' });
     }
 
-    // Issue your own JWT (same as the email/password login flow)
+    // Issue your standard JWT (same structure as email/password login)
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    // Set httpOnly cookies
+    // Set the same httpOnly cookies as the email login flow
     res.cookie('auth_token', access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -1215,7 +1215,7 @@ app.post('/api/auth/oauth-callback', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    // Audit log
+    // Audit log (non-fatal)
     try {
       await supabaseAdmin.from('audit_logs').insert({
         user_id: user.id,
@@ -1224,7 +1224,7 @@ app.post('/api/auth/oauth-callback', async (req, res) => {
         status: 'success',
         details: { provider: 'google' },
       });
-    } catch (logErr) { /* non-fatal */ }
+    } catch (logErr) { /* ignore */ }
 
     res.json({ token, message: 'Logged in successfully' });
   } catch (err) {
