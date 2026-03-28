@@ -1119,28 +1119,42 @@
                 const a = document.createElement('a');
                 a.className = 'carousel-card';
                 a.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
-                a.innerHTML = `
-                    <div class="carousel-card-thumb">
-                        <img src="${asset.image_url}" alt="${asset.title}" loading="lazy">
-                        ${asset.tag ? `<span class="card-badge">${asset.tag}</span>` : ''}
-                        <button class="card-quick-add" data-id="${idx}">
-                            <i class="fas fa-cart-plus"></i> Add to Cart
-                        </button>
-                    </div>
-                    <div class="carousel-card-body">
-                        <div class="carousel-card-title">${asset.title}</div>
-                        <div class="carousel-card-footer">
-                            <div class="carousel-card-price">$${asset.price.toLocaleString()}</div>
-                            <div class="carousel-card-arrow"><i class="fas fa-arrow-right"></i></div>
-                        </div>
-                    </div>
-                `;
 
-                // Quick-add button intercepts click without navigating
-                a.querySelector('.card-quick-add').addEventListener('click', e => {
+                const inCart = !!getCart().find(i => i.id === asset.id);
+                const quickAddContent = inCart
+                    ? `<i class="fas fa-check"></i> Added!`
+                    : `<i class="fas fa-cart-plus"></i> Add to Cart`;
+                const quickAddStyle = inCart
+                    ? `style="background:rgba(0,212,255,0.15);border:1px solid var(--accent);color:var(--accent);pointer-events:none;opacity:0.9;"`
+                    : '';
+
+                a.innerHTML = `
+        <div class="carousel-card-thumb">
+            <img src="${asset.image_url}" alt="${asset.title}" loading="lazy">
+            ${asset.tag ? `<span class="card-badge">${asset.tag}</span>` : ''}
+            <button class="card-quick-add" ${quickAddStyle}>${quickAddContent}</button>
+        </div>
+        <div class="carousel-card-body">
+            <div class="carousel-card-title">${asset.title}</div>
+            <div class="carousel-card-footer">
+                <div class="carousel-card-price">$${asset.price.toLocaleString()}</div>
+                <div class="carousel-card-arrow"><i class="fas fa-arrow-right"></i></div>
+            </div>
+        </div>
+    `;
+
+                const quickAddBtn = a.querySelector('.card-quick-add');
+                quickAddBtn.addEventListener('click', e => {
                     e.preventDefault();
                     e.stopPropagation();
-                    addAssetToCart(asset);
+                    const cart = getCart();
+                    if (!cart.find(i => i.id === asset.id)) {
+                        cart.push({ id: asset.id, title: asset.title, price: asset.price, image_url: asset.image_url, stripe_price_id: asset.stripe_price_id });
+                        saveCart(cart);
+                        showSuccess('Added to cart!');
+                    }
+                    quickAddBtn.innerHTML = '<i class="fas fa-check"></i> Added!';
+                    quickAddBtn.style.cssText = 'background:rgba(0,212,255,0.15);border:1px solid var(--accent);color:var(--accent);pointer-events:none;opacity:0.9;';
                 });
 
                 track.appendChild(a);
