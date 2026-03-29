@@ -448,7 +448,7 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
       password,
       options: {
         data: { full_name: validator.trim(fullName) },
-        emailRedirectTo: `${process.env.FRONTEND_URL}/p/verified`,
+        emailRedirectTo: `${process.env.FRONTEND_URL}/p/dashboard`,
       },
     });
 
