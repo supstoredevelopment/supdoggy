@@ -812,23 +812,16 @@
         }
 
         async function checkAuth() {
-            const token = localStorage.getItem('auth_token');
-            if (!token) {
-                window.location.href = '/p/login';
-                return null;
-            }
-
             try {
-                const res = await fetch('/api/user/profile', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!res.ok) throw new Error('Unauthorized');
-                const user = await res.json();
-                return user;
+                const res = await fetch('/api/user/profile', { credentials: 'include' });
+                if (res.status === 401) {
+                    window.location.href = '/p/login';
+                    return null;
+                }
+                if (!res.ok) return null; // 500 etc — don't redirect
+                return await res.json();
             } catch {
-                localStorage.removeItem('auth_token');
-                window.location.href = '/p/login';
-                return null;
+                return null; // network error — don't redirect
             }
         }
 
@@ -860,29 +853,20 @@
 
         document.getElementById('logoutBtn').addEventListener('click', async (e) => {
             e.preventDefault();
-            const token = localStorage.getItem('auth_token');
             try {
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
             } catch { }
-            localStorage.removeItem('auth_token');
             window.location.href = '/';
         });
 
         document.getElementById('accountForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const token = localStorage.getItem('auth_token');
             const fullName = document.getElementById('fullName').value;
-
             try {
                 const res = await fetch('/api/user/profile', {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ fullName })
                 });
                 if (!res.ok) throw new Error();
@@ -896,9 +880,7 @@
         async function loadOrders() {
             const token = localStorage.getItem('auth_token');
             try {
-                const res = await fetch('/api/user/orders', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetch('/api/user/orders', { credentials: 'include' });
                 if (!res.ok) throw new Error();
                 const orders = await res.json();
 
@@ -953,9 +935,7 @@
             const token = localStorage.getItem('auth_token');
             try {
                 console.log('🔍 Fetching user assets...');
-                const res = await fetch('/api/user/assets', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetch('/api/user/assets', { credentials: 'include' });
 
                 if (!res.ok) {
                     console.error('❌ Failed to fetch assets:', res.status);
@@ -1002,9 +982,7 @@
 
                     try {
                         console.log(`🔍 Fetching versions for asset ${asset.id}...`);
-                        const vres = await fetch(`/api/asset/${asset.id}/versions`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
+                        const vres = await fetch(`/api/asset/${asset.id}/versions`, { credentials: 'include' });
 
                         if (!vres.ok) {
                             console.error(`❌ Failed to fetch versions for asset ${asset.id}:`, vres.status);
@@ -1036,13 +1014,7 @@
                                     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
 
                                     try {
-                                        const downloadRes = await fetch(
-                                            `/api/download/${asset.id}/${version.id}`,
-                                            {
-                                                headers: { 'Authorization': `Bearer ${token}` }
-                                            }
-                                        );
-
+                                        const downloadRes = await fetch(`/api/download/${asset.id}/${version.id}`, { credentials: 'include' });
                                         console.log('Download response status:', downloadRes.status);
 
                                         if (!downloadRes.ok) {
