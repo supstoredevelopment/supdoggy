@@ -1959,29 +1959,21 @@
         initCarousel();
         updateCartCount();
 
+
         async function updateAuthButton() {
-            const token = localStorage.getItem('auth_token');
             const authBtn = document.getElementById('authBtn');
             const authBtnText = document.getElementById('authBtnText');
 
-            if (!token) {
-                authBtn.href = '/p/login';
-                authBtnText.textContent = 'Login';
-                authBtn.style.display = 'inline-flex';
-                return;
-            }
             try {
-                const res = await fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${token}` } });
+                const res = await fetch('/api/user/profile', { credentials: 'include' });
                 if (res.ok) {
                     authBtn.href = '/p/dashboard';
                     authBtnText.textContent = 'My Account';
                 } else {
-                    localStorage.removeItem('auth_token');
                     authBtn.href = '/p/login';
                     authBtnText.textContent = 'Login';
                 }
             } catch {
-                localStorage.removeItem('auth_token');
                 authBtn.href = '/p/login';
                 authBtnText.textContent = 'Login';
             }

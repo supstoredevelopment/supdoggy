@@ -706,37 +706,23 @@
         }
 
         async function updateAuthButton() {
-            const token = localStorage.getItem('auth_token');
             const authBtn = document.getElementById('authBtn');
             const authBtnText = document.getElementById('authBtnText');
 
-            if (!token) {
-                authBtn.href = '/p/login';
-                authBtnText.textContent = 'Login';
-                return;
-            }
-
             try {
-                const response = await fetch('/api/user/profile', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
-
-                if (response.ok) {
+                const res = await fetch('/api/user/profile', { credentials: 'include' });
+                if (res.ok) {
                     authBtn.href = '/p/dashboard';
                     authBtnText.textContent = 'My Account';
                 } else {
-                    localStorage.removeItem('auth_token');
                     authBtn.href = '/p/login';
                     authBtnText.textContent = 'Login';
                 }
-            } catch (err) {
-                localStorage.removeItem('auth_token');
+            } catch {
                 authBtn.href = '/p/login';
                 authBtnText.textContent = 'Login';
             }
+            authBtn.style.display = 'inline-flex';
         }
 
         updateCartCount();

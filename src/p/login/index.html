@@ -473,6 +473,7 @@
 
     <script>
         // ── Theme ─────────────────────────────────────────────────
+        // Theme preference is low-sensitivity UI state — localStorage is fine here.
         const themeSwitch = document.getElementById('themeSwitch');
         const currentTheme = localStorage.getItem('theme') || 'dark';
         document.body.dataset.theme = currentTheme;
@@ -495,8 +496,6 @@
             eyeToggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
         });
 
-
-
         // ── Helpers ───────────────────────────────────────────────
         const errorMessage = document.getElementById('errorMessage');
         const successMessage = document.getElementById('successMessage');
@@ -514,8 +513,8 @@
         // ── OAuth callback ────────────────────────────────────────
         // After Google auth, Supabase redirects back to this page with
         // #access_token=...&refresh_token=... in the URL hash.
-        // We immediately show the loading overlay, exchange the token
-        // with our backend, save the JWT, then redirect to /p/verified.
+        // We exchange the token with our backend (which sets httpOnly cookies),
+        // then redirect to /p/dashboard. No token stored in JS.
         (async function handleOAuthCallback() {
             const hash = window.location.hash;
             if (!hash || !hash.includes('access_token')) return;
@@ -537,17 +536,15 @@
                 const response = await fetch('/api/auth/oauth-callback', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', // send & receive cookies
                     body: JSON.stringify({ access_token, refresh_token }),
                 });
 
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'OAuth callback failed');
 
-                if (data.token) {
-                    localStorage.setItem('auth_token', data.token);
-                }
-
-                // Clear hash from URL before redirecting
+                // Backend sets httpOnly cookies — nothing to store in JS.
+                // Clear hash from URL before redirecting.
                 history.replaceState(null, '', window.location.pathname);
                 window.location.href = '/p/dashboard';
 
@@ -575,6 +572,7 @@
                 const response = await fetch('/api/auth/google', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Google sign-in failed');
@@ -612,13 +610,13 @@
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include', // send & receive cookies
                     body: JSON.stringify({ email, password }),
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Login failed');
 
-                if (data.token) localStorage.setItem('auth_token', data.token);
-
+                // Backend sets httpOnly cookies — no token to store in JS.
                 showSuccess('Login successful! Redirecting...');
                 setTimeout(() => { window.location.href = '/p/dashboard'; }, 800);
 
@@ -630,20 +628,19 @@
         });
 
         // ── Skip login if already authenticated ───────────────────
+        // Relies purely on the httpOnly cookie being sent automatically.
+        // No token to read from JS — just probe the profile endpoint.
         async function checkAuth() {
-            const token = localStorage.getItem('auth_token');
-            if (!token) return;
             try {
                 const response = await fetch('/api/user/profile', {
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    credentials: 'include', // cookie sent automatically
                 });
                 if (response.ok) {
                     window.location.href = '/p/dashboard';
-                } else {
-                    localStorage.removeItem('auth_token');
                 }
+                // If 401, cookie is absent/expired — stay on login page silently.
             } catch (err) {
-                localStorage.removeItem('auth_token');
+                // Network error — stay on login page silently.
             }
         }
 
