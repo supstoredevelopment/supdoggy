@@ -495,43 +495,7 @@
             eyeToggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
         });
 
-        (async function handleOAuthOnHomepage() {
-            const hash = window.location.hash;
-            if (!hash || !hash.includes('access_token')) return;
 
-            // Parse the hash params
-            const params = new URLSearchParams(hash.substring(1));
-            const access_token = params.get('access_token');
-            const refresh_token = params.get('refresh_token');
-
-            if (!access_token) return;
-
-            // Clean the ugly hash from the URL immediately
-            history.replaceState(null, '', window.location.pathname);
-
-            try {
-                const response = await fetch('/api/auth/oauth-callback', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ access_token, refresh_token }),
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) throw new Error(data.error || 'OAuth failed');
-
-                if (data.token) {
-                    localStorage.setItem('auth_token', data.token);
-                }
-
-                // Redirect to verified page
-                window.location.href = '/p/verified';
-
-            } catch (err) {
-                console.error('OAuth callback failed:', err);
-                // Fall through to homepage — user can try logging in manually
-            }
-        })();
 
         // ── Helpers ───────────────────────────────────────────────
         const errorMessage = document.getElementById('errorMessage');

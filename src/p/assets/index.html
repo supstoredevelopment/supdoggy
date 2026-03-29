@@ -5,6 +5,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SupStore - All Assets</title>
+
+    <!--
+      PASTE THIS as the LAST thing inside your <head> tag in index.html.
+      It must be inline (not a src= file) and has no defer/async so it
+      runs instantly before any other JS touches the page.
+    -->
+    <script>
+        (async function () {
+            const hash = window.location.hash;
+            if (!hash || !hash.includes('access_token')) return;
+
+            // Supabase redirected here after Google login — handle it immediately
+            const params = new URLSearchParams(hash.substring(1));
+            const access_token = params.get('access_token');
+            const refresh_token = params.get('refresh_token');
+            if (!access_token) return;
+
+            // Wipe the token from the URL right away
+            history.replaceState(null, '', window.location.pathname);
+
+            try {
+                const res = await fetch('/api/auth/oauth-callback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ access_token, refresh_token }),
+                });
+                const data = await res.json();
+                console.log('[OAuth]', res.status, data);
+                if (!res.ok) throw new Error(data.error);
+                if (data.token) localStorage.setItem('auth_token', data.token);
+                window.location.href = '/p/verified';
+            } catch (err) {
+                console.error('[OAuth] failed:', err.message);
+                // Send them to login page to try again
+                window.location.href = '/p/login?oauth_error=1';
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
         integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
