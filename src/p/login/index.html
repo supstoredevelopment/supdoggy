@@ -549,7 +549,7 @@
 
                 // Clear hash from URL before redirecting
                 history.replaceState(null, '', window.location.pathname);
-                window.location.href = '/p/verified';
+                window.location.href = '/p/dashboard';
 
             } catch (err) {
                 document.getElementById('oauthLoading').classList.remove('show');
@@ -620,7 +620,7 @@
                 if (data.token) localStorage.setItem('auth_token', data.token);
 
                 showSuccess('Login successful! Redirecting...');
-                setTimeout(() => { window.location.href = '/p/verified'; }, 800);
+                setTimeout(() => { window.location.href = '/p/dashboard'; }, 800);
 
             } catch (error) {
                 showError(error.message || 'Failed to sign in. Check your credentials.');
@@ -638,7 +638,7 @@
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 });
                 if (response.ok) {
-                    window.location.href = '/p/verified';
+                    window.location.href = '/p/dashboard';
                 } else {
                     localStorage.removeItem('auth_token');
                 }
