@@ -361,7 +361,7 @@ const authenticateToken = async (req, res, next) => {
     let token = req.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
-      token = req.cookies.auth_token;
+      token = req.cookies.jwt;
     }
 
     if (!token) {
