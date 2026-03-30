@@ -63,7 +63,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Stripe webhook (must be before express.json()) ────────────────────────────
+// ── Stripe webhook ────────────────────────────────────────────────────────────
+// Must be registered BEFORE express.json() middleware
 
 app.options('/api/stripe-webhook', (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
@@ -76,12 +77,12 @@ app.get('/api/stripe-webhook', (req, res) => {
   res.json({
     status: 'Webhook endpoint is active',
     message: 'This endpoint only accepts POST requests from Stripe',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
-
-app.post('/api/stripe-webhook',
+app.post(
+  '/api/stripe-webhook',
   express.raw({ type: 'application/json' }),
   async (req, res) => {
     console.log('🎯 Webhook POST received!');
@@ -89,16 +90,10 @@ app.post('/api/stripe-webhook',
     const sig = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    if (!sig) {
-      return res.status(400).json({ error: 'No signature header' });
-    }
-
-    if (!webhookSecret) {
-      return res.status(500).json({ error: 'Webhook secret not configured' });
-    }
+    if (!sig) return res.status(400).json({ error: 'No signature header' });
+    if (!webhookSecret) return res.status(500).json({ error: 'Webhook secret not configured' });
 
     let event;
-
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
       console.log('✅ Webhook verified:', event.type);
@@ -108,76 +103,120 @@ app.post('/api/stripe-webhook',
     }
 
     try {
-      // =========================
+      // ════════════════════════════════════════════════════════════════
       // CHECKOUT COMPLETED
-      // =========================
+      // ════════════════════════════════════════════════════════════════
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         console.log('💳 Processing session:', session.id);
+        console.log('📋 Raw metadata:', JSON.stringify(session.metadata));
 
-        // ✅ USE METADATA FIRST
-        const orderId = session.metadata?.orderId;
-        const userId = session.metadata?.userId;
+        // ── Resolve userId ───────────────────────────────────────────
+        // Primary: metadata.userId
+        // Fallback: look up the order by session_id and get its user_id
+        let userId = session.metadata?.userId;
+        let orderId = session.metadata?.orderId;
 
-        if (!orderId || !userId) {
-          console.error('❌ Missing metadata:', session.metadata);
-          return res.status(400).json({ error: 'Missing metadata' });
+        if (!userId || !orderId) {
+          console.warn('⚠️ Metadata incomplete — attempting session_id fallback lookup');
+
+          const { data: fallbackOrder, error: fallbackErr } = await supabaseAdmin
+            .from('orders')
+            .select('id, user_id')
+            .eq('session_id', session.id)
+            .single();
+
+          if (fallbackErr || !fallbackOrder) {
+            console.error('❌ Fallback order lookup failed:', fallbackErr?.message);
+            // Return 200 so Stripe does NOT keep retrying an unrecoverable event.
+            // Log it for manual review instead.
+            await supabaseAdmin.from('audit_logs').insert({
+              action: 'webhook_unresolvable',
+              resource: 'order',
+              status: 'failed',
+              details: {
+                session_id: session.id,
+                metadata: session.metadata,
+                reason: 'Missing metadata and no matching order row',
+              },
+            }).catch(() => { });
+            return res.json({ received: true, warning: 'Order not found — logged for review' });
+          }
+
+          userId = userId || fallbackOrder.user_id;
+          orderId = orderId || fallbackOrder.id;
+          console.log('✅ Resolved via fallback — userId:', userId, 'orderId:', orderId);
         }
 
-        // ✅ Fetch order by ID (NO RACE CONDITION)
-        const { data: order, error: orderError } = await supabaseAdmin
+        // ── Idempotency guard ────────────────────────────────────────
+        // If the order is already completed, do nothing (Stripe can retry events).
+        const { data: existingOrder, error: existingErr } = await supabaseAdmin
           .from('orders')
-          .select('*')
+          .select('id, status')
           .eq('id', orderId)
           .single();
 
-        if (orderError || !order) {
-          console.error('❌ Order not found:', orderError);
+        if (existingErr || !existingOrder) {
+          console.error('❌ Order row not found for orderId:', orderId);
           return res.status(400).json({ error: 'Order not found' });
         }
 
-        // ✅ Mark as completed
+        if (existingOrder.status === 'completed') {
+          console.log('ℹ️ Order already completed — skipping (idempotent):', orderId);
+          return res.json({ received: true });
+        }
+
+        // ── Mark order completed ─────────────────────────────────────
         const { error: updateError } = await supabaseAdmin
           .from('orders')
           .update({
             status: 'completed',
-            payment_date: new Date().toISOString()
+            payment_date: new Date().toISOString(),
+            // Also store session_id here in case it wasn't linked yet
+            session_id: session.id,
           })
           .eq('id', orderId);
 
         if (updateError) {
           console.error('❌ Failed to update order:', updateError);
-          return res.status(500).json({ error: 'Update failed' });
+          return res.status(500).json({ error: 'Order update failed' });
         }
 
-        console.log('✅ Order marked as completed');
+        console.log('✅ Order marked as completed:', orderId);
 
-        // =========================
-        // STRIPE LINE ITEMS
-        // =========================
-        const sessionWithLineItems = await stripe.checkout.sessions.retrieve(
-          session.id,
-          { expand: ['line_items'] }
-        );
+        // ── Resolve line items ───────────────────────────────────────
+        // Expand line_items; fall back to a separate retrieve() call if already expanded.
+        let lineItems = session.line_items?.data;
+        if (!lineItems) {
+          const sessionExpanded = await stripe.checkout.sessions.retrieve(session.id, {
+            expand: ['line_items'],
+          });
+          lineItems = sessionExpanded.line_items?.data || [];
+        }
 
         const { data: allAssets } = await supabaseAdmin
           .from('assets')
           .select('id, stripe_price_id, stripe_prices_multi');
 
-        for (const lineItem of sessionWithLineItems.line_items.data) {
-          const priceId = lineItem.price.id;
+        for (const lineItem of lineItems) {
+          const priceId = lineItem.price?.id;
+          if (!priceId) {
+            console.warn('⚠️ Line item has no price id, skipping');
+            continue;
+          }
 
+          // Match by default price OR any currency in stripe_prices_multi
           let asset = allAssets.find(a => a.stripe_price_id === priceId);
-
           if (!asset) {
-            asset = allAssets.find(a =>
-              a.stripe_prices_multi &&
-              Object.values(a.stripe_prices_multi).includes(priceId)
+            asset = allAssets.find(
+              a =>
+                a.stripe_prices_multi &&
+                Object.values(a.stripe_prices_multi).includes(priceId)
             );
           }
 
           if (!asset) {
-            console.warn('⚠️ No asset found for price:', priceId);
+            console.warn('⚠️ No asset matched price:', priceId);
             continue;
           }
 
@@ -189,42 +228,59 @@ app.post('/api/stripe-webhook',
               purchased_at: new Date().toISOString(),
             });
 
+          // 23505 = unique_violation — asset already granted; safe to ignore
           if (insertError && insertError.code !== '23505') {
-            console.error('❌ Insert error:', insertError);
+            console.error('❌ Failed to insert user_asset:', insertError);
+          } else {
+            console.log('✅ Asset granted:', asset.id, '→ user:', userId);
           }
         }
 
-        // =========================
-        // AUDIT LOG
-        // =========================
+        // ── Audit log ────────────────────────────────────────────────
         await supabaseAdmin.from('audit_logs').insert({
           user_id: userId,
           action: 'payment',
           resource: 'order',
           resource_id: orderId,
           status: 'completed',
-          details: { amount: session.amount_total / 100 },
-        });
+          details: {
+            amount: session.amount_total / 100,
+            currency: session.currency,
+            session_id: session.id,
+          },
+        }).catch(err => console.error('⚠️ Audit log insert failed:', err.message));
       }
 
-      // =========================
-      // EXPIRED
-      // =========================
+      // ════════════════════════════════════════════════════════════════
+      // SESSION EXPIRED
+      // ════════════════════════════════════════════════════════════════
       if (event.type === 'checkout.session.expired') {
         const session = event.data.object;
+        const orderId = session.metadata?.orderId;
 
-        await supabaseAdmin
-          .from('orders')
-          .update({ status: 'cancelled' })
-          .eq('id', session.metadata?.orderId);
+        if (orderId) {
+          await supabaseAdmin
+            .from('orders')
+            .update({ status: 'cancelled' })
+            .eq('id', orderId)
+            .eq('status', 'pending'); // only cancel if still pending
+          console.log('🚫 Order cancelled (session expired):', orderId);
+        } else {
+          // Fallback by session_id
+          const { error } = await supabaseAdmin
+            .from('orders')
+            .update({ status: 'cancelled' })
+            .eq('session_id', session.id)
+            .eq('status', 'pending');
+          if (error) console.warn('⚠️ Fallback cancel failed:', error.message);
+        }
       }
 
-      // =========================
+      // ════════════════════════════════════════════════════════════════
       // REFUND
-      // =========================
+      // ════════════════════════════════════════════════════════════════
       if (event.type === 'charge.refunded') {
         const charge = event.data.object;
-
         const orderId = charge.metadata?.orderId;
 
         if (orderId) {
@@ -232,14 +288,44 @@ app.post('/api/stripe-webhook',
             .from('orders')
             .update({ status: 'refunded' })
             .eq('id', orderId);
+          console.log('💸 Order refunded:', orderId);
+        } else {
+          // Stripe links charges to payment intents; try to find the order that way
+          const paymentIntentId = charge.payment_intent;
+          if (paymentIntentId) {
+            const { data: matchedOrder } = await supabaseAdmin
+              .from('orders')
+              .select('id')
+              .eq('session_id',
+                // checkout sessions store the payment_intent on the session object,
+                // so we need a sub-query via Stripe if we want to match this way.
+                // For now log it for manual review.
+                null
+              )
+              .single();
+
+            console.warn(
+              '⚠️ Refund received but orderId missing from charge metadata.',
+              'payment_intent:', paymentIntentId,
+              '— log this for manual review'
+            );
+
+            await supabaseAdmin.from('audit_logs').insert({
+              action: 'refund_unmatched',
+              resource: 'charge',
+              status: 'needs_review',
+              details: { charge_id: charge.id, payment_intent: paymentIntentId },
+            }).catch(() => { });
+          }
         }
       }
 
       res.json({ received: true });
-
     } catch (err) {
-      console.error('❌ Webhook error:', err);
-      res.status(500).json({ error: 'Webhook failed' });
+      console.error('❌ Webhook processing error:', err);
+      // Return 500 so Stripe retries — only safe because the idempotency guard
+      // at the top of the completed handler prevents double-processing.
+      res.status(500).json({ error: 'Webhook processing failed' });
     }
   }
 );
