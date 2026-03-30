@@ -113,24 +113,20 @@ app.post('/api/stripe-webhook',
         const session = event.data.object;
         console.log('💳 Processing checkout.session.completed for session:', session.id);
 
+        const order = await supabaseAdmin
+          .from('orders')
+          .select('*')
+          .eq('session_id', session.id)
+          .single();
+
         // ── Retry loop to handle race condition where webhook fires before INSERT ──
-        const orderId = session.metadata?.orderId;
+        const orderId = order.data.id;
 
         if (!orderId) {
           console.error('❌ Missing orderId in metadata');
           return res.status(400).json({ error: 'Missing orderId' });
         }
 
-        const { data: order, error } = await supabaseAdmin
-          .from('orders')
-          .select('id, user_id')
-          .eq('id', orderId)
-          .single();
-
-        if (error || !order) {
-          console.error('❌ Order not found:', orderId);
-          return res.status(500).json({ error: 'Order not found' });
-        }
 
         // Update order to completed
         const { error: updateError } = await supabaseAdmin
