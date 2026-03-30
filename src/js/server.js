@@ -643,7 +643,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     const productMap = new Map(products.map(p => [p.id, p]));
 
-    // ── Split cart into free and paid items ───────────────────────────────────
+    // ── Split cart ────────────────────────────────────────────────
     const freeItems = [];
     const paidItems = [];
 
@@ -658,7 +658,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       }
     }
 
-    // ── Grant free items immediately ──────────────────────────────────────────
+    // ── Grant free items ─────────────────────────────────────────
     for (const { product } of freeItems) {
       const { error: insertError } = await supabaseAdmin
         .from('user_assets')
@@ -673,42 +673,24 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         return res.status(500).json({ error: 'Failed to grant free asset' });
       }
 
-      console.log('✅ Free asset granted:', product.id, 'to user:', userId);
+      console.log('✅ Free asset granted:', product.id);
     }
 
-    // ── If everything was free, create a $0 order record and return ───────────
+    // ── If everything is free ─────────────────────────────────────
     if (paidItems.length === 0) {
-      const { error: orderError } = await supabaseAdmin
-        .from('orders')
-        .insert({
-          user_id: userId,
-          session_id: `free_${crypto.randomUUID()}`,
-          total_amount: 0,
-          status: 'completed',
-          payment_date: new Date().toISOString(),
-          currency: (currency || 'USD').toUpperCase(),
-        });
+      await supabaseAdmin.from('orders').insert({
+        user_id: userId,
+        session_id: `free_${crypto.randomUUID()}`,
+        total_amount: 0,
+        status: 'completed',
+        payment_date: new Date().toISOString(),
+        currency: (currency || 'USD').toUpperCase(),
+      });
 
-      if (orderError) {
-        console.error('❌ Free order insert error:', orderError);
-      }
-
-      try {
-        await supabaseAdmin.from('audit_logs').insert({
-          user_id: userId,
-          action: 'payment',
-          resource: 'order',
-          resource_id: 'free',
-          status: 'completed',
-          details: { amount: 0, free: true },
-        });
-      } catch (logErr) { }
-
-      // Return a flag instead of a Stripe URL so the frontend knows to redirect directly
       return res.json({ free: true });
     }
 
-    // ── Build Stripe line items for paid products ─────────────────────────────
+    // ── Build Stripe line items ───────────────────────────────────
     const lineItems = [];
     let totalAmount = 0;
     const checkoutCurrency = (currency || 'usd').toLowerCase();
@@ -721,21 +703,41 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       }
 
       if (!stripePriceId) {
-        if (product.stripe_prices_multi && typeof product.stripe_prices_multi === 'object') {
-          stripePriceId = product.stripe_prices_multi['usd'];
-        } else {
-          stripePriceId = product.stripe_price_id;
-        }
+        stripePriceId = product.stripe_prices_multi?.['usd'] || product.stripe_price_id;
       }
 
       if (!stripePriceId) {
         return res.status(400).json({ error: `Product ${item.id} not available` });
       }
 
-      lineItems.push({ price: stripePriceId, quantity: item.quantity });
+      lineItems.push({
+        price: stripePriceId,
+        quantity: item.quantity
+      });
+
       totalAmount += product.price * item.quantity;
     }
 
+    // ── ✅ Create order FIRST (FIX) ────────────────────────────────
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from('orders')
+      .insert({
+        user_id: userId,
+        total_amount: Math.round(totalAmount * 100) / 100,
+        status: 'pending',
+        currency: checkoutCurrency.toUpperCase(),
+      })
+      .select()
+      .single();
+
+    if (orderError || !order) {
+      console.error('❌ Order insert error:', orderError);
+      return res.status(500).json({ error: 'Failed to create order record' });
+    }
+
+    console.log('✅ Order created:', order.id);
+
+    // ── ✅ Create Stripe session WITH orderId ─────────────────────
     const session = await stripe.checkout.sessions.create({
       customer_email: userEmail,
       line_items: lineItems,
@@ -743,28 +745,26 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       success_url: `${process.env.FRONTEND_URL}/p/success/?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/p/cancel`,
       allow_promotion_codes: true,
-      metadata: { userId },
+      metadata: {
+        userId,
+        orderId: order.id // 🔥 CRITICAL FIX
+      },
     });
 
     console.log('✅ Stripe session created:', session.id);
 
-    const { error: orderError } = await supabaseAdmin
+    // ── Link session to order ─────────────────────────────────────
+    const { error: updateError } = await supabaseAdmin
       .from('orders')
-      .insert({
-        user_id: userId,
-        session_id: session.id,
-        total_amount: Math.round(totalAmount * 100) / 100,
-        status: 'pending',
-        currency: checkoutCurrency.toUpperCase(),
-      });
+      .update({ session_id: session.id })
+      .eq('id', order.id);
 
-    if (orderError) {
-      console.error('❌ Order insert error:', orderError);
-      return res.status(500).json({ error: 'Failed to create order record' });
+    if (updateError) {
+      console.error('❌ Failed to link session to order:', updateError);
     }
 
-    console.log('✅ Order created, sending URL to client');
     res.json({ url: session.url });
+
   } catch (err) {
     console.error('❌ Checkout error:', err.message, err.stack);
     res.status(500).json({ error: 'Checkout failed', message: err.message });
