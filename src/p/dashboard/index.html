@@ -354,6 +354,11 @@
             color: #00ff88;
         }
 
+        .order-status.cancelled {
+            background: rgba(255, 68, 68, 0.1);
+            color: #ff4444;
+        }
+
         .order-items {
             list-style: none;
             margin-bottom: 1rem;
@@ -885,6 +890,7 @@
                 const orders = await res.json();
 
                 const completedOrders = orders.filter(o => o.status === 'completed');
+                const cancelledOrders = orders.filter(o => o.status === 'cancelled');
                 const totalOrders = orders.length;
                 const totalSpent = completedOrders.reduce((sum, o) => sum + o.total_amount, 0).toFixed(2);
 
