@@ -642,16 +642,78 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     }
 
     const productMap = new Map(products.map(p => [p.id, p]));
+
+    // ── Split cart into free and paid items ───────────────────────────────────
+    const freeItems = [];
+    const paidItems = [];
+
+    for (const item of validatedCart) {
+      const product = productMap.get(item.id);
+      if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
+
+      if (!product.price || product.price === 0) {
+        freeItems.push({ item, product });
+      } else {
+        paidItems.push({ item, product });
+      }
+    }
+
+    // ── Grant free items immediately ──────────────────────────────────────────
+    for (const { product } of freeItems) {
+      const { error: insertError } = await supabaseAdmin
+        .from('user_assets')
+        .insert({
+          user_id: userId,
+          asset_id: product.id,
+          purchased_at: new Date().toISOString(),
+        });
+
+      if (insertError && insertError.code !== '23505') {
+        console.error('❌ Failed to grant free asset:', product.id, insertError);
+        return res.status(500).json({ error: 'Failed to grant free asset' });
+      }
+
+      console.log('✅ Free asset granted:', product.id, 'to user:', userId);
+    }
+
+    // ── If everything was free, create a $0 order record and return ───────────
+    if (paidItems.length === 0) {
+      const { error: orderError } = await supabaseAdmin
+        .from('orders')
+        .insert({
+          user_id: userId,
+          session_id: `free_${crypto.randomUUID()}`,
+          total_amount: 0,
+          status: 'completed',
+          payment_date: new Date().toISOString(),
+          currency: (currency || 'USD').toUpperCase(),
+        });
+
+      if (orderError) {
+        console.error('❌ Free order insert error:', orderError);
+      }
+
+      try {
+        await supabaseAdmin.from('audit_logs').insert({
+          user_id: userId,
+          action: 'payment',
+          resource: 'order',
+          resource_id: 'free',
+          status: 'completed',
+          details: { amount: 0, free: true },
+        });
+      } catch (logErr) { }
+
+      // Return a flag instead of a Stripe URL so the frontend knows to redirect directly
+      return res.json({ free: true });
+    }
+
+    // ── Build Stripe line items for paid products ─────────────────────────────
     const lineItems = [];
     let totalAmount = 0;
     const checkoutCurrency = (currency || 'usd').toLowerCase();
 
-    for (const item of validatedCart) {
-      const product = productMap.get(item.id);
-      if (!product) {
-        return res.status(400).json({ error: `Product ${item.id} not found` });
-      }
-
+    for (const { item, product } of paidItems) {
       let stripePriceId;
 
       if (product.stripe_prices_multi && typeof product.stripe_prices_multi === 'object') {
@@ -686,7 +748,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     console.log('✅ Stripe session created:', session.id);
 
-    // Insert order BEFORE sending URL — webhook may fire before client receives response
     const { error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -694,7 +755,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         session_id: session.id,
         total_amount: Math.round(totalAmount * 100) / 100,
         status: 'pending',
-        currency: checkoutCurrency.toUpperCase()
+        currency: checkoutCurrency.toUpperCase(),
       });
 
     if (orderError) {
