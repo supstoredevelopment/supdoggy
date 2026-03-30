@@ -80,6 +80,7 @@ app.get('/api/stripe-webhook', (req, res) => {
   });
 });
 
+
 app.post('/api/stripe-webhook',
   express.raw({ type: 'application/json' }),
   async (req, res) => {
@@ -112,16 +113,29 @@ app.post('/api/stripe-webhook',
         const session = event.data.object;
         console.log('💳 Processing checkout.session.completed for session:', session.id);
 
-        // Find order — return 500 (not 404) so Stripe retries if not found yet
-        const { data: order, error: fetchError } = await supabaseAdmin
-          .from('orders')
-          .select('id, user_id')
-          .eq('session_id', session.id)
-          .single();
+        // ── Retry loop to handle race condition where webhook fires before INSERT ──
+        let order = null;
+        for (let attempt = 1; attempt <= 10; attempt++) {
+          console.log(`🔍 Looking for order, attempt ${attempt}/10...`);
+          const { data, error } = await supabaseAdmin
+            .from('orders')
+            .select('id, user_id')
+            .eq('session_id', session.id)
+            .single();
 
-        if (fetchError || !order) {
-          console.error('❌ Order not found for session:', session.id, fetchError);
-          return res.status(500).json({ error: 'Order not found, will retry' });
+          if (data) {
+            order = data;
+            console.log(`✅ Order found on attempt ${attempt}`);
+            break;
+          }
+
+          console.log(`⏳ Order not found yet (${error?.message}), waiting 1s...`);
+          await new Promise(r => setTimeout(r, 1000));
+        }
+
+        if (!order) {
+          console.error('❌ Order not found after 10 attempts for session:', session.id);
+          return res.status(500).json({ error: 'Order not found after retries, Stripe will retry' });
         }
 
         // Update order to completed
@@ -269,6 +283,7 @@ app.post('/api/stripe-webhook',
       res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
+
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
