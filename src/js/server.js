@@ -90,85 +90,83 @@ app.post('/api/stripe-webhook',
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!sig) {
-      console.log('❌ No stripe-signature header');
       return res.status(400).json({ error: 'No signature header' });
     }
 
     if (!webhookSecret) {
-      console.log('❌ No STRIPE_WEBHOOK_SECRET in environment');
       return res.status(500).json({ error: 'Webhook secret not configured' });
     }
 
     let event;
+
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
       console.log('✅ Webhook verified:', event.type);
     } catch (err) {
       console.error('❌ Webhook signature verification failed:', err.message);
-      return res.status(400).json({ error: 'Webhook signature verification failed' });
+      return res.status(400).json({ error: 'Invalid signature' });
     }
 
     try {
+      // =========================
+      // CHECKOUT COMPLETED
+      // =========================
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
-        console.log('💳 Processing checkout.session.completed for session:', session.id);
+        console.log('💳 Processing session:', session.id);
 
-        const order = await supabaseAdmin
-          .from('orders')
-          .select('*')
-          .eq('session_id', session.id)
-          .single();
+        // ✅ USE METADATA FIRST
+        const orderId = session.metadata?.orderId;
+        const userId = session.metadata?.userId;
 
-        // ── Retry loop to handle race condition where webhook fires before INSERT ──
-        const orderId = order.data.id;
-
-        if (!orderId) {
-          console.error('❌ Missing orderId in metadata');
-          return res.status(400).json({ error: 'Missing orderId' });
+        if (!orderId || !userId) {
+          console.error('❌ Missing metadata:', session.metadata);
+          return res.status(400).json({ error: 'Missing metadata' });
         }
 
+        // ✅ Fetch order by ID (NO RACE CONDITION)
+        const { data: order, error: orderError } = await supabaseAdmin
+          .from('orders')
+          .select('*')
+          .eq('id', orderId)
+          .single();
 
-        // Update order to completed
+        if (orderError || !order) {
+          console.error('❌ Order not found:', orderError);
+          return res.status(400).json({ error: 'Order not found' });
+        }
+
+        // ✅ Mark as completed
         const { error: updateError } = await supabaseAdmin
           .from('orders')
           .update({
             status: 'completed',
             payment_date: new Date().toISOString()
           })
-          .eq('session_id', session.id);
+          .eq('id', orderId);
 
         if (updateError) {
           console.error('❌ Failed to update order:', updateError);
-          return res.status(500).json({ error: 'Failed to update order' });
+          return res.status(500).json({ error: 'Update failed' });
         }
 
         console.log('✅ Order marked as completed');
 
-        // Retrieve line items from Stripe
+        // =========================
+        // STRIPE LINE ITEMS
+        // =========================
         const sessionWithLineItems = await stripe.checkout.sessions.retrieve(
           session.id,
           { expand: ['line_items'] }
         );
 
-        const userId = session.metadata.userId;
-        console.log('Processing payment for user:', userId);
-        console.log('Line items count:', sessionWithLineItems.line_items.data.length);
-
-        // Fetch ALL assets with their price mappings once — avoids N+1 queries
-        const { data: allAssets, error: allAssetsError } = await supabaseAdmin
+        const { data: allAssets } = await supabaseAdmin
           .from('assets')
           .select('id, stripe_price_id, stripe_prices_multi');
 
-        if (allAssetsError) {
-          console.error('❌ Failed to fetch assets for matching:', allAssetsError);
-          return res.status(500).json({ error: 'Failed to fetch assets' });
-        }
-
         for (const lineItem of sessionWithLineItems.line_items.data) {
           const priceId = lineItem.price.id;
-          console.log('🔍 Looking up asset for price ID:', priceId);
 
-          // Check stripe_price_id first (USD default), then search stripe_prices_multi
           let asset = allAssets.find(a => a.stripe_price_id === priceId);
 
           if (!asset) {
@@ -176,20 +174,10 @@ app.post('/api/stripe-webhook',
               a.stripe_prices_multi &&
               Object.values(a.stripe_prices_multi).includes(priceId)
             );
-            if (asset) {
-              console.log('✅ Found asset via stripe_prices_multi:', asset.id);
-            }
-          } else {
-            console.log('✅ Found asset via stripe_price_id:', asset.id);
           }
 
           if (!asset) {
-            console.warn('⚠️ No asset found for price ID:', priceId);
-            console.warn('Available price IDs:', allAssets.map(a => ({
-              id: a.id,
-              stripe_price_id: a.stripe_price_id,
-              multi_keys: a.stripe_prices_multi ? Object.keys(a.stripe_prices_multi) : []
-            })));
+            console.warn('⚠️ No asset found for price:', priceId);
             continue;
           }
 
@@ -201,79 +189,60 @@ app.post('/api/stripe-webhook',
               purchased_at: new Date().toISOString(),
             });
 
-          if (insertError) {
-            if (insertError.code === '23505') {
-              console.log('ℹ️ Asset already owned by user, skipping:', asset.id);
-            } else {
-              console.error('❌ Insert error for asset', asset.id, ':', insertError);
-            }
-          } else {
-            console.log('✅ Successfully added asset', asset.id, 'to user', userId);
+          if (insertError && insertError.code !== '23505') {
+            console.error('❌ Insert error:', insertError);
           }
         }
 
-        try {
-          await supabaseAdmin.from('audit_logs').insert({
-            user_id: order.user_id,
-            action: 'payment',
-            resource: 'order',
-            resource_id: session.id,
-            status: 'completed',
-            details: { amount: session.amount_total / 100 },
-          });
-        } catch (logErr) {
-          console.error('Audit log error:', logErr);
-        }
+        // =========================
+        // AUDIT LOG
+        // =========================
+        await supabaseAdmin.from('audit_logs').insert({
+          user_id: userId,
+          action: 'payment',
+          resource: 'order',
+          resource_id: orderId,
+          status: 'completed',
+          details: { amount: session.amount_total / 100 },
+        });
       }
 
+      // =========================
+      // EXPIRED
+      // =========================
       if (event.type === 'checkout.session.expired') {
         const session = event.data.object;
 
-        const { error: updateError } = await supabaseAdmin
+        await supabaseAdmin
           .from('orders')
           .update({ status: 'cancelled' })
-          .eq('session_id', session.id);
-
-        if (updateError) {
-          console.error('Failed to cancel order:', updateError);
-          return res.status(500).json({ error: 'Failed to update order' });
-        }
+          .eq('id', session.metadata?.orderId);
       }
 
+      // =========================
+      // REFUND
+      // =========================
       if (event.type === 'charge.refunded') {
         const charge = event.data.object;
-        const { metadata } = charge;
 
-        if (metadata?.orderId) {
-          const { error: updateError } = await supabaseAdmin
+        const orderId = charge.metadata?.orderId;
+
+        if (orderId) {
+          await supabaseAdmin
             .from('orders')
             .update({ status: 'refunded' })
-            .eq('id', metadata.orderId);
-
-          if (!updateError) {
-            try {
-              await supabaseAdmin.from('audit_logs').insert({
-                action: 'refund',
-                resource: 'order',
-                resource_id: metadata.orderId,
-                status: 'completed',
-                details: { amount: charge.amount / 100 },
-              });
-            } catch (logErr) {
-              console.error('Audit log error:', logErr);
-            }
-          }
+            .eq('id', orderId);
         }
       }
 
-      console.log('✅ Webhook processed successfully');
       res.json({ received: true });
-    } catch (err) {
-      console.error('❌ Webhook processing error:', err);
-      res.status(500).json({ error: 'Webhook processing failed' });
-    }
-  });
 
+    } catch (err) {
+      console.error('❌ Webhook error:', err);
+      res.status(500).json({ error: 'Webhook failed' });
+    }
+  }
+);
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
