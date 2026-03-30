@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        
+
         body {
             font-family: 'Inter', sans-serif;
             background: #000;
@@ -20,29 +21,40 @@
             min-height: 100vh;
             text-align: center;
         }
+
         .container {
             max-width: 600px;
             padding: 2rem;
         }
+
         .success-icon {
             font-size: 5rem;
             color: #00d4ff;
             margin-bottom: 1.5rem;
             animation: scaleIn 0.5s ease-out;
         }
+
         @keyframes scaleIn {
-            from { transform: scale(0); }
-            to { transform: scale(1); }
+            from {
+                transform: scale(0);
+            }
+
+            to {
+                transform: scale(1);
+            }
         }
+
         h1 {
             font-size: 2.5rem;
             margin-bottom: 1rem;
         }
+
         p {
             font-size: 1.2rem;
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.8);
             margin-bottom: 2rem;
         }
+
         .btn {
             display: inline-block;
             background: #0066ff;
@@ -53,15 +65,18 @@
             font-weight: 600;
             transition: all 0.3s;
         }
+
         .btn:hover {
             background: #0052cc;
             transform: translateY(-3px);
         }
+
         .details {
             margin-top: 2rem;
             font-size: 0.9rem;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255, 255, 255, 0.6);
         }
+
         .download-status {
             margin-top: 1.5rem;
             padding: 1rem;
@@ -69,36 +84,44 @@
             border-radius: 8px;
             border: 1px solid rgba(0, 102, 255, 0.3);
         }
+
         .download-status p {
             margin: 0.5rem 0;
             font-size: 0.95rem;
         }
+
         .loading {
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: #00d4ff;
             animation: spin 1s linear infinite;
         }
+
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
+
         .success-badge {
             color: #00ff88;
         }
+
         .error-badge {
             color: #ff4444;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <i class="fas fa-check-circle success-icon"></i>
         <h1>Purchase Successful!</h1>
         <p>Thank you for your purchase. Your assets are now available in your account.</p>
-        
+
         <div class="download-status" id="downloadStatus">
             <p><span class="loading"></span> Preparing your downloads...</p>
         </div>
@@ -120,7 +143,7 @@
     <script>
         const params = new URLSearchParams(window.location.search);
         const sessionId = params.get('session_id');
-        
+
         if (sessionId) {
             document.getElementById('sessionId').textContent = sessionId;
         }
@@ -129,7 +152,7 @@
             try {
                 localStorage.removeItem('cart');
                 console.log('✅ Cart cleared successfully');
-                
+
                 window.dispatchEvent(new Event('cartCleared'));
                 window.dispatchEvent(new StorageEvent('storage', {
                     key: 'cart',
@@ -144,24 +167,18 @@
         function updateStatus(message, isSuccess = null) {
             const statusDiv = document.getElementById('downloadStatus');
             let icon = '<span class="loading"></span>';
-            
+
             if (isSuccess === true) {
                 icon = '<i class="fas fa-check-circle success-badge"></i>';
             } else if (isSuccess === false) {
                 icon = '<i class="fas fa-exclamation-circle error-badge"></i>';
             }
-            
+
             statusDiv.innerHTML = `<p>${icon} ${message}</p>`;
         }
 
-        async function handleAutoDownloads() {
-            const token = localStorage.getItem('auth_token') || localStorage.getItem('jwt');
-            
-            if (!token) {
-                updateStatus('Please log in to download your assets.', false);
-                return;
-            }
 
+        async function handleAutoDownloads() {
             if (!sessionId) {
                 updateStatus('No session ID found.', false);
                 return;
@@ -170,17 +187,13 @@
             try {
                 updateStatus('Fetching your purchased assets...');
 
-                const res = await fetch(`/api/user/assets`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
-                });
+                const res = await fetch('/api/user/assets', { credentials: 'include' });
 
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch assets: ${res.status}`);
+                if (res.status === 401) {
+                    updateStatus('Please log in to download your assets.', false);
+                    return;
                 }
+                if (!res.ok) throw new Error(`Failed to fetch assets: ${res.status}`);
 
                 const assets = await res.json();
 
@@ -196,56 +209,24 @@
 
                 for (const asset of assets) {
                     try {
-                        const vres = await fetch(`/api/asset/${asset.id}/versions`, {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            },
-                            credentials: 'include'
-                        });
-
-                        if (!vres.ok) {
-                            console.error(`Failed to fetch versions for asset ${asset.id}`);
-                            errorCount++;
-                            continue;
-                        }
+                        const vres = await fetch(`/api/asset/${asset.id}/versions`, { credentials: 'include' });
+                        if (!vres.ok) { errorCount++; continue; }
 
                         const versions = await vres.json();
-                        
-                        if (!versions || versions.length === 0) {
-                            console.warn(`No versions available for asset ${asset.id}`);
-                            errorCount++;
-                            continue;
-                        }
-
-                        const latestVersion = versions[0];
+                        if (!versions || versions.length === 0) { errorCount++; continue; }
 
                         const downloadRes = await fetch(
-                            `/api/download/${asset.id}/${latestVersion.id}`,
-                            {
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                    'Content-Type': 'application/json'
-                                },
-                                credentials: 'include'
-                            }
+                            `/api/download/${asset.id}/${versions[0].id}`,
+                            { credentials: 'include' }
                         );
-
-                        if (!downloadRes.ok) {
-                            console.error(`Failed to get download URL for asset ${asset.id}`);
-                            errorCount++;
-                            continue;
-                        }
+                        if (!downloadRes.ok) { errorCount++; continue; }
 
                         const downloadData = await downloadRes.json();
-                        
                         if (downloadData.url) {
                             window.open(downloadData.url, '_blank');
                             downloadCount++;
-                            
                             await new Promise(resolve => setTimeout(resolve, 500));
                         }
-
                     } catch (assetErr) {
                         console.error(`Error processing asset ${asset.id}:`, assetErr);
                         errorCount++;
@@ -269,9 +250,10 @@
 
         window.addEventListener('load', async () => {
             clearCart();
-            
+
             await handleAutoDownloads();
         });
     </script>
 </body>
+
 </html>
