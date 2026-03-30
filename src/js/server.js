@@ -34,7 +34,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://supdoggy.onrender.coma')
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://supdoggy.onrender.com')
   .split(',')
   .map(origin => origin.trim());
 
@@ -44,9 +44,7 @@ const corsOptions = {
   origin: function (origin, callback) {
     console.log('📨 CORS request from origin:', origin);
     console.log('✅ ALLOWED_ORIGINS:', ALLOWED_ORIGINS);
-
     if (!origin) return callback(null, true);
-
     if (ALLOWED_ORIGINS.includes(origin)) {
       console.log('✅ Origin ALLOWED');
       return callback(null, true);
@@ -64,6 +62,8 @@ app.use((req, res, next) => {
   console.log(`📨 ${req.method} ${req.path} from ${req.get('origin') || 'no-origin'}`);
   next();
 });
+
+// ── Stripe webhook (must be before express.json()) ────────────────────────────
 
 app.options('/api/stripe-webhook', (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
@@ -84,7 +84,6 @@ app.post('/api/stripe-webhook',
   express.raw({ type: 'application/json' }),
   async (req, res) => {
     console.log('🎯 Webhook POST received!');
-    console.log('Headers:', req.headers);
 
     const sig = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -100,7 +99,6 @@ app.post('/api/stripe-webhook',
     }
 
     let event;
-
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
       console.log('✅ Webhook verified:', event.type);
@@ -112,7 +110,9 @@ app.post('/api/stripe-webhook',
     try {
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
+        console.log('💳 Processing checkout.session.completed for session:', session.id);
 
+        // Find order — return 500 (not 404) so Stripe retries if not found yet
         const { data: order, error: fetchError } = await supabaseAdmin
           .from('orders')
           .select('id, user_id')
@@ -120,10 +120,11 @@ app.post('/api/stripe-webhook',
           .single();
 
         if (fetchError || !order) {
-          console.error('Order not found for session:', session.id);
-          return res.status(404).json({ error: 'Order not found' });
+          console.error('❌ Order not found for session:', session.id, fetchError);
+          return res.status(500).json({ error: 'Order not found, will retry' });
         }
 
+        // Update order to completed
         const { error: updateError } = await supabaseAdmin
           .from('orders')
           .update({
@@ -133,53 +134,77 @@ app.post('/api/stripe-webhook',
           .eq('session_id', session.id);
 
         if (updateError) {
-          console.error('Failed to update order:', updateError);
+          console.error('❌ Failed to update order:', updateError);
           return res.status(500).json({ error: 'Failed to update order' });
         }
 
-        const sessionWithLineItems = await stripe.checkout.sessions.retrieve(session.id, { expand: ['line_items'] });
+        console.log('✅ Order marked as completed');
 
-        console.log('Processing payment for user:', session.metadata.userId);
-        console.log('Line items:', sessionWithLineItems.line_items.data.length);
+        // Retrieve line items from Stripe
+        const sessionWithLineItems = await stripe.checkout.sessions.retrieve(
+          session.id,
+          { expand: ['line_items'] }
+        );
+
+        const userId = session.metadata.userId;
+        console.log('Processing payment for user:', userId);
+        console.log('Line items count:', sessionWithLineItems.line_items.data.length);
+
+        // Fetch ALL assets with their price mappings once — avoids N+1 queries
+        const { data: allAssets, error: allAssetsError } = await supabaseAdmin
+          .from('assets')
+          .select('id, stripe_price_id, stripe_prices_multi');
+
+        if (allAssetsError) {
+          console.error('❌ Failed to fetch assets for matching:', allAssetsError);
+          return res.status(500).json({ error: 'Failed to fetch assets' });
+        }
 
         for (const lineItem of sessionWithLineItems.line_items.data) {
           const priceId = lineItem.price.id;
-          console.log('Processing price ID:', priceId);
+          console.log('🔍 Looking up asset for price ID:', priceId);
 
-          const { data: asset, error: assetError } = await supabaseAdmin
-            .from('assets')
-            .select('id')
-            .eq('stripe_price_id', priceId)
-            .single();
+          // Check stripe_price_id first (USD default), then search stripe_prices_multi
+          let asset = allAssets.find(a => a.stripe_price_id === priceId);
 
-          if (assetError) {
-            console.error('Asset error for price', priceId, ':', assetError);
-            continue;
+          if (!asset) {
+            asset = allAssets.find(a =>
+              a.stripe_prices_multi &&
+              Object.values(a.stripe_prices_multi).includes(priceId)
+            );
+            if (asset) {
+              console.log('✅ Found asset via stripe_prices_multi:', asset.id);
+            }
+          } else {
+            console.log('✅ Found asset via stripe_price_id:', asset.id);
           }
 
           if (!asset) {
-            console.warn('No asset found for price', priceId);
+            console.warn('⚠️ No asset found for price ID:', priceId);
+            console.warn('Available price IDs:', allAssets.map(a => ({
+              id: a.id,
+              stripe_price_id: a.stripe_price_id,
+              multi_keys: a.stripe_prices_multi ? Object.keys(a.stripe_prices_multi) : []
+            })));
             continue;
           }
-
-          console.log('Found asset:', asset.id);
 
           const { error: insertError } = await supabaseAdmin
             .from('user_assets')
             .insert({
-              user_id: session.metadata.userId,
+              user_id: userId,
               asset_id: asset.id,
               purchased_at: new Date().toISOString(),
             });
 
           if (insertError) {
             if (insertError.code === '23505') {
-              console.log('Asset already owned by user, skipping');
+              console.log('ℹ️ Asset already owned by user, skipping:', asset.id);
             } else {
-              console.error('Insert error:', insertError);
+              console.error('❌ Insert error for asset', asset.id, ':', insertError);
             }
           } else {
-            console.log('Successfully added asset', asset.id, 'to user', session.metadata.userId);
+            console.log('✅ Successfully added asset', asset.id, 'to user', userId);
           }
         }
 
@@ -245,6 +270,8 @@ app.post('/api/stripe-webhook',
     }
   });
 
+// ── Middleware ────────────────────────────────────────────────────────────────
+
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -270,12 +297,7 @@ app.use(
           "https://fonts.gstatic.com",
           "https://cdnjs.cloudflare.com",
         ],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "https:",
-          "blob:",
-        ],
+        imgSrc: ["'self'", "data:", "https:", "blob:"],
         connectSrc: [
           "'self'",
           "https://api.stripe.com",
@@ -333,6 +355,8 @@ const csrfProtection = csrf({
   }
 });
 
+// ── Validators ────────────────────────────────────────────────────────────────
+
 const validateEmail = (email) => {
   if (!validator.isEmail(email)) throw new Error('Invalid email');
   return validator.trim(email).toLowerCase();
@@ -347,34 +371,25 @@ const validateUserId = (userId) => {
 
 const validateCartItem = (item) => {
   const id = parseInt(item.id);
-  if (!Number.isInteger(id) || id < 1) {
-    throw new Error('Invalid item ID');
-  }
+  if (!Number.isInteger(id) || id < 1) throw new Error('Invalid item ID');
   if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) {
     throw new Error('Invalid quantity');
   }
-  return { id: id, quantity: item.quantity };
+  return { id, quantity: item.quantity };
 };
+
+// ── Auth middleware ───────────────────────────────────────────────────────────
 
 const authenticateToken = async (req, res, next) => {
   try {
     let token = req.headers.authorization?.replace('Bearer ', '');
-
-    if (!token) {
-      token = req.cookies.jwt;
-    }
-
-    if (!token) {
-      return res.status(401).json({ error: 'No authentication token' });
-    }
+    if (!token) token = req.cookies.jwt;
+    if (!token) return res.status(401).json({ error: 'No authentication token' });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(decoded.userId);
-
-    if (error || !user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    if (error || !user) return res.status(401).json({ error: 'Unauthorized' });
 
     const isEmailConfirmed = !!user.email_confirmed_at;
     const isOAuthUser = user.app_metadata?.provider && user.app_metadata.provider !== 'email';
@@ -401,7 +416,6 @@ app.post('/api/csrf-token', csrfProtection, (req, res) => {
 app.get('/api/assets/top-selling', async (req, res) => {
   try {
     const limit = Math.min(20, parseInt(req.query.limit) || 10);
-
     const { data: assets, error } = await supabase
       .from('assets')
       .select('id, title, description, price, image_url, tag')
@@ -410,7 +424,6 @@ app.get('/api/assets/top-selling', async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (error) return res.status(500).json({ error: 'Failed to fetch assets' });
-
     res.json(assets);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -430,15 +443,12 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
     if (password.length < 8) {
       return res.status(400).json({ warning: 'Password must be at least 12 characters' });
     }
-
     if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
       return res.status(400).json({ warning: 'Password must contain uppercase letters and numbers' });
     }
-
     if (!validator.isLength(fullName, { min: 2, max: 100 })) {
       return res.status(400).json({ warning: 'Invalid name length' });
     }
-
     if (!/^[a-zA-Z\s'-]+$/.test(fullName)) {
       return res.status(400).json({ warning: 'Invalid name format' });
     }
@@ -470,28 +480,19 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
     console.log('📨 Login request received');
-
     const { email, password } = req.body;
 
     if (!email || !password) {
-      console.log('❌ Missing email or password');
       return res.status(400).json({ error: 'Email and password required' });
     }
 
     const validEmail = validateEmail(email);
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: validEmail,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: validEmail, password });
 
     if (error || !data?.user?.email_confirmed_at) {
-      console.log('❌ Login failed - invalid credentials or unconfirmed email');
       try {
         await supabaseAdmin.from('audit_logs').insert({
-          action: 'login',
-          resource: 'auth',
-          status: 'failed',
+          action: 'login', resource: 'auth', status: 'failed',
         });
       } catch (logErr) { }
       return res.status(401).json({ error: 'Invalid credentials or unconfirmed email' });
@@ -503,33 +504,22 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    res.cookie('auth_token', data.session.access_token, {
+    const cookieOpts = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000,
-    });
+    };
 
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
+    res.cookie('auth_token', data.session.access_token, cookieOpts);
+    res.cookie('jwt', token, cookieOpts);
+
+    supabaseAdmin.from('audit_logs').insert({
+      user_id: data.user.id, action: 'login', resource: 'auth', status: 'success',
     });
 
     console.log('✅ Login successful for user:', data.user.id);
-
-    supabaseAdmin.from('audit_logs').insert({
-      user_id: data.user.id,
-      action: 'login',
-      resource: 'auth',
-      status: 'success',
-    });
-
-    res.json({
-      message: 'Logged in successfully',
-      token: token
-    });
+    res.json({ message: 'Logged in successfully', token });
   } catch (err) {
     console.error('❌ Login error:', err);
     res.status(400).json({ error: 'Login failed' });
@@ -543,10 +533,7 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
 
     try {
       await supabaseAdmin.from('audit_logs').insert({
-        user_id: req.userId,
-        action: 'logout',
-        resource: 'auth',
-        status: 'success',
+        user_id: req.userId, action: 'logout', resource: 'auth', status: 'success',
       });
     } catch (logErr) { }
 
@@ -560,9 +547,7 @@ app.post('/api/auth/google', async (req, res) => {
   try {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${process.env.FRONTEND_URL}/p/login`,
-      },
+      options: { redirectTo: `${process.env.FRONTEND_URL}/p/login` },
     });
     if (error) return res.status(400).json({ error: error.message });
     res.json({ url: data.url });
@@ -575,20 +560,14 @@ app.post('/api/auth/google', async (req, res) => {
 app.post('/api/auth/oauth-callback', async (req, res) => {
   try {
     console.log('📨 /api/auth/oauth-callback hit');
-
-    const { access_token, refresh_token } = req.body;
+    const { access_token } = req.body;
 
     if (!access_token) {
-      console.log('❌ No access_token in request body');
       return res.status(400).json({ error: 'Missing access token' });
     }
 
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(access_token);
-    console.log('Supabase getUser result — user:', user?.id, 'error:', error?.message);
-
-    if (error || !user) {
-      return res.status(401).json({ error: 'Invalid OAuth token' });
-    }
+    if (error || !user) return res.status(401).json({ error: 'Invalid OAuth token' });
 
     const token = jwt.sign(
       { userId: user.id, email: user.email },
@@ -596,19 +575,15 @@ app.post('/api/auth/oauth-callback', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    res.cookie('auth_token', access_token, {
+    const cookieOpts = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000,
-    });
+    };
 
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+    res.cookie('auth_token', access_token, cookieOpts);
+    res.cookie('jwt', token, cookieOpts);
 
     try {
       await supabaseAdmin.from('audit_logs').insert({
@@ -618,11 +593,10 @@ app.post('/api/auth/oauth-callback', async (req, res) => {
         status: 'success',
         details: { provider: user.app_metadata?.provider || 'oauth' },
       });
-    } catch (logErr) { /* non-fatal */ }
+    } catch (logErr) { }
 
     console.log('✅ OAuth callback success for user:', user.id);
     res.json({ token, message: 'Logged in successfully' });
-
   } catch (err) {
     console.error('❌ OAuth callback error:', err);
     res.status(500).json({ error: 'OAuth callback failed' });
@@ -637,21 +611,16 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     const userId = req.userId;
     const userEmail = req.user.email;
 
-    console.log('User:', userId, 'Currency:', currency);
-
     if (!Array.isArray(cart) || cart.length === 0 || cart.length > 100) {
       return res.status(400).json({ error: 'Invalid cart' });
     }
 
     const validatedCart = cart.map(validateCartItem);
-    console.log('Validated cart:', validatedCart);
 
     const { data: products, error: productsError } = await supabase
       .from('assets')
       .select('id, title, price, stripe_product_id, stripe_price_id, stripe_prices_multi')
       .in('id', validatedCart.map(item => item.id));
-
-    console.log('Products fetched:', products?.length, 'Error:', productsError);
 
     if (productsError || !products) {
       return res.status(400).json({ error: 'Failed to fetch products' });
@@ -662,51 +631,33 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     let totalAmount = 0;
     const checkoutCurrency = (currency || 'usd').toLowerCase();
 
-    console.log('Checkout currency:', checkoutCurrency);
-
     for (const item of validatedCart) {
       const product = productMap.get(item.id);
       if (!product) {
-        console.error(`Product ${item.id} not found in database`);
         return res.status(400).json({ error: `Product ${item.id} not found` });
       }
-
-      console.log(`Processing product ${item.id}:`, {
-        stripe_prices_multi: product.stripe_prices_multi,
-        stripe_price_id: product.stripe_price_id
-      });
 
       let stripePriceId;
 
       if (product.stripe_prices_multi && typeof product.stripe_prices_multi === 'object') {
         stripePriceId = product.stripe_prices_multi[checkoutCurrency];
-        console.log(`✅ Found multi-currency price for ${checkoutCurrency}:`, stripePriceId);
       }
 
       if (!stripePriceId) {
         if (product.stripe_prices_multi && typeof product.stripe_prices_multi === 'object') {
           stripePriceId = product.stripe_prices_multi['usd'];
-          console.log(`⚠️ Fallback to USD:`, stripePriceId);
         } else {
           stripePriceId = product.stripe_price_id;
-          console.log(`⚠️ Using default stripe_price_id:`, stripePriceId);
         }
       }
 
       if (!stripePriceId) {
-        console.error(`❌ No price found for product ${item.id}`);
         return res.status(400).json({ error: `Product ${item.id} not available` });
       }
 
-      lineItems.push({
-        price: stripePriceId,
-        quantity: item.quantity,
-      });
-
+      lineItems.push({ price: stripePriceId, quantity: item.quantity });
       totalAmount += product.price * item.quantity;
     }
-
-    console.log('📦 Creating Stripe session with', lineItems.length, 'items');
 
     const session = await stripe.checkout.sessions.create({
       customer_email: userEmail,
@@ -736,11 +687,8 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       return res.status(500).json({ error: 'Failed to create order record' });
     }
 
-    console.log('✅ Order created');
-
-    // Only now send the URL — order is guaranteed in DB
+    console.log('✅ Order created, sending URL to client');
     res.json({ url: session.url });
-
   } catch (err) {
     console.error('❌ Checkout error:', err.message, err.stack);
     res.status(500).json({ error: 'Checkout failed', message: err.message });
@@ -756,7 +704,6 @@ app.get('/api/user/orders', authenticateToken, async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (error) return res.status(500).json({ error: 'Failed to fetch orders' });
-
     res.json(orders);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -794,9 +741,7 @@ app.get('/api/user-location', async (req, res) => {
         });
         const quoteData = await quoteResponse.json();
         const rateInfo = quoteData?.rates?.usd;
-        if (rateInfo?.exchange_rate) {
-          rate = rateInfo.exchange_rate;
-        }
+        if (rateInfo?.exchange_rate) rate = rateInfo.exchange_rate;
       } catch (rateErr) {
         console.error('Stripe exchange rate error:', rateErr);
       }
@@ -857,7 +802,6 @@ app.get('/api/asset/:assetId/versions', authenticateToken, async (req, res) => {
       .order('created_at', { ascending: false });
 
     if (error) return res.status(500).json({ error: 'Failed to fetch versions' });
-
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -880,7 +824,6 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
       .eq('asset_id', assetId);
 
     if (countError || count === 0) {
-      console.error('Authorization check failed:', countError);
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -892,36 +835,20 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
       .single();
 
     if (versionError || !version) {
-      console.error('Version lookup failed:', versionError);
       return res.status(404).json({ error: 'Version not found' });
     }
 
     let filePath = version.file_path;
-
-    if (filePath.startsWith('/')) {
-      filePath = filePath.substring(1);
-    }
-
-    if (filePath.startsWith('assets/')) {
-      filePath = filePath.substring(7);
-    }
+    if (filePath.startsWith('/')) filePath = filePath.substring(1);
+    if (filePath.startsWith('assets/')) filePath = filePath.substring(7);
 
     const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin
       .storage
       .from('assets')
-      .createSignedUrl(filePath, 3600, {
-        download: true
-      });
+      .createSignedUrl(filePath, 3600, { download: true });
 
-    if (signedUrlError) {
+    if (signedUrlError || !signedUrlData?.signedUrl) {
       console.error('Signed URL error:', signedUrlError);
-      return res.status(500).json({
-        error: 'Failed to generate download URL',
-        details: process.env.NODE_ENV === 'development' ? signedUrlError.message : undefined
-      });
-    }
-
-    if (!signedUrlData || !signedUrlData.signedUrl) {
       return res.status(500).json({ error: 'Failed to generate download URL' });
     }
 
@@ -950,7 +877,6 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
     if (!fullName || !validator.isLength(fullName, { min: 2, max: 100 })) {
       return res.status(400).json({ error: 'Invalid name length' });
     }
-
     if (!/^[a-zA-Z\s'-]+$/.test(fullName)) {
       return res.status(400).json({ error: 'Invalid name format' });
     }
@@ -964,10 +890,7 @@ app.put('/api/user/profile', authenticateToken, async (req, res) => {
 
     try {
       await supabaseAdmin.from('audit_logs').insert({
-        user_id: req.userId,
-        action: 'profile_update',
-        resource: 'user',
-        status: 'success',
+        user_id: req.userId, action: 'profile_update', resource: 'user', status: 'success',
       });
     } catch (logErr) { }
 
@@ -1005,12 +928,7 @@ app.get('/api/assets', async (req, res) => {
 
     res.json({
       data: assets,
-      pagination: {
-        page,
-        limit,
-        total: count,
-        pages: Math.ceil(count / limit)
-      }
+      pagination: { page, limit, total: count, pages: Math.ceil(count / limit) }
     });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -1020,7 +938,6 @@ app.get('/api/assets', async (req, res) => {
 app.get('/api/assets/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-
     if (!Number.isInteger(id) || id < 1) {
       return res.status(400).json({ error: 'Invalid asset ID' });
     }
@@ -1031,10 +948,7 @@ app.get('/api/assets/:id', async (req, res) => {
       .eq('id', id)
       .single();
 
-    if (error || !asset) {
-      return res.status(404).json({ error: 'Asset not found' });
-    }
-
+    if (error || !asset) return res.status(404).json({ error: 'Asset not found' });
     res.json(asset);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -1051,16 +965,41 @@ app.get('/api/debug/session/:sessionId', authenticateToken, async (req, res) => 
     .single();
 
   let stripeSession = null;
+  let lineItems = null;
   try {
-    stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
+    stripeSession = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['line_items']
+    });
+    lineItems = stripeSession.line_items?.data?.map(i => i.price?.id);
   } catch (e) {
     stripeSession = { error: e.message };
+  }
+
+  let matchedAssets = null;
+  if (lineItems?.length) {
+    const { data: allAssets } = await supabaseAdmin
+      .from('assets')
+      .select('id, title, stripe_price_id, stripe_prices_multi');
+
+    matchedAssets = lineItems.map(priceId => {
+      const byDefault = allAssets?.find(a => a.stripe_price_id === priceId);
+      const byMulti = allAssets?.find(a =>
+        a.stripe_prices_multi && Object.values(a.stripe_prices_multi).includes(priceId)
+      );
+      return {
+        price_id: priceId,
+        matched_by_stripe_price_id: byDefault ?? null,
+        matched_by_stripe_prices_multi: byMulti ?? null,
+      };
+    });
   }
 
   res.json({
     order,
     stripe_payment_status: stripeSession?.payment_status,
     stripe_status: stripeSession?.status,
+    line_item_price_ids: lineItems,
+    asset_matches: matchedAssets,
   });
 });
 
@@ -1078,11 +1017,9 @@ app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
     return res.status(403).json({ error: 'CSRF validation failed' });
   }
-
   if (err instanceof SyntaxError) {
     return res.status(400).json({ error: 'Invalid JSON' });
   }
-
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
@@ -1129,10 +1066,7 @@ async function syncAssetsWithStripe() {
       return;
     }
 
-    let syncedCount = 0;
-    let createdCount = 0;
-    let updatedCount = 0;
-    let errorCount = 0;
+    let syncedCount = 0, createdCount = 0, updatedCount = 0, errorCount = 0;
 
     for (const asset of assets) {
       try {
@@ -1142,11 +1076,10 @@ async function syncAssetsWithStripe() {
 
         if (productId) {
           try {
-            const product = await stripe.products.retrieve(productId);
-            console.log(`✅ Product found for asset ${asset.id}: ${product.id}`);
+            await stripe.products.retrieve(productId);
           } catch (err) {
             if (err.code === 'resource_missing') {
-              console.log(`⚠️  Product ${productId} not found in Stripe, creating new one...`);
+              console.log(`⚠️ Product ${productId} not found in Stripe, creating new one...`);
               productId = null;
             } else {
               throw err;
@@ -1158,9 +1091,7 @@ async function syncAssetsWithStripe() {
           const product = await stripe.products.create({
             name: asset.title,
             description: asset.description || '',
-            metadata: {
-              asset_id: asset.id.toString(),
-            },
+            metadata: { asset_id: asset.id.toString() },
           });
           productId = product.id;
           needsUpdate = true;
@@ -1175,16 +1106,11 @@ async function syncAssetsWithStripe() {
           const amount = Math.round(asset.price * rate * 100);
 
           try {
-            const existingPrices = await stripe.prices.list({
-              product: productId,
-              currency: currency,
-              limit: 1
-            });
+            const existingPrices = await stripe.prices.list({ product: productId, currency, limit: 1 });
 
             if (existingPrices.data.length > 0) {
               const existingPrice = existingPrices.data[0];
               if (existingPrice.unit_amount === amount && existingPrice.active) {
-                console.log(`✅ Price correct for asset ${asset.id} in ${currency.toUpperCase()}: ${existingPrice.id}`);
                 priceIds[currency] = existingPrice.id;
                 continue;
               } else {
@@ -1195,14 +1121,12 @@ async function syncAssetsWithStripe() {
             const price = await stripe.prices.create({
               product: productId,
               unit_amount: amount,
-              currency: currency,
-              metadata: {
-                asset_id: asset.id.toString(),
-              },
+              currency,
+              metadata: { asset_id: asset.id.toString() },
             });
             priceIds[currency] = price.id;
             updatedCount++;
-            console.log(`✨ Created new price for asset ${asset.id} in ${currency.toUpperCase()}: ${price.id} (${asset.price * rate})`);
+            console.log(`✨ Created new price for asset ${asset.id} in ${currency.toUpperCase()}: ${price.id}`);
           } catch (err) {
             console.error(`❌ Error creating price for ${currency}:`, err.message);
             errorCount++;
