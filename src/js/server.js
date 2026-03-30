@@ -715,13 +715,12 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       success_url: `${process.env.FRONTEND_URL}/p/success/?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/p/cancel`,
       allow_promotion_codes: true,
-      metadata: {
-        userId,
-      },
+      metadata: { userId },
     });
 
     console.log('✅ Stripe session created:', session.id);
 
+    // Insert order BEFORE sending URL — webhook may fire before client receives response
     const { error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -739,7 +738,9 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     console.log('✅ Order created');
 
+    // Only now send the URL — order is guaranteed in DB
     res.json({ url: session.url });
+
   } catch (err) {
     console.error('❌ Checkout error:', err.message, err.stack);
     res.status(500).json({ error: 'Checkout failed', message: err.message });
