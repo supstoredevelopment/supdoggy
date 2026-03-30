@@ -1293,17 +1293,9 @@
 
         /* ── PAY ── */
         async function checkAuth() {
-            const token = localStorage.getItem('auth_token');
-            if (!token) {
-                localStorage.setItem('redirectAfterLogin', '/p/cart');
-                alert('Please login to complete your purchase');
-                window.location.href = '/p/login';
-                return false;
-            }
             try {
-                const res = await fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${token}` } });
+                const res = await fetch('/api/user/profile', { credentials: 'include' });
                 if (!res.ok) {
-                    localStorage.removeItem('auth_token');
                     localStorage.setItem('redirectAfterLogin', '/p/cart');
                     alert('Please login to complete your purchase');
                     window.location.href = '/p/login';
@@ -1321,7 +1313,6 @@
         async function handlePay() {
             if (!await checkAuth()) return;
 
-            const token = localStorage.getItem('auth_token');
             const cart = getCart();
             const payBtn = document.getElementById('payBtn');
             const errBox = document.getElementById('errorBanner');
@@ -1340,7 +1331,8 @@
             try {
                 const res = await fetch('/api/create-checkout-session', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({
                         cart: cart.map(i => ({ id: i.id, quantity: 1 })),
                         currency: cur.code
