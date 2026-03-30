@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SupStore - Purchase Successful!</title>
+    <title>SupStore - Purchase Cancelled</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        
+
         body {
             font-family: 'Inter', sans-serif;
             background: #000;
@@ -20,24 +21,40 @@
             min-height: 100vh;
             text-align: center;
         }
+
         .container {
             max-width: 600px;
             padding: 2rem;
         }
-        .success-icon {
+
+        .cancel-icon {
             font-size: 5rem;
-            color: #ff0000;
+            color: #ff4444;
             margin-bottom: 1.5rem;
+            animation: scaleIn 0.5s ease-out;
         }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+            }
+
+            to {
+                transform: scale(1);
+            }
+        }
+
         h1 {
             font-size: 2.5rem;
             margin-bottom: 1rem;
         }
+
         p {
             font-size: 1.2rem;
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.8);
             margin-bottom: 2rem;
         }
+
         .btn {
             display: inline-block;
             background: #0066ff;
@@ -48,78 +65,91 @@
             font-weight: 600;
             transition: all 0.3s;
         }
+
         .btn:hover {
             background: #0052cc;
             transform: translateY(-3px);
         }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #0066ff;
+        }
+
+        .btn-outline:hover {
+            background: rgba(0, 102, 255, 0.1);
+        }
+
         .details {
             margin-top: 2rem;
             font-size: 0.9rem;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .info-box {
+            margin-top: 1.5rem;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 68, 68, 0.08);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 68, 68, 0.25);
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        .retry-btn {
+            margin-top: 1.5rem;
+            background: #ff4444;
+        }
+
+        .retry-btn:hover {
+            background: #cc0000;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <i class="fas fa-solid fa-circle-xmark success-icon"></i>
+        <i class="fas fa-circle-xmark cancel-icon"></i>
         <h1>Purchase Cancelled</h1>
-        <p>You cancelled your purchase or a error occured, if this was an accident, check your dashboard for the order id and contact support.</p>
+        <p>Your purchase was cancelled and you have not been charged.</p>
+
+        <div class="info-box">
+            If this was a mistake, you can go back to the store and try again.
+            If you believe you were charged, please contact support with your session ID below.
+        </div>
+
+        <br>
+        <a href="/p/store" class="btn retry-btn">
+            <i class="fas fa-arrow-left"></i> Back to Store
+        </a>
+        &nbsp;
         <a href="/p/dashboard" class="btn">
-            <i class="fas fa-th-large"></i> Go to My Dashboard
+            <i class="fas fa-th-large"></i> My Dashboard
         </a>
         <br><br>
-        <a href="/" class="btn" style="background: transparent; border: 1px solid #0066ff;">
+        <a href="/" class="btn btn-outline">
             <i class="fas fa-home"></i> Back to Home
         </a>
 
         <div class="details">
-            <p>Order ID: <span id="sessionId">Loading...</span></p>
+            <p>Session ID: <span id="sessionId">—</span></p>
+            <p>No payment was taken. Your cart items are still available.</p>
         </div>
     </div>
 
     <script>
+        // Stripe passes session_id to cancel_url if you use {CHECKOUT_SESSION_ID} placeholder
         const params = new URLSearchParams(window.location.search);
         const sessionId = params.get('session_id');
+
         if (sessionId) {
             document.getElementById('sessionId').textContent = sessionId;
         }
 
-        async function handleAutoDownloads() {
-            const token = localStorage.getItem('auth_token');
-            if (!token || !sessionId) return;
-
-            try {
-                const res = await fetch(`/api/session/${sessionId}/assets`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!res.ok) throw new Error('Failed to fetch assets');
-
-                const assets = await res.json();
-
-                for (const asset of assets) {
-                    const vres = await fetch(`/api/asset/${asset.id}/versions`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-
-                    if (!vres.ok) continue;
-
-                    const versions = await vres.json();
-                    if (versions.length === 0) continue;
-
-                    const latestVersionId = versions[0].id;
-                    window.open(`/api/download/${asset.id}/${latestVersionId}`, '_blank');
-                }
-            } catch (err) {
-                console.error('Auto download failed:', err);
-            }
-        }
-
-        window.addEventListener('load', handleAutoDownloads);
+        // Restore cart from session if needed — nothing to do here since
+        // the cart was never cleared (we only clear it on the success page).
     </script>
 </body>
+
 </html>

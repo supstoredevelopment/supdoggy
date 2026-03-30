@@ -57,13 +57,11 @@ const auditLog = async (data) => {
 const corsOptions = {
   origin: function (origin, callback) {
     console.log('📨 CORS request from origin:', origin);
-    console.log('✅ ALLOWED_ORIGINS:', ALLOWED_ORIGINS);
     if (!origin) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) {
-      console.log('✅ Origin ALLOWED');
       return callback(null, true);
     } else {
-      console.log('❌ Origin BLOCKED');
+      console.log('❌ Origin BLOCKED:', origin);
       return callback(new Error('Not allowed by CORS'), false);
     }
   },
@@ -139,19 +137,67 @@ app.post(
 
         console.log('\n💳 checkout.session.completed');
         console.log('   Session id      :', session.id);
-        console.log('   Payment status  :', session.payment_status);
+        console.log('   Payment status  :', session.payment_status);  // ← KEY FIELD
         console.log('   Amount total    :', session.amount_total);
         console.log('   Currency        :', session.currency);
         console.log('   Customer email  :', session.customer_email);
         console.log('   Raw metadata    :', JSON.stringify(session.metadata));
 
+        // ── CRITICAL: only process if actually paid ───────────────────
+        // payment_status can be 'paid', 'unpaid', or 'no_payment_required' (free)
+        const isPaid = session.payment_status === 'paid';
+        const isFree = session.payment_status === 'no_payment_required';
+        const isUnpaid = session.payment_status === 'unpaid';
+
+        console.log('\n💰 Payment check:');
+        console.log('   isPaid :', isPaid);
+        console.log('   isFree :', isFree);
+        console.log('   isUnpaid:', isUnpaid);
+
+        if (isUnpaid) {
+          console.warn('⚠️  Payment status is UNPAID — cancelling order and NOT granting assets');
+
+          // Cancel the order if we can find it
+          const orderId = session.metadata?.orderId;
+          if (orderId) {
+            const { error } = await supabaseAdmin
+              .from('orders')
+              .update({ status: 'cancelled' })
+              .eq('id', orderId)
+              .eq('status', 'pending');
+            if (error) console.error('   ❌ Failed to cancel unpaid order:', error.message);
+            else console.log('   ✅ Order cancelled (unpaid):', orderId);
+          } else {
+            // Fallback by session_id
+            const { error } = await supabaseAdmin
+              .from('orders')
+              .update({ status: 'cancelled' })
+              .eq('session_id', session.id)
+              .eq('status', 'pending');
+            if (error) console.error('   ❌ Fallback cancel failed:', error.message);
+            else console.log('   ✅ Order cancelled via session_id fallback (unpaid)');
+          }
+
+          await auditLog({
+            action: 'payment_unpaid',
+            resource: 'order',
+            status: 'cancelled',
+            details: { session_id: session.id, payment_status: session.payment_status },
+          });
+
+          return res.json({ received: true, note: 'Order cancelled — payment not completed' });
+        }
+
+        // Only proceed for paid or no_payment_required
+        if (!isPaid && !isFree) {
+          console.warn('⚠️  Unknown payment_status:', session.payment_status, '— skipping');
+          return res.json({ received: true, note: 'Unknown payment status — skipped' });
+        }
+
         // ── Resolve userId & orderId ──────────────────────────────────
         // Primary source: session metadata (set at checkout creation time).
-        // Fallback 1:     look up order by session_id (handles race where
-        //                 session_id was saved to the DB before webhook fires).
+        // Fallback 1:     look up order by session_id
         // Fallback 2:     look up the most recent PENDING order for this user
-        //                 (handles old sessions created before orderId was added
-        //                 to metadata, or rare race conditions).
 
         let userId = session.metadata?.userId || null;
         let orderId = session.metadata?.orderId || null;
@@ -168,7 +214,7 @@ app.post(
             .from('orders')
             .select('id, user_id, status')
             .eq('session_id', session.id)
-            .maybeSingle(); // maybeSingle() returns null instead of throwing on no rows
+            .maybeSingle();
 
           if (fallbackErr) {
             console.error('   ❌ Fallback 1 DB error:', fallbackErr.message);
@@ -182,7 +228,6 @@ app.post(
         }
 
         // ── Fallback 2: recent pending order for this user ────────────
-        // Only possible if we at least have userId from metadata.
         if (userId && !orderId) {
           console.log('\n⚠️  orderId still missing — trying fallback 2: most recent pending order for user...');
 
@@ -203,22 +248,19 @@ app.post(
             console.log('   ✅ Fallback 2 resolved — order:', recentOrder.id, '| created_at:', recentOrder.created_at);
             orderId = recentOrder.id;
 
-            // If this order has no session_id yet, link it now
+            // Link session_id to order if missing
             if (!recentOrder.session_id) {
               const { error: linkErr } = await supabaseAdmin
                 .from('orders')
                 .update({ session_id: session.id })
                 .eq('id', orderId);
-              if (linkErr) {
-                console.error('   ⚠️  Failed to link session_id to order (fallback 2):', linkErr.message);
-              } else {
-                console.log('   🔗 session_id linked to order via fallback 2');
-              }
+              if (linkErr) console.error('   ⚠️  Failed to link session_id (fallback 2):', linkErr.message);
+              else console.log('   🔗 session_id linked to order via fallback 2');
             }
           }
         }
 
-        // ── Give up if we still can't resolve ────────────────────────
+        // ── Give up if still unresolvable ─────────────────────────────
         if (!userId || !orderId) {
           console.error('\n❌ UNRESOLVABLE — could not determine userId or orderId after all fallbacks');
           console.error('   userId :', userId);
@@ -236,14 +278,12 @@ app.post(
             },
           });
 
-          // Return 200 so Stripe does NOT keep retrying — this needs manual review.
           return res.json({ received: true, warning: 'Order not found — logged for manual review' });
         }
 
         console.log('\n✅ Resolution complete — userId:', userId, '| orderId:', orderId);
 
         // ── Idempotency guard ─────────────────────────────────────────
-        // Stripe can deliver the same event more than once; safe to skip.
         const { data: existingOrder, error: existingErr } = await supabaseAdmin
           .from('orders')
           .select('id, status, session_id')
@@ -273,7 +313,7 @@ app.post(
           .update({
             status: 'completed',
             payment_date: new Date().toISOString(),
-            session_id: session.id, // ensure session_id is always stored
+            session_id: session.id,
           })
           .eq('id', orderId);
 
@@ -333,8 +373,7 @@ app.post(
           let asset = allAssets.find(a => a.stripe_price_id === priceId);
           if (!asset) {
             asset = allAssets.find(
-              a =>
-                a.stripe_prices_multi &&
+              a => a.stripe_prices_multi &&
                 Object.values(a.stripe_prices_multi).includes(priceId)
             );
           }
@@ -352,6 +391,8 @@ app.post(
 
           console.log('   🎯 Matched asset:', asset.id, '|', asset.title);
 
+          // ── Insert into user_assets ───────────────────────────────
+          // Schema: user_id, asset_id, purchased_at
           const { error: insertError } = await supabaseAdmin
             .from('user_assets')
             .insert({
@@ -364,9 +405,9 @@ app.post(
           if (insertError && insertError.code !== '23505') {
             console.error('   ❌ Failed to insert user_asset:', insertError.message, '| code:', insertError.code);
           } else if (insertError?.code === '23505') {
-            console.log('   ℹ️  Asset already owned by user (unique_violation) — skipping:', asset.id);
+            console.log('   ℹ️  Asset already owned (unique_violation) — skipping:', asset.id);
           } else {
-            console.log('   ✅ Asset granted:', asset.id, '→ user:', userId);
+            console.log('   ✅ user_assets row created — user_id:', userId, '| asset_id:', asset.id, '| purchased_at:', new Date().toISOString());
             grantedCount++;
           }
         }
@@ -384,6 +425,7 @@ app.post(
             amount: session.amount_total / 100,
             currency: session.currency,
             session_id: session.id,
+            payment_status: session.payment_status,
             assets_granted: grantedCount,
             line_items_skipped: skippedCount,
           },
@@ -393,7 +435,7 @@ app.post(
       }
 
       // ════════════════════════════════════════════════════════════════
-      // SESSION EXPIRED
+      // SESSION EXPIRED — user abandoned checkout without paying
       // ════════════════════════════════════════════════════════════════
       if (event.type === 'checkout.session.expired') {
         const session = event.data.object;
@@ -408,11 +450,10 @@ app.post(
             .from('orders')
             .update({ status: 'cancelled' })
             .eq('id', orderId)
-            .eq('status', 'pending');
+            .eq('status', 'pending'); // only cancel if still pending
           if (error) console.error('   ❌ Failed to cancel order by orderId:', error.message);
-          else console.log('   ✅ Order cancelled:', orderId);
+          else console.log('   ✅ Order cancelled (session expired):', orderId);
         } else {
-          // Fallback by session_id
           console.log('   ⚠️  No orderId — attempting cancel via session_id fallback...');
           const { error } = await supabaseAdmin
             .from('orders')
@@ -445,13 +486,10 @@ app.post(
           if (error) console.error('   ❌ Failed to mark order refunded:', error.message);
           else console.log('   ✅ Order marked as refunded:', orderId);
         } else {
-          // Stripe links charges to payment intents; attempt a best-effort lookup
-          // by matching payment_intent via checkout session → order
           const paymentIntentId = charge.payment_intent;
-          console.warn('   ⚠️  orderId missing from charge metadata — attempting payment_intent lookup...');
+          console.warn('   ⚠️  orderId missing — attempting payment_intent lookup...');
 
           if (paymentIntentId) {
-            // Find the checkout session that owns this payment_intent
             const sessions = await stripe.checkout.sessions.list({
               payment_intent: paymentIntentId,
               limit: 1,
@@ -477,16 +515,12 @@ app.post(
                 if (refundErr) console.error('   ❌ Failed to mark matched order refunded:', refundErr.message);
                 else console.log('   ✅ Order refunded via payment_intent lookup:', matchedOrder.id);
               } else {
-                console.warn('   ⚠️  No order found for session_id:', relatedSession.id, '— logging for manual review');
+                console.warn('   ⚠️  No order found for session_id:', relatedSession.id);
                 await auditLog({
                   action: 'refund_unmatched',
                   resource: 'charge',
                   status: 'needs_review',
-                  details: {
-                    charge_id: charge.id,
-                    payment_intent: paymentIntentId,
-                    related_session_id: relatedSession.id,
-                  },
+                  details: { charge_id: charge.id, payment_intent: paymentIntentId, related_session_id: relatedSession.id },
                 });
               }
             } else {
@@ -495,11 +529,7 @@ app.post(
                 action: 'refund_unmatched',
                 resource: 'charge',
                 status: 'needs_review',
-                details: {
-                  charge_id: charge.id,
-                  payment_intent: paymentIntentId,
-                  reason: 'No matching checkout session',
-                },
+                details: { charge_id: charge.id, payment_intent: paymentIntentId, reason: 'No matching checkout session' },
               });
             }
           }
@@ -510,7 +540,6 @@ app.post(
     } catch (err) {
       console.error('❌ Webhook processing error:', err.message);
       console.error('   Stack:', err.stack);
-      // Return 500 so Stripe retries — idempotency guard prevents double-processing.
       res.status(500).json({ error: 'Webhook processing failed' });
     }
   }
@@ -523,42 +552,13 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          "'unsafe-hashes'",
-          "https://cdnjs.cloudflare.com",
-          "https://js.stripe.com",
-          "https://cdn.jsdelivr.net",
-        ],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'", "https://cdnjs.cloudflare.com", "https://js.stripe.com", "https://cdn.jsdelivr.net"],
         scriptSrcAttr: ["'unsafe-inline'", "'unsafe-hashes'"],
-        styleSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          "https://fonts.googleapis.com",
-          "https://cdnjs.cloudflare.com",
-        ],
-        fontSrc: [
-          "'self'",
-          "https://fonts.gstatic.com",
-          "https://cdnjs.cloudflare.com",
-        ],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
         imgSrc: ["'self'", "data:", "https:", "blob:"],
-        connectSrc: [
-          "'self'",
-          "https://api.stripe.com",
-          "https://api.emailjs.com",
-          "https://api.exchangerate-api.com",
-          process.env.SUPABASE_URL,
-          process.env.FRONTEND_URL || "'self'",
-          "http://localhost:3000",
-          "http://localhost:3001",
-        ].filter(Boolean),
-        frameSrc: [
-          "'self'",
-          "https://js.stripe.com",
-          "https://hooks.stripe.com",
-        ],
+        connectSrc: ["'self'", "https://api.stripe.com", "https://api.emailjs.com", "https://api.exchangerate-api.com", process.env.SUPABASE_URL, process.env.FRONTEND_URL || "'self'", "http://localhost:3000", "http://localhost:3001"].filter(Boolean),
+        frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
       },
@@ -873,7 +873,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     const productMap = new Map(products.map(p => [p.id, p]));
 
-    // ── Split cart into free / paid ───────────────────────────────
     const freeItems = [];
     const paidItems = [];
 
@@ -908,7 +907,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       console.log('✅ Free asset granted:', product.id);
     }
 
-    // ── Everything free ───────────────────────────────────────────
     if (paidItems.length === 0) {
       const { error: orderErr } = await supabaseAdmin.from('orders').insert({
         user_id: userId,
@@ -973,11 +971,11 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       line_items: lineItems,
       mode: 'payment',
       success_url: `${process.env.FRONTEND_URL}/p/success/?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/p/cancel`,
+      cancel_url: `${process.env.FRONTEND_URL}/p/cancel/?session_id={CHECKOUT_SESSION_ID}`,  // ← pass session_id to cancel page too
       allow_promotion_codes: true,
       metadata: {
-        userId,    // ← always set
-        orderId: order.id, // ← always set
+        userId,
+        orderId: order.id,
       },
     });
 
@@ -992,7 +990,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     if (updateError) {
       console.error('⚠️ Failed to link session_id to order:', updateError.message);
-      // Non-fatal — the webhook has fallbacks, but log it.
     } else {
       console.log('🔗 session_id linked to order row');
     }
@@ -1501,11 +1498,9 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🎯 Webhook endpoint: http://localhost:${PORT}/api/stripe-webhook`);
   console.log(`📁 Static files directory: ${path.join(__dirname, '..')}\n`);
 
-  // Run Stripe sync in the background — does NOT block the server from
-  // accepting requests (including webhooks) while it runs.
   //setTimeout(() => {
   //   syncAssetsWithStripe().catch(err =>
   //   console.error('❌ Background Stripe sync failed:', err)
   //  );
-  // }, 5000); // 5s head-start so the server is fully ready first
+  // }, 5000);
 });

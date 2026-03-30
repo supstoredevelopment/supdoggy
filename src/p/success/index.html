@@ -98,6 +98,8 @@
             border-radius: 50%;
             border-top-color: #00d4ff;
             animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
         }
 
         @keyframes spin {
@@ -135,7 +137,7 @@
         </a>
 
         <div class="details">
-            <p>Order ID: <span id="sessionId">Loading...</span></p>
+            <p>Session ID: <span id="sessionId">Loading...</span></p>
             <p>All your purchased assets are available in your dashboard.</p>
         </div>
     </div>
@@ -165,25 +167,35 @@
         function updateStatus(message, isSuccess = null) {
             const statusDiv = document.getElementById('downloadStatus');
             let icon = '<span class="loading"></span>';
-            if (isSuccess === true) icon = '<i class="fas fa-check-circle success-badge"></i>';
-            else if (isSuccess === false) icon = '<i class="fas fa-exclamation-circle error-badge"></i>';
-            statusDiv.innerHTML = `<p>${icon} ${message}</p>`;
+            if (isSuccess === true) icon = '<i class="fas fa-check-circle success-badge"></i> ';
+            else if (isSuccess === false) icon = '<i class="fas fa-exclamation-circle error-badge"></i> ';
+            statusDiv.innerHTML = `<p>${icon}${message}</p>`;
         }
 
+        // Poll for assets until the webhook has processed (up to ~30s)
         async function pollForAssets(maxAttempts = 10, intervalMs = 3000) {
             updateStatus('Waiting for payment confirmation...');
 
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
                 try {
-                    updateStatus(`Checking for your assets...
-        (${attempt}/${maxAttempts})`); const res = await fetch('/api/user/assets', { credentials: 'include' }); if
-                        (res.status === 401) { updateStatus('Please log in to download your assets.', false); return null; } if (!res.ok)
-                        throw new Error(`HTTP ${res.status}`); const assets = await res.json(); if (assets && assets.length > 0) {
-                            console.log(`✅ Found ${assets.length} asset(s) on attempt ${attempt}`);
-                            return assets;
-                        }
+                    updateStatus(`Checking for your assets... (${attempt}/${maxAttempts})`);
 
-                    // Not ready yet — wait before next attempt
+                    const res = await fetch('/api/user/assets', { credentials: 'include' });
+
+                    if (res.status === 401) {
+                        updateStatus('Please log in to access your assets.', false);
+                        return null;
+                    }
+
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                    const assets = await res.json();
+
+                    if (assets && assets.length > 0) {
+                        console.log(`✅ Found ${assets.length} asset(s) on attempt ${attempt}`);
+                        return assets;
+                    }
+
                     if (attempt < maxAttempts) {
                         await new Promise(resolve => setTimeout(resolve, intervalMs));
                     }
@@ -196,7 +208,7 @@
                 }
             }
 
-            return null; // Timed out
+            return null;
         }
 
         async function handleAutoDownloads() {
@@ -205,7 +217,6 @@
                 return;
             }
 
-            // Poll until assets appear (up to ~30 seconds)
             const assets = await pollForAssets(10, 3000);
 
             if (!assets) {
@@ -250,7 +261,7 @@
                     errorCount === 0
                 );
             } else {
-                updateStatus('Failed to start downloads. Please try from your dashboard.', false);
+                updateStatus('Could not start downloads automatically. Please download from your dashboard.', false);
             }
         }
 
