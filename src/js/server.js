@@ -56,7 +56,6 @@ const auditLog = async (data) => {
 
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log('📨 CORS request from origin:', origin);
     if (!origin) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) {
       return callback(null, true);
@@ -725,7 +724,6 @@ app.post('/api/auth/signup', authLimiter, async (req, res) => {
 
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
-    console.log('📨 Login request received');
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -799,7 +797,6 @@ app.post('/api/auth/google', async (req, res) => {
 
 app.post('/api/auth/oauth-callback', async (req, res) => {
   try {
-    console.log('📨 /api/auth/oauth-callback hit');
     const { access_token } = req.body;
 
     if (!access_token) {
