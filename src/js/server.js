@@ -1307,9 +1307,9 @@ app.listen(PORT, '0.0.0.0', () => {
 
   // Run Stripe sync in the background — does NOT block the server from
   // accepting requests (including webhooks) while it runs.
-  setTimeout(() => {
-    syncAssetsWithStripe().catch(err =>
-      console.error('❌ Background Stripe sync failed:', err)
-    );
-  }, 5000); // 5s head-start so the server is fully ready first
+  //setTimeout(() => {
+  //   syncAssetsWithStripe().catch(err =>
+  //   console.error('❌ Background Stripe sync failed:', err)
+  //  );
+  // }, 5000); // 5s head-start so the server is fully ready first
 });
