@@ -1299,11 +1299,17 @@ async function syncAssetsWithStripe() {
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, '0.0.0.0', async () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🌐 Frontend served from: src/`);
   console.log(`🎯 Webhook endpoint: http://localhost:${PORT}/api/stripe-webhook`);
   console.log(`📁 Static files directory: ${path.join(__dirname, '..')}\n`);
 
-  await syncAssetsWithStripe();
+  // Run Stripe sync in the background — does NOT block the server from
+  // accepting requests (including webhooks) while it runs.
+  setTimeout(() => {
+    syncAssetsWithStripe().catch(err =>
+      console.error('❌ Background Stripe sync failed:', err)
+    );
+  }, 5000); // 5s head-start so the server is fully ready first
 });
