@@ -188,9 +188,9 @@ app.post(
         }
 
         // Only proceed for paid or no_payment_required
-        if (!isPaid && !isFree) {
-          console.warn('⚠️  Unknown payment_status:', session.payment_status, '— skipping');
-          return res.json({ received: true, note: 'Unknown payment status — skipped' });
+        if (!isPaid) {
+          console.warn('⚠️  payment_status is not "paid" (got:', session.payment_status, ') — skipping');
+          return res.json({ received: true, note: 'Payment not confirmed — skipped' });
         }
 
         // ── Resolve userId & orderId ──────────────────────────────────
