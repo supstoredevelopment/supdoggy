@@ -1041,6 +1041,29 @@ app.get('/api/assets/:id', async (req, res) => {
   }
 });
 
+app.get('/api/debug/session/:sessionId', authenticateToken, async (req, res) => {
+  const { sessionId } = req.params;
+
+  const { data: order } = await supabaseAdmin
+    .from('orders')
+    .select('*')
+    .eq('session_id', sessionId)
+    .single();
+
+  let stripeSession = null;
+  try {
+    stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
+  } catch (e) {
+    stripeSession = { error: e.message };
+  }
+
+  res.json({
+    order,
+    stripe_payment_status: stripeSession?.payment_status,
+    stripe_status: stripeSession?.status,
+  });
+});
+
 // ── Static files & SPA fallback ───────────────────────────────────────────────
 
 app.use(express.static(path.join(__dirname, '..')));
