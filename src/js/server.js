@@ -114,28 +114,22 @@ app.post('/api/stripe-webhook',
         console.log('💳 Processing checkout.session.completed for session:', session.id);
 
         // ── Retry loop to handle race condition where webhook fires before INSERT ──
-        let order = null;
-        for (let attempt = 1; attempt <= 10; attempt++) {
-          console.log(`🔍 Looking for order, attempt ${attempt}/10...`);
-          const { data, error } = await supabaseAdmin
-            .from('orders')
-            .select('id, user_id')
-            .eq('session_id', session.id)
-            .single();
+        const orderId = session.metadata?.orderId;
 
-          if (data) {
-            order = data;
-            console.log(`✅ Order found on attempt ${attempt}`);
-            break;
-          }
-
-          console.log(`⏳ Order not found yet (${error?.message}), waiting 1s...`);
-          await new Promise(r => setTimeout(r, 1000));
+        if (!orderId) {
+          console.error('❌ Missing orderId in metadata');
+          return res.status(400).json({ error: 'Missing orderId' });
         }
 
-        if (!order) {
-          console.error('❌ Order not found after 10 attempts for session:', session.id);
-          return res.status(500).json({ error: 'Order not found after retries, Stripe will retry' });
+        const { data: order, error } = await supabaseAdmin
+          .from('orders')
+          .select('id, user_id')
+          .eq('id', orderId)
+          .single();
+
+        if (error || !order) {
+          console.error('❌ Order not found:', orderId);
+          return res.status(500).json({ error: 'Order not found' });
         }
 
         // Update order to completed
