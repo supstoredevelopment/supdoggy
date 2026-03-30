@@ -1326,7 +1326,7 @@
             }
 
             payBtn.disabled = true;
-            payBtn.innerHTML = '<div class="btn-spin"></div> Redirecting to Stripe…';
+            payBtn.innerHTML = '<div class="btn-spin"></div> Redirecting…';
 
             try {
                 const res = await fetch('/api/create-checkout-session', {
@@ -1340,8 +1340,14 @@
                 });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const session = await res.json();
-                if (session.url) { window.location.href = session.url; }
-                else throw new Error('No checkout URL received');
+
+                if (session.free) {
+                    window.location.href = '/p/success';
+                } else if (session.url) {
+                    window.location.href = session.url;
+                } else {
+                    throw new Error('No checkout URL received');
+                }
             } catch (err) {
                 errText.textContent = `Something went wrong: ${err.message}`;
                 errBox.style.display = 'flex';
