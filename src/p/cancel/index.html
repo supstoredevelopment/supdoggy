@@ -139,16 +139,38 @@
     </div>
 
     <script>
-        // Stripe passes session_id to cancel_url if you use {CHECKOUT_SESSION_ID} placeholder
         const params = new URLSearchParams(window.location.search);
         const sessionId = params.get('session_id');
 
         if (sessionId) {
             document.getElementById('sessionId').textContent = sessionId;
+
+            // ── Eagerly cancel the order the moment the user lands here.
+            // We read the JWT from the cookie (same-site, httpOnly=false path)
+            // or fall back to localStorage if your frontend stores it there.
+            const token = localStorage.getItem('token') || getCookieValue('jwt');
+
+            if (token) {
+                fetch('/api/cancel-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ sessionId }),
+                })
+                    .then(r => r.json())
+                    .then(data => console.log('🚫 Cancel order result:', data))
+                    .catch(err => console.warn('⚠️ Cancel order call failed (non-critical):', err));
+            } else {
+                console.warn('⚠️ No auth token found — cancel-order not called. Webhook will handle it.');
+            }
         }
 
-        // Restore cart from session if needed — nothing to do here since
-        // the cart was never cleared (we only clear it on the success page).
+        function getCookieValue(name) {
+            const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+            return match ? decodeURIComponent(match[2]) : null;
+        }
     </script>
 </body>
 

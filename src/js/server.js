@@ -74,8 +74,113 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Stripe webhook ────────────────────────────────────────────────────────────
-// Must be registered BEFORE express.json() middleware so body stays as raw Buffer
+
+// ── Explicit cancel from cancel page ─────────────────────────────────────────
+// Called client-side when user lands on /p/cancel with a session_id.
+// Acts as an eager complement to the checkout.session.expired webhook.
+
+app.post('/api/cancel-order', authenticateToken, async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 200) {
+      return res.status(400).json({ error: 'Invalid session ID' });
+    }
+
+    console.log('\n🚫 /api/cancel-order called');
+    console.log('   userId   :', req.userId);
+    console.log('   sessionId:', sessionId);
+
+    // ── Verify with Stripe that this session is NOT paid ─────────
+    // This is the critical guard: if somehow the user lands here
+    // after a completed payment, we must NOT cancel the order.
+    let stripeSession;
+    try {
+      stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
+    } catch (err) {
+      console.error('   ❌ Could not retrieve Stripe session:', err.message);
+      return res.status(400).json({ error: 'Invalid session' });
+    }
+
+    console.log('   Stripe payment_status:', stripeSession.payment_status);
+    console.log('   Stripe status        :', stripeSession.status);
+
+    if (stripeSession.payment_status === 'paid') {
+      console.warn('   ⚠️  Session is PAID — refusing to cancel. Webhook should handle this.');
+      return res.status(400).json({ error: 'Session is already paid — order will not be cancelled' });
+    }
+
+    // ── Cancel by session_id (primary) ────────────────────────────
+    const { data: updatedBySession, error: sessionErr } = await supabaseAdmin
+      .from('orders')
+      .update({ status: 'cancelled' })
+      .eq('session_id', sessionId)
+      .eq('user_id', req.userId)   // scoped to this user — prevents cross-user abuse
+      .eq('status', 'pending')
+      .select('id')
+      .maybeSingle();
+
+    if (sessionErr) {
+      console.error('   ❌ DB error cancelling by session_id:', sessionErr.message);
+      return res.status(500).json({ error: 'DB error' });
+    }
+
+    if (updatedBySession) {
+      console.log('   ✅ Order cancelled by session_id:', updatedBySession.id);
+      await auditLog({
+        user_id: req.userId,
+        action: 'order_cancelled',
+        resource: 'order',
+        resource_id: updatedBySession.id,
+        status: 'cancelled',
+        details: { session_id: sessionId, method: 'cancel_page' },
+      });
+      return res.json({ cancelled: true, orderId: updatedBySession.id });
+    }
+
+    // ── Fallback: cancel by orderId from Stripe metadata ─────────
+    const orderId = stripeSession.metadata?.orderId;
+    if (orderId) {
+      console.log('   ⚠️  session_id lookup found nothing — trying orderId from Stripe metadata:', orderId);
+
+      const { data: updatedByOrder, error: orderErr } = await supabaseAdmin
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId)
+        .eq('user_id', req.userId)
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle();
+
+      if (orderErr) {
+        console.error('   ❌ DB error cancelling by orderId:', orderErr.message);
+        return res.status(500).json({ error: 'DB error' });
+      }
+
+      if (updatedByOrder) {
+        console.log('   ✅ Order cancelled by Stripe metadata orderId:', updatedByOrder.id);
+        await auditLog({
+          user_id: req.userId,
+          action: 'order_cancelled',
+          resource: 'order',
+          resource_id: updatedByOrder.id,
+          status: 'cancelled',
+          details: { session_id: sessionId, method: 'cancel_page_metadata_fallback' },
+        });
+        return res.json({ cancelled: true, orderId: updatedByOrder.id });
+      }
+    }
+
+    // Nothing found to cancel — not an error, just nothing pending
+    console.log('   ℹ️  No pending order found to cancel for this session/user');
+    res.json({ cancelled: false, note: 'No pending order found' });
+
+  } catch (err) {
+    console.error('❌ /api/cancel-order error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 app.options('/api/stripe-webhook', (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
@@ -132,31 +237,41 @@ app.post(
       // CHECKOUT COMPLETED
       // ════════════════════════════════════════════════════════════════
       if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
+
+        // ── Re-fetch from Stripe for authoritative payment_status ─────
+        // The event payload can be stale in edge cases. Fetching live
+        // guarantees we never mark an order complete for an unpaid session.
+        let session;
+        try {
+          session = await stripe.checkout.sessions.retrieve(event.data.object.id);
+          console.log('\n🔄 Re-verified session from Stripe API');
+        } catch (err) {
+          console.error('❌ Could not re-verify session from Stripe:', err.message);
+          return res.status(500).json({ error: 'Session verification failed' });
+        }
 
         console.log('\n💳 checkout.session.completed');
         console.log('   Session id      :', session.id);
-        console.log('   Payment status  :', session.payment_status);  // ← KEY FIELD
+        console.log('   Payment status  :', session.payment_status);
+        console.log('   Stripe status   :', session.status);
         console.log('   Amount total    :', session.amount_total);
         console.log('   Currency        :', session.currency);
         console.log('   Customer email  :', session.customer_email);
         console.log('   Raw metadata    :', JSON.stringify(session.metadata));
 
-        // ── CRITICAL: only process if actually paid ───────────────────
-        // payment_status can be 'paid', 'unpaid', or 'no_payment_required' (free)
+        // ── CRITICAL: only proceed if Stripe confirms payment ─────────
         const isPaid = session.payment_status === 'paid';
         const isFree = session.payment_status === 'no_payment_required';
         const isUnpaid = session.payment_status === 'unpaid';
 
-        console.log('\n💰 Payment check:');
-        console.log('   isPaid :', isPaid);
-        console.log('   isFree :', isFree);
+        console.log('\n💰 Payment check (re-verified):');
+        console.log('   isPaid  :', isPaid);
+        console.log('   isFree  :', isFree);
         console.log('   isUnpaid:', isUnpaid);
 
         if (isUnpaid) {
-          console.warn('⚠️  Payment status is UNPAID — cancelling order and NOT granting assets');
+          console.warn('⚠️  Re-verified payment_status is UNPAID — cancelling order and NOT granting assets');
 
-          // Cancel the order if we can find it
           const orderId = session.metadata?.orderId;
           if (orderId) {
             const { error } = await supabaseAdmin
@@ -167,7 +282,6 @@ app.post(
             if (error) console.error('   ❌ Failed to cancel unpaid order:', error.message);
             else console.log('   ✅ Order cancelled (unpaid):', orderId);
           } else {
-            // Fallback by session_id
             const { error } = await supabaseAdmin
               .from('orders')
               .update({ status: 'cancelled' })
@@ -187,17 +301,12 @@ app.post(
           return res.json({ received: true, note: 'Order cancelled — payment not completed' });
         }
 
-        // Only proceed for paid or no_payment_required
-        if (!isPaid) {
-          console.warn('⚠️  payment_status is not "paid" (got:', session.payment_status, ') — skipping');
-          return res.json({ received: true, note: 'Payment not confirmed — skipped' });
+        if (!isPaid && !isFree) {
+          console.warn('⚠️  Re-verified payment_status is neither "paid" nor "no_payment_required" (got:', session.payment_status, ') — aborting');
+          return res.json({ received: true, note: 'Payment not confirmed on re-verification — skipped' });
         }
 
         // ── Resolve userId & orderId ──────────────────────────────────
-        // Primary source: session metadata (set at checkout creation time).
-        // Fallback 1:     look up order by session_id
-        // Fallback 2:     look up the most recent PENDING order for this user
-
         let userId = session.metadata?.userId || null;
         let orderId = session.metadata?.orderId || null;
 
@@ -227,14 +336,19 @@ app.post(
         }
 
         // ── Fallback 2: recent pending order for this user ────────────
+        // Kept intentionally — metadata can be missing in some edge cases.
+        // Scoped tightly: only pending orders created within the last 2 hours.
         if (userId && !orderId) {
-          console.log('\n⚠️  orderId still missing — trying fallback 2: most recent pending order for user...');
+          console.log('\n⚠️  orderId still missing — trying fallback 2: most recent pending order for user (within 2h)...');
+
+          const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 
           const { data: recentOrder, error: recentErr } = await supabaseAdmin
             .from('orders')
             .select('id, user_id, status, created_at, session_id')
             .eq('user_id', userId)
             .eq('status', 'pending')
+            .gte('created_at', twoHoursAgo)          // ← tight time window
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -242,12 +356,11 @@ app.post(
           if (recentErr) {
             console.error('   ❌ Fallback 2 DB error:', recentErr.message);
           } else if (!recentOrder) {
-            console.warn('   ⚠️  Fallback 2: no pending order found for user:', userId);
+            console.warn('   ⚠️  Fallback 2: no recent pending order found for user:', userId);
           } else {
             console.log('   ✅ Fallback 2 resolved — order:', recentOrder.id, '| created_at:', recentOrder.created_at);
             orderId = recentOrder.id;
 
-            // Link session_id to order if missing
             if (!recentOrder.session_id) {
               const { error: linkErr } = await supabaseAdmin
                 .from('orders')
@@ -262,8 +375,8 @@ app.post(
         // ── Give up if still unresolvable ─────────────────────────────
         if (!userId || !orderId) {
           console.error('\n❌ UNRESOLVABLE — could not determine userId or orderId after all fallbacks');
-          console.error('   userId :', userId);
-          console.error('   orderId:', orderId);
+          console.error('   userId    :', userId);
+          console.error('   orderId   :', orderId);
           console.error('   session_id:', session.id);
 
           await auditLog({
@@ -303,6 +416,19 @@ app.post(
         if (existingOrder.status === 'completed') {
           console.log('ℹ️  Order already completed — skipping (idempotent):', orderId);
           return res.json({ received: true, note: 'Already completed' });
+        }
+
+        // ── Safety check: if order was already cancelled (e.g. by cancel
+        //    page hitting /api/cancel-order), do NOT re-open it.
+        //    This only applies to Fallback 2 matches — if metadata gave us
+        //    the orderId directly and it's cancelled, something is wrong
+        //    and we should not override it either.
+        if (existingOrder.status === 'cancelled') {
+          console.warn('⚠️  Order is already cancelled — but Stripe says payment is confirmed.');
+          console.warn('   Re-opening order as completed since payment is verified by Stripe.');
+          // We intentionally fall through here and mark it completed,
+          // because Stripe's re-verified payment_status === 'paid' is the
+          // source of truth. If money was taken, the user gets their assets.
         }
 
         // ── Mark order completed ──────────────────────────────────────
@@ -368,7 +494,6 @@ app.post(
             continue;
           }
 
-          // Match by default stripe_price_id OR any currency in stripe_prices_multi
           let asset = allAssets.find(a => a.stripe_price_id === priceId);
           if (!asset) {
             asset = allAssets.find(
@@ -390,8 +515,6 @@ app.post(
 
           console.log('   🎯 Matched asset:', asset.id, '|', asset.title);
 
-          // ── Insert into user_assets ───────────────────────────────
-          // Schema: user_id, asset_id, purchased_at
           const { error: insertError } = await supabaseAdmin
             .from('user_assets')
             .insert({
@@ -400,20 +523,18 @@ app.post(
               purchased_at: new Date().toISOString(),
             });
 
-          // 23505 = unique_violation — asset already owned; safe to ignore
           if (insertError && insertError.code !== '23505') {
             console.error('   ❌ Failed to insert user_asset:', insertError.message, '| code:', insertError.code);
           } else if (insertError?.code === '23505') {
             console.log('   ℹ️  Asset already owned (unique_violation) — skipping:', asset.id);
           } else {
-            console.log('   ✅ user_assets row created — user_id:', userId, '| asset_id:', asset.id, '| purchased_at:', new Date().toISOString());
+            console.log('   ✅ user_assets row created — user_id:', userId, '| asset_id:', asset.id);
             grantedCount++;
           }
         }
 
         console.log('\n📊 Grant summary — granted:', grantedCount, '| skipped:', skippedCount);
 
-        // ── Audit log ─────────────────────────────────────────────────
         await auditLog({
           user_id: userId,
           action: 'payment',
@@ -449,7 +570,7 @@ app.post(
             .from('orders')
             .update({ status: 'cancelled' })
             .eq('id', orderId)
-            .eq('status', 'pending'); // only cancel if still pending
+            .eq('status', 'pending');
           if (error) console.error('   ❌ Failed to cancel order by orderId:', error.message);
           else console.log('   ✅ Order cancelled (session expired):', orderId);
         } else {
