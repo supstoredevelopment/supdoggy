@@ -669,16 +669,6 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// ── Routes ────────────────────────────────────────────────────────────────────
-
-app.post('/api/csrf-token', csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
-});
-
-// ── Explicit cancel from cancel page ─────────────────────────────────────────
-// Called client-side when user lands on /p/cancel with a session_id.
-// Acts as an eager complement to the checkout.session.expired webhook.
-
 app.post('/api/cancel-order', authenticateToken, async (req, res) => {
   try {
     const { sessionId } = req.body;
@@ -780,6 +770,14 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+
+// ── Routes ────────────────────────────────────────────────────────────────────
+
+app.post('/api/csrf-token', csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
 
 app.get('/api/assets/top-selling', async (req, res) => {
   try {
