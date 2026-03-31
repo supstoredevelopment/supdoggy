@@ -75,111 +75,7 @@ app.use((req, res, next) => {
 });
 
 
-// ── Explicit cancel from cancel page ─────────────────────────────────────────
-// Called client-side when user lands on /p/cancel with a session_id.
-// Acts as an eager complement to the checkout.session.expired webhook.
 
-app.post('/api/cancel-order', authenticateToken, async (req, res) => {
-  try {
-    const { sessionId } = req.body;
-
-    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 200) {
-      return res.status(400).json({ error: 'Invalid session ID' });
-    }
-
-    console.log('\n🚫 /api/cancel-order called');
-    console.log('   userId   :', req.userId);
-    console.log('   sessionId:', sessionId);
-
-    // ── Verify with Stripe that this session is NOT paid ─────────
-    // This is the critical guard: if somehow the user lands here
-    // after a completed payment, we must NOT cancel the order.
-    let stripeSession;
-    try {
-      stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
-    } catch (err) {
-      console.error('   ❌ Could not retrieve Stripe session:', err.message);
-      return res.status(400).json({ error: 'Invalid session' });
-    }
-
-    console.log('   Stripe payment_status:', stripeSession.payment_status);
-    console.log('   Stripe status        :', stripeSession.status);
-
-    if (stripeSession.payment_status === 'paid') {
-      console.warn('   ⚠️  Session is PAID — refusing to cancel. Webhook should handle this.');
-      return res.status(400).json({ error: 'Session is already paid — order will not be cancelled' });
-    }
-
-    // ── Cancel by session_id (primary) ────────────────────────────
-    const { data: updatedBySession, error: sessionErr } = await supabaseAdmin
-      .from('orders')
-      .update({ status: 'cancelled' })
-      .eq('session_id', sessionId)
-      .eq('user_id', req.userId)   // scoped to this user — prevents cross-user abuse
-      .eq('status', 'pending')
-      .select('id')
-      .maybeSingle();
-
-    if (sessionErr) {
-      console.error('   ❌ DB error cancelling by session_id:', sessionErr.message);
-      return res.status(500).json({ error: 'DB error' });
-    }
-
-    if (updatedBySession) {
-      console.log('   ✅ Order cancelled by session_id:', updatedBySession.id);
-      await auditLog({
-        user_id: req.userId,
-        action: 'order_cancelled',
-        resource: 'order',
-        resource_id: updatedBySession.id,
-        status: 'cancelled',
-        details: { session_id: sessionId, method: 'cancel_page' },
-      });
-      return res.json({ cancelled: true, orderId: updatedBySession.id });
-    }
-
-    // ── Fallback: cancel by orderId from Stripe metadata ─────────
-    const orderId = stripeSession.metadata?.orderId;
-    if (orderId) {
-      console.log('   ⚠️  session_id lookup found nothing — trying orderId from Stripe metadata:', orderId);
-
-      const { data: updatedByOrder, error: orderErr } = await supabaseAdmin
-        .from('orders')
-        .update({ status: 'cancelled' })
-        .eq('id', orderId)
-        .eq('user_id', req.userId)
-        .eq('status', 'pending')
-        .select('id')
-        .maybeSingle();
-
-      if (orderErr) {
-        console.error('   ❌ DB error cancelling by orderId:', orderErr.message);
-        return res.status(500).json({ error: 'DB error' });
-      }
-
-      if (updatedByOrder) {
-        console.log('   ✅ Order cancelled by Stripe metadata orderId:', updatedByOrder.id);
-        await auditLog({
-          user_id: req.userId,
-          action: 'order_cancelled',
-          resource: 'order',
-          resource_id: updatedByOrder.id,
-          status: 'cancelled',
-          details: { session_id: sessionId, method: 'cancel_page_metadata_fallback' },
-        });
-        return res.json({ cancelled: true, orderId: updatedByOrder.id });
-      }
-    }
-
-    // Nothing found to cancel — not an error, just nothing pending
-    console.log('   ℹ️  No pending order found to cancel for this session/user');
-    res.json({ cancelled: false, note: 'No pending order found' });
-
-  } catch (err) {
-    console.error('❌ /api/cancel-order error:', err.message);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
 
 
 app.options('/api/stripe-webhook', (req, res) => {
@@ -777,6 +673,112 @@ const authenticateToken = async (req, res, next) => {
 
 app.post('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
+});
+
+// ── Explicit cancel from cancel page ─────────────────────────────────────────
+// Called client-side when user lands on /p/cancel with a session_id.
+// Acts as an eager complement to the checkout.session.expired webhook.
+
+app.post('/api/cancel-order', authenticateToken, async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 200) {
+      return res.status(400).json({ error: 'Invalid session ID' });
+    }
+
+    console.log('\n🚫 /api/cancel-order called');
+    console.log('   userId   :', req.userId);
+    console.log('   sessionId:', sessionId);
+
+    // ── Verify with Stripe that this session is NOT paid ─────────
+    // This is the critical guard: if somehow the user lands here
+    // after a completed payment, we must NOT cancel the order.
+    let stripeSession;
+    try {
+      stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
+    } catch (err) {
+      console.error('   ❌ Could not retrieve Stripe session:', err.message);
+      return res.status(400).json({ error: 'Invalid session' });
+    }
+
+    console.log('   Stripe payment_status:', stripeSession.payment_status);
+    console.log('   Stripe status        :', stripeSession.status);
+
+    if (stripeSession.payment_status === 'paid') {
+      console.warn('   ⚠️  Session is PAID — refusing to cancel. Webhook should handle this.');
+      return res.status(400).json({ error: 'Session is already paid — order will not be cancelled' });
+    }
+
+    // ── Cancel by session_id (primary) ────────────────────────────
+    const { data: updatedBySession, error: sessionErr } = await supabaseAdmin
+      .from('orders')
+      .update({ status: 'cancelled' })
+      .eq('session_id', sessionId)
+      .eq('user_id', req.userId)   // scoped to this user — prevents cross-user abuse
+      .eq('status', 'pending')
+      .select('id')
+      .maybeSingle();
+
+    if (sessionErr) {
+      console.error('   ❌ DB error cancelling by session_id:', sessionErr.message);
+      return res.status(500).json({ error: 'DB error' });
+    }
+
+    if (updatedBySession) {
+      console.log('   ✅ Order cancelled by session_id:', updatedBySession.id);
+      await auditLog({
+        user_id: req.userId,
+        action: 'order_cancelled',
+        resource: 'order',
+        resource_id: updatedBySession.id,
+        status: 'cancelled',
+        details: { session_id: sessionId, method: 'cancel_page' },
+      });
+      return res.json({ cancelled: true, orderId: updatedBySession.id });
+    }
+
+    // ── Fallback: cancel by orderId from Stripe metadata ─────────
+    const orderId = stripeSession.metadata?.orderId;
+    if (orderId) {
+      console.log('   ⚠️  session_id lookup found nothing — trying orderId from Stripe metadata:', orderId);
+
+      const { data: updatedByOrder, error: orderErr } = await supabaseAdmin
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId)
+        .eq('user_id', req.userId)
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle();
+
+      if (orderErr) {
+        console.error('   ❌ DB error cancelling by orderId:', orderErr.message);
+        return res.status(500).json({ error: 'DB error' });
+      }
+
+      if (updatedByOrder) {
+        console.log('   ✅ Order cancelled by Stripe metadata orderId:', updatedByOrder.id);
+        await auditLog({
+          user_id: req.userId,
+          action: 'order_cancelled',
+          resource: 'order',
+          resource_id: updatedByOrder.id,
+          status: 'cancelled',
+          details: { session_id: sessionId, method: 'cancel_page_metadata_fallback' },
+        });
+        return res.json({ cancelled: true, orderId: updatedByOrder.id });
+      }
+    }
+
+    // Nothing found to cancel — not an error, just nothing pending
+    console.log('   ℹ️  No pending order found to cancel for this session/user');
+    res.json({ cancelled: false, note: 'No pending order found' });
+
+  } catch (err) {
+    console.error('❌ /api/cancel-order error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 app.get('/api/assets/top-selling', async (req, res) => {
