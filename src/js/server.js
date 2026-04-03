@@ -139,8 +139,10 @@ app.post(
         // guarantees we never mark an order complete for an unpaid session.
         let session;
         try {
-          session = await stripe.checkout.sessions.retrieve(event.data.object.id);
-          console.log('\n🔄 Re-verified session from Stripe API');
+          session = await stripe.checkout.sessions.retrieve(event.data.object.id, {
+            expand: ['line_items'],
+          });
+          console.log('\n🔄 Re-verified session from Stripe API (with line_items expanded)');
         } catch (err) {
           console.error('❌ Could not re-verify session from Stripe:', err.message);
           return res.status(500).json({ error: 'Session verification failed' });
@@ -1085,7 +1087,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         currency: (currency || 'USD').toUpperCase(),
       });
       if (orderErr) console.error('⚠️ Failed to log free order:', orderErr.message);
-      return res.json({ free: true });
+      return res.json({ free: true, url: `${process.env.FRONTEND_URL}/p/success/?free=true` });
     }
 
     // ── Build Stripe line items ───────────────────────────────────

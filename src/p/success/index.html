@@ -145,9 +145,12 @@
     <script>
         const params = new URLSearchParams(window.location.search);
         const sessionId = params.get('session_id');
+        const isFree = params.get('free') === 'true';
 
         if (sessionId) {
             document.getElementById('sessionId').textContent = sessionId;
+        } else if (isFree) {
+            document.getElementById('sessionId').textContent = 'Free order';
         }
 
         function clearCart() {
@@ -172,29 +175,21 @@
             statusDiv.innerHTML = `<p>${icon}${message}</p>`;
         }
 
-        // Poll for assets until the webhook has processed (up to ~30s)
+        // For paid orders: poll until webhook has processed (up to ~30s)
+        // For free orders: assets are granted synchronously so one fetch is enough,
+        // but we still retry a couple of times in case of DB replication lag.
         async function pollForAssets(maxAttempts = 10, intervalMs = 3000) {
             updateStatus('Waiting for payment confirmation...');
 
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
                 try {
-                    updateStatus(`Checking for your assets... (${attempt}/${maxAttempts})`);
-
-                    const res = await fetch('/api/user/assets', { credentials: 'include' });
-
-                    if (res.status === 401) {
-                        updateStatus('Please log in to access your assets.', false);
-                        return null;
-                    }
-
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-                    const assets = await res.json();
-
-                    if (assets && assets.length > 0) {
-                        console.log(`✅ Found ${assets.length} asset(s) on attempt ${attempt}`);
-                        return assets;
-                    }
+                    updateStatus(`Checking for your assets...
+        (${attempt}/${maxAttempts})`); const res = await fetch('/api/user/assets', { credentials: 'include' }); if
+                        (res.status === 401) { updateStatus('Please log in to access your assets.', false); return null; } if (!res.ok)
+                        throw new Error(`HTTP ${res.status}`); const assets = await res.json(); if (assets && assets.length > 0) {
+                            console.log(`✅ Found ${assets.length} asset(s) on attempt ${attempt}`);
+                            return assets;
+                        }
 
                     if (attempt < maxAttempts) {
                         await new Promise(resolve => setTimeout(resolve, intervalMs));
@@ -211,19 +206,7 @@
             return null;
         }
 
-        async function handleAutoDownloads() {
-            if (!sessionId) {
-                updateStatus('No session ID found.', false);
-                return;
-            }
-
-            const assets = await pollForAssets(10, 3000);
-
-            if (!assets) {
-                updateStatus('Assets are still processing — check your dashboard in a moment.', false);
-                return;
-            }
-
+        async function startDownloads(assets) {
             updateStatus(`Found ${assets.length} asset(s). Starting downloads...`);
 
             let downloadCount = 0;
@@ -263,6 +246,28 @@
             } else {
                 updateStatus('Could not start downloads automatically. Please download from your dashboard.', false);
             }
+        }
+
+        async function handleAutoDownloads() {
+            // Free orders: assets already granted server-side, just fetch & download.
+            // Paid orders: need session_id to have been processed by the Stripe webhook.
+            if (!sessionId && !isFree) {
+                updateStatus('No session ID found — check your dashboard for your assets.', false);
+                return;
+            }
+
+            // For free orders use fewer, faster attempts since the grant is synchronous.
+            const maxAttempts = isFree ? 4 : 10;
+            const interval = isFree ? 1500 : 3000;
+
+            const assets = await pollForAssets(maxAttempts, interval);
+
+            if (!assets) {
+                updateStatus('Assets are still processing — check your dashboard in a moment.', false);
+                return;
+            }
+
+            await startDownloads(assets);
         }
 
         window.addEventListener('load', async () => {
