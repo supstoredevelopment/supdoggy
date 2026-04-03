@@ -1520,7 +1520,7 @@ app.get('/api/assets', async (req, res) => {
 
     const { data: assets, error, count } = await supabase
       .from('assets')
-      .select('id, title, description, price, image_url, tag, is_top_selling', { count: 'exact' })
+      .select('id, title, description, price, image_url, tag, is_top_selling, author', { count: 'exact' })
       .range(offset, offset + limit - 1)
       .order('created_at', { ascending: false });
 
