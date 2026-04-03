@@ -304,12 +304,23 @@ app.post(
         }
         console.log('✅ Order marked as completed:', orderId);
 
-        // ── Resolve line items ────────────────────────────────────────
+
         console.log('\n🛒 Resolving line items...');
-        let lineItems = session.line_items?.data;
 
-        console.log('   Line items from expanded session, count:', lineItems.length);
+        // Must use listLineItems() — expand on retrieve doesn't work in webhook context
+        let lineItems = [];
+        try {
+          const lineItemsPage = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
+          lineItems = lineItemsPage.data;
+          console.log('   Line items fetched via listLineItems, count:', lineItems.length);
+        } catch (err) {
+          console.error('   ❌ Failed to fetch line items:', err.message);
+          return res.status(500).json({ error: 'Failed to fetch line items' });
+        }
 
+        if (lineItems.length === 0) {
+          console.warn('   ⚠️  No line items returned — cannot grant assets');
+        }
         // ── Fetch all assets for price matching ───────────────────────
         const { data: allAssets, error: assetsErr } = await supabaseAdmin
           .from('assets')
@@ -506,6 +517,77 @@ app.post(
     }
   }
 );
+
+// Returns assets purchased in a specific checkout session (for success page)
+app.get('/api/session-assets/:sessionId', authenticateToken, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 200) {
+      return res.status(400).json({ error: 'Invalid session ID' });
+    }
+
+    // Verify this session belongs to this user
+    const { data: order, error: orderErr } = await supabaseAdmin
+      .from('orders')
+      .select('id, status')
+      .eq('session_id', sessionId)
+      .eq('user_id', req.userId)
+      .maybeSingle();
+
+    if (orderErr || !order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.status !== 'completed') {
+      return res.json({ ready: false, assets: [] });
+    }
+
+    // Get the line items from Stripe to know exactly which assets were bought
+    let lineItems = [];
+    try {
+      const page = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 100 });
+      lineItems = page.data;
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to fetch session line items' });
+    }
+
+    const priceIds = lineItems.map(li => li.price?.id).filter(Boolean);
+
+    if (priceIds.length === 0) {
+      return res.json({ ready: true, assets: [] });
+    }
+
+    // Match price IDs to assets
+    const { data: allAssets, error: assetsErr } = await supabaseAdmin
+      .from('assets')
+      .select('id, title, stripe_price_id, stripe_prices_multi');
+
+    if (assetsErr) return res.status(500).json({ error: 'Failed to fetch assets' });
+
+    const matchedAssetIds = [];
+    for (const priceId of priceIds) {
+      const asset = allAssets.find(a => a.stripe_price_id === priceId) ||
+        allAssets.find(a => a.stripe_prices_multi && Object.values(a.stripe_prices_multi).includes(priceId));
+      if (asset) matchedAssetIds.push(asset.id);
+    }
+
+    // Verify user actually owns these (safety check)
+    const { data: ownedAssets, error: ownedErr } = await supabaseAdmin
+      .from('user_assets')
+      .select('asset_id, assets(id, title, image_url, tag)')
+      .eq('user_id', req.userId)
+      .in('asset_id', matchedAssetIds);
+
+    if (ownedErr) return res.status(500).json({ error: 'Failed to verify ownership' });
+
+    const assets = ownedAssets.map(r => r.assets).filter(Boolean);
+    return res.json({ ready: true, assets });
+
+  } catch (err) {
+    console.error('❌ /api/session-assets error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
