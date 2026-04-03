@@ -1188,11 +1188,23 @@
         async function init() {
             grid.innerHTML = '<div class="loader"></div>';
             try {
-                assets = await fetchAssets();
-                if (assets.length === 0) {
+                const [fetchedAssets, aggregates] = await Promise.all([
+                    fetchAssets(),
+                    fetch('/api/assets/review-aggregates').then(r => r.json()),
+                ]);
+
+                if (fetchedAssets.length === 0) {
                     grid.innerHTML = '<p style="text-align:center;color:var(--subtext);grid-column:1/-1;">No assets available.</p>';
                     return;
                 }
+
+                // Merge live review data into each asset
+                assets = fetchedAssets.map(asset => ({
+                    ...asset,
+                    rating_score: aggregates[asset.id]?.score || 0,
+                    rating_count: aggregates[asset.id]?.count || 0,
+                }));
+
                 filteredAssets = assets;
                 resultsCount.innerHTML = `Showing <strong>${assets.length}</strong> assets`;
                 renderPage(1);

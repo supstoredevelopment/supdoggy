@@ -1380,6 +1380,36 @@ app.post('/api/assets/:id/reviews', reviewLimiter, authenticateToken, async (req
   }
 });
 
+app.get('/api/assets/review-aggregates', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('asset_reviews')
+      .select('asset_id, stars');
+
+    if (error) return res.status(500).json({ error: 'Failed to fetch reviews' });
+
+    // Aggregate in JS
+    const map = {};
+    for (const row of data) {
+      if (!map[row.asset_id]) map[row.asset_id] = { sum: 0, count: 0 };
+      map[row.asset_id].sum += row.stars;
+      map[row.asset_id].count += 1;
+    }
+
+    const result = {};
+    for (const [id, val] of Object.entries(map)) {
+      result[id] = {
+        score: Math.round((val.sum / val.count) * 10) / 10,
+        count: val.count,
+      };
+    }
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res) => {
   try {
     const assetId = parseInt(req.params.assetId);
@@ -1512,7 +1542,7 @@ app.get('/api/assets/:id', async (req, res) => {
 
     const { data: asset, error } = await supabase
       .from('assets')
-      .select('id, title, description, price, image_url, tag, is_top_selling, created_at')
+      .select('id, title, description, price, image_url, tag, is_top_selling, created_at, updated_at, author')
       .eq('id', id)
       .single();
 
