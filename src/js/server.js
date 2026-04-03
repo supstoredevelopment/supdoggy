@@ -1247,6 +1247,36 @@ app.get('/api/asset/:assetId/versions', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/assets/review-aggregates', async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('asset_reviews')
+      .select('asset_id, stars');
+
+    if (error) return res.status(500).json({ error: 'Failed to fetch reviews' });
+
+    // Aggregate in JS
+    const map = {};
+    for (const row of data) {
+      if (!map[row.asset_id]) map[row.asset_id] = { sum: 0, count: 0 };
+      map[row.asset_id].sum += row.stars;
+      map[row.asset_id].count += 1;
+    }
+
+    const result = {};
+    for (const [id, val] of Object.entries(map)) {
+      result[id] = {
+        score: Math.round((val.sum / val.count) * 10) / 10,
+        count: val.count,
+      };
+    }
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.get('/api/assets/:id/reviews', async (req, res) => {
   try {
     const assetId = parseInt(req.params.id);
@@ -1380,35 +1410,7 @@ app.post('/api/assets/:id/reviews', reviewLimiter, authenticateToken, async (req
   }
 });
 
-app.get('/api/assets/review-aggregates', async (req, res) => {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('asset_reviews')
-      .select('asset_id, stars');
 
-    if (error) return res.status(500).json({ error: 'Failed to fetch reviews' });
-
-    // Aggregate in JS
-    const map = {};
-    for (const row of data) {
-      if (!map[row.asset_id]) map[row.asset_id] = { sum: 0, count: 0 };
-      map[row.asset_id].sum += row.stars;
-      map[row.asset_id].count += 1;
-    }
-
-    const result = {};
-    for (const [id, val] of Object.entries(map)) {
-      result[id] = {
-        score: Math.round((val.sum / val.count) * 10) / 10,
-        count: val.count,
-      };
-    }
-
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
 
 app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res) => {
   try {
