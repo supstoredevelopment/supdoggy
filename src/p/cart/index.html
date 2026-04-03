@@ -21,6 +21,47 @@
         }
 
         :root {
+            --primary: #0066ff;
+            --accent: #00d4ff;
+            --dark: #000000;
+            --light: #ffffff;
+            --text-dark: #ffffff;
+            --text-light: #000000;
+            --subtext-dark: rgba(255, 255, 255, 0.6);
+            --subtext-light: rgba(0, 0, 0, 0.6);
+            --glass-bg-dark: rgba(255, 255, 255, 0.05);
+            --glass-bg-light: rgba(0, 0, 0, 0.05);
+            --glass-border-dark: rgba(255, 255, 255, 0.1);
+            --glass-border-light: rgba(0, 0, 0, 0.1);
+            --bg-rgb-dark: 0, 0, 0;
+            --bg-rgb-light: 255, 255, 255;
+            --shadow-dark: rgba(0, 0, 0, 0.3);
+            --shadow-light: rgba(0, 0, 0, 0.1);
+            --border-radius-small: 8px;
+            --border-radius-medium: 12px;
+            --border-radius-large: 20px;
+            --border-radius-extra-large: 24px;
+            --border-radius-circle: 50%;
+            --border-radius-pill: 9999px;
+            --font-size-small: 0.75rem;
+            --font-size-medium: 0.95rem;
+            --font-size-large: 1.5rem;
+            --font-size-extra-large: 2.5rem;
+            --spacing-small: 0.5rem;
+            --spacing-medium: 1rem;
+            --spacing-large: 2rem;
+            --spacing-extra-large: 3rem;
+            --transition-fast: 0.3s ease;
+            --transition-medium: 0.4s ease;
+            --transition-slow: 0.7s ease;
+            --z-index-nav: 1000;
+            --opacity-low: 0.4;
+            --opacity-medium: 0.6;
+            --opacity-high: 0.8;
+            --blur-medium: 10px;
+            --blur-extra-large: 30px;
+
+            /* Cart-specific */
             --blue: #0055ff;
             --cyan: #00cfff;
             --red: #ff3b30;
@@ -40,7 +81,25 @@
             --spring: cubic-bezier(0.34, 1.25, 0.64, 1);
         }
 
+        [data-theme="dark"] {
+            --bg-var: var(--dark);
+            --text-var: var(--text-dark);
+            --subtext: var(--subtext-dark);
+            --glass-bg: var(--glass-bg-dark);
+            --glass-border: var(--glass-border-dark);
+            --bg-rgb: var(--bg-rgb-dark);
+            --shadow: var(--shadow-dark);
+        }
+
         [data-theme="light"] {
+            --bg-var: var(--light);
+            --text-var: var(--text-light);
+            --subtext: var(--subtext-light);
+            --glass-bg: var(--glass-bg-light);
+            --glass-border: var(--glass-border-light);
+            --bg-rgb: var(--bg-rgb-light);
+            --shadow: var(--shadow-light);
+
             --bg: #f3f3f7;
             --surface: #ffffff;
             --surface-2: #ececf2;
@@ -49,10 +108,6 @@
             --text: #0a0a12;
             --muted: rgba(10, 10, 18, 0.45);
             --muted-2: rgba(10, 10, 18, 0.2);
-        }
-
-        [data-theme="light"] nav {
-            background: rgba(243, 243, 247, 0.85);
         }
 
         html {
@@ -69,52 +124,54 @@
             transition: background .3s, color .3s;
         }
 
-        /* NAV */
+        /* ── NAVBAR (copied from homepage) ── */
         nav {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            z-index: 1000;
-            background: rgba(6, 6, 10, 0.72);
-            backdrop-filter: blur(28px) saturate(160%);
-            -webkit-backdrop-filter: blur(28px) saturate(160%);
-            border-bottom: 1px solid var(--border);
-            padding: 1.1rem 0;
-            transition: all .35s ease;
+            background: rgba(var(--bg-rgb), 0.5);
+            backdrop-filter: blur(var(--blur-extra-large)) saturate(180%);
+            -webkit-backdrop-filter: blur(var(--blur-extra-large)) saturate(180%);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: var(--z-index-nav);
+            padding: 1.2rem 0;
+            transition: all var(--transition-medium);
         }
 
         nav.scrolled {
-            background: rgba(6, 6, 10, 0.94);
-            padding: .8rem 0;
-            box-shadow: 0 8px 40px rgba(0, 0, 0, .5);
+            background: rgba(var(--bg-rgb), var(--opacity-high));
+            padding: 0.9rem 0;
+            box-shadow: 0 8px 32px var(--shadow);
         }
 
-        .nav-inner {
-            max-width: 1200px;
+        .nav-container {
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 0 2.5rem;
+            padding: 0 var(--spacing-extra-large);
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
         }
 
         .logo {
-            font-size: 1.25rem;
-            font-weight: 800;
+            font-size: 1.4rem;
+            font-weight: 700;
             color: var(--text);
             text-decoration: none;
-            letter-spacing: -.04em;
+            letter-spacing: -1px;
+            transition: all var(--transition-fast);
         }
 
-        .logo span {
-            color: var(--blue);
+        .logo:hover {
+            color: var(--accent);
         }
 
         .nav-links {
             display: flex;
-            gap: 2.5rem;
+            gap: var(--spacing-extra-large);
             list-style: none;
+            align-items: center;
             position: absolute;
             left: 50%;
             top: 50%;
@@ -122,88 +179,154 @@
         }
 
         .nav-links a {
-            color: var(--muted);
+            color: var(--subtext);
             text-decoration: none;
             font-weight: 500;
-            font-size: .9rem;
-            transition: color .2s;
+            font-size: var(--font-size-medium);
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width var(--transition-fast);
         }
 
         .nav-links a:hover {
-            color: var(--text);
+            color: var(--accent);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-links a:focus {
+            outline: none;
+            color: var(--accent);
         }
 
         .nav-actions {
             display: flex;
             align-items: center;
-            gap: 1.25rem;
+            gap: 1.5rem;
         }
 
-        .cart-badge {
+        .cart-icon {
             position: relative;
+            font-size: 1.2rem;
             color: var(--text);
-            font-size: 1.1rem;
             text-decoration: none;
-            transition: color .2s;
         }
 
-        .cart-badge:hover {
-            color: var(--cyan);
-        }
-
-        .cart-badge sup {
+        .cart-icon span {
             position: absolute;
             top: -8px;
-            right: -11px;
-            background: var(--blue);
-            color: #fff;
-            border-radius: 20px;
-            padding: 1px 6px;
-            font-size: .68rem;
+            right: -12px;
+            background: var(--accent);
+            color: var(--dark);
+            border-radius: 50%;
+            padding: 2px 7px;
+            font-size: 0.75rem;
             font-weight: 700;
-            font-family: var(--mono);
         }
 
-        .btn-nav {
-            background: var(--surface-2);
+        .cart-icon:hover {
+            color: var(--accent);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
             color: var(--text);
-            border: 1px solid var(--border-hi);
-            padding: .55rem 1.2rem;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            font-size: .85rem;
-            text-decoration: none;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            padding: 0.7rem 1.5rem;
             display: inline-flex;
             align-items: center;
-            gap: .4rem;
-            transition: all .2s;
-        }
-
-        .btn-nav:hover {
-            border-color: var(--cyan);
-            color: var(--cyan);
-        }
-
-        .theme-btn {
-            background: none;
-            border: 1px solid var(--border);
-            color: var(--muted);
-            width: 34px;
-            height: 34px;
+            gap: 0.5rem;
+            text-decoration: none;
             border-radius: 8px;
-            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .theme-toggle {
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: all .2s;
+            gap: var(--spacing-small);
         }
 
-        .theme-btn:hover {
-            border-color: var(--border-hi);
-            color: var(--text);
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius-medium);
+            cursor: pointer;
+            transition: background var(--transition-fast);
         }
 
-        /* PAGE */
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: var(--border-radius-circle);
+            transition: transform var(--transition-fast);
+        }
+
+        input[type="checkbox"]:checked+.toggle-switch {
+            background: var(--primary);
+        }
+
+        input[type="checkbox"]:checked+.toggle-switch::before {
+            transform: translateX(26px);
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 30px;
+            height: 25px;
+            cursor: pointer;
+        }
+
+        .hamburger span {
+            width: 100%;
+            height: 3px;
+            background: var(--text);
+            transition: all var(--transition-fast);
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -6px);
+        }
+
+        /* ── CART PAGE ── */
         .cart-page {
             min-height: 100vh;
             padding: 110px 2.5rem 100px;
@@ -231,7 +354,6 @@
             z-index: 1;
         }
 
-        /* LEFT */
         .cart-left {
             display: flex;
             flex-direction: column;
@@ -299,7 +421,6 @@
             gap: .6rem;
         }
 
-        /* CART ITEM */
         .cart-item {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -450,19 +571,6 @@
             transform: scale(.92);
         }
 
-        .license-chip {
-            font-size: .64rem;
-            font-weight: 600;
-            font-family: var(--mono);
-            background: rgba(0, 201, 125, .1);
-            color: var(--green);
-            border: 1px solid rgba(0, 201, 125, .2);
-            border-radius: 20px;
-            padding: 2px 8px;
-            white-space: nowrap;
-        }
-
-        /* EMPTY */
         .cart-empty {
             display: none;
             text-align: center;
@@ -559,15 +667,6 @@
             font-size: .84rem;
         }
 
-        .val-green {
-            color: var(--green);
-        }
-
-        .val-red {
-            color: var(--red);
-        }
-
-        /* auto-detected currency display */
         .currency-row {
             display: flex;
             justify-content: space-between;
@@ -613,7 +712,6 @@
             }
         }
 
-        /* total */
         .total-block {
             background: var(--surface-2);
             border: 1px solid var(--border);
@@ -661,7 +759,6 @@
             display: none;
         }
 
-        /* pay btn */
         .pay-btn {
             width: 100%;
             margin-top: 1rem;
@@ -743,7 +840,6 @@
             color: var(--cyan);
         }
 
-        /* no-refund notice */
         .no-refund-notice {
             margin-top: .85rem;
             background: rgba(255, 59, 48, .06);
@@ -770,7 +866,6 @@
             margin-bottom: 1px;
         }
 
-        /* thumb strip */
         .thumb-strip {
             margin-top: 1.2rem;
             padding-top: 1.1rem;
@@ -824,7 +919,6 @@
             font-family: var(--mono);
         }
 
-        /* error */
         .err-box {
             display: none;
             margin-top: .75rem;
@@ -855,6 +949,11 @@
             backdrop-filter: blur(20px);
             border-top: 1px solid var(--border);
             padding: 60px 2.5rem 36px;
+        }
+
+        [data-theme="light"] footer {
+            background: rgba(255, 255, 255, 0.9);
+            border-top: 1px solid rgba(0, 0, 0, 0.03);
         }
 
         .footer-inner {
@@ -917,7 +1016,7 @@
         }
 
         /* RESPONSIVE */
-        @media(max-width:960px) {
+        @media (max-width: 960px) {
             .cart-wrap {
                 grid-template-columns: 1fr;
             }
@@ -927,8 +1026,38 @@
             }
         }
 
-        @media(max-width:700px) {
+        @media (max-width: 768px) {
+            .hamburger {
+                display: flex;
+            }
+
             .nav-links {
+                display: none;
+                position: fixed;
+                top: 57px;
+                left: 0;
+                right: 0;
+                transform: none;
+                flex-direction: column;
+                background: var(--bg);
+                padding: var(--spacing-medium);
+                gap: var(--spacing-medium);
+                border-bottom: 1px solid var(--glass-border);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .nav-links a {
+                text-align: center;
+            }
+
+            .nav-container {
+                padding: 0 1.5rem;
+            }
+
+            #authBtnText {
                 display: none;
             }
 
@@ -956,7 +1085,7 @@
             }
         }
 
-        @media(max-width:480px) {
+        @media (max-width: 480px) {
             .cart-page {
                 padding: 80px 1rem 60px;
             }
@@ -975,21 +1104,33 @@
 <body data-theme="dark">
 
     <nav id="nav">
-        <div class="nav-inner">
-            <a href="/" class="logo">SupStore <span>Checkout</span></a>
-            <ul class="nav-links">
+        <div class="nav-container">
+            <a href="/" class="logo">SupStore</a>
+            <ul class="nav-links" id="navLinks">
                 <li><a href="/p/assets">Assets</a></li>
                 <li><a href="/#features">Features</a></li>
                 <li><a href="/#stats">Stats</a></li>
                 <li><a href="/p/contact">Contact</a></li>
             </ul>
             <div class="nav-actions">
-                <a href="/p/cart" class="cart-badge"><i class="fa-solid fa-cart-shopping"></i><sup
-                        id="cartCount">0</sup></a>
-                <a href="/p/login" id="authBtn" class="btn-nav" style="display:none;"><i class="fas fa-user"></i> <span
-                        id="authBtnText">Login</span></a>
-                <button class="theme-btn" id="themeBtn" title="Toggle theme"><i
-                        class="fas fa-circle-half-stroke"></i></button>
+                <a href="/p/cart" class="cart-icon">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span id="cartCount">0</span>
+                </a>
+                <a href="/p/login" id="authBtn" class="btn-secondary" style="display: none;">
+                    <i class="fas fa-user"></i>
+                    <span id="authBtnText">Login</span>
+                </a>
+                <div class="theme-toggle">
+                    <input type="checkbox" id="themeSwitch" hidden>
+                    <label for="themeSwitch" class="toggle-switch"></label>
+                    <span>Light Mode</span>
+                </div>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
     </nav>
@@ -1026,7 +1167,6 @@
                         <span class="val" id="summarySubtotal">$0.00</span>
                     </div>
 
-                    <!-- Read-only auto-detected currency -->
                     <div class="currency-row">
                         <span class="lbl">
                             Billing currency
@@ -1038,7 +1178,6 @@
                         </div>
                     </div>
 
-                    <!-- Total -->
                     <div class="total-block">
                         <span class="total-label">Total due</span>
                         <div class="total-right">
@@ -1119,6 +1258,50 @@
     </footer>
 
     <script>
+        /* ── HAMBURGER ── */
+        const hamburger = document.getElementById('hamburger');
+        const navLinks = document.getElementById('navLinks');
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navLinks.classList.toggle('active');
+        });
+
+        /* ── THEME ── */
+        const themeSwitch = document.getElementById('themeSwitch');
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.dataset.theme = savedTheme;
+        themeSwitch.checked = savedTheme === 'light';
+        themeSwitch.addEventListener('change', e => {
+            const theme = e.target.checked ? 'light' : 'dark';
+            document.body.dataset.theme = theme;
+            localStorage.setItem('theme', theme);
+        });
+
+        /* ── NAV SCROLL ── */
+        window.addEventListener('scroll', () =>
+            document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 50)
+        );
+
+        /* ── AUTH BUTTON ── */
+        async function updateAuthButton() {
+            const authBtn = document.getElementById('authBtn');
+            const authBtnText = document.getElementById('authBtnText');
+            try {
+                const res = await fetch('/api/user/profile', { credentials: 'include' });
+                if (res.ok) {
+                    authBtn.href = '/p/dashboard';
+                    authBtnText.textContent = 'My Account';
+                } else {
+                    authBtn.href = '/p/login';
+                    authBtnText.textContent = 'Login';
+                }
+            } catch {
+                authBtn.href = '/p/login';
+                authBtnText.textContent = 'Login';
+            }
+            authBtn.style.display = 'inline-flex';
+        }
+
         /* ── CURRENCY ── */
         const SYMBOLS = {
             USD: '$', EUR: '€', GBP: '£', JPY: '¥', CAD: 'C$', AUD: 'A$', NZD: 'NZ$',
@@ -1129,7 +1312,6 @@
         };
         const NO_DECIMAL = new Set(['JPY', 'KRW', 'IDR', 'HUF']);
 
-        // Start with cached or USD default
         let cur = { code: 'USD', symbol: '$', rate: 1 };
         try {
             const cached = localStorage.getItem('supCurrency');
@@ -1150,7 +1332,6 @@
             document.getElementById('currencySymbol').textContent = cur.symbol;
         }
 
-        // Fetch from /api/user-location — server detects IP, returns currency + Stripe live rate
         async function detectCurrency() {
             const spinner = document.getElementById('curSpinner');
             spinner.style.display = 'inline-block';
@@ -1159,14 +1340,10 @@
                 if (res.ok) {
                     const data = await res.json();
                     if (data.currency) {
-                        cur = {
-                            code: data.currency,
-                            symbol: symFor(data.currency),
-                            rate: data.exchangeRate || 1
-                        };
+                        cur = { code: data.currency, symbol: symFor(data.currency), rate: data.exchangeRate || 1 };
                         localStorage.setItem('supCurrency', JSON.stringify(cur));
                         updateCurrencyPill();
-                        renderCart(); // re-render prices with live Stripe rate
+                        renderCart();
                     }
                 }
             } catch (e) {
@@ -1223,7 +1400,7 @@
             let totalUSD = 0;
             list.innerHTML = '';
 
-            cart.forEach((item, idx) => {
+            cart.forEach((item) => {
                 const price = Number(item.price);
                 totalUSD += price;
 
@@ -1234,26 +1411,24 @@
                 const card = document.createElement('div');
                 card.className = 'cart-item';
                 card.innerHTML = `
-      <div class="item-thumb">
-        <img src="${item.image_url}" alt="${item.title}" loading="lazy">
-      </div>
-      <div class="item-info">
-        <div class="item-tag">${item.tag || 'Asset'}</div>
-        <div class="item-title">${item.title}</div>
-        <div class="item-sub">Full commercial license · Lifetime updates</div>
-        <div class="item-price">${priceHTML}</div>
-      </div>
-      <div class="item-right">
-        <button class="remove-btn" aria-label="Remove ${item.title}">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    `;
+                    <div class="item-thumb">
+                        <img src="${item.image_url}" alt="${item.title}" loading="lazy">
+                    </div>
+                    <div class="item-info">
+                        <div class="item-tag">${item.tag || 'Asset'}</div>
+                        <div class="item-title">${item.title}</div>
+                        <div class="item-sub">Full commercial license · Lifetime updates</div>
+                        <div class="item-price">${priceHTML}</div>
+                    </div>
+                    <div class="item-right">
+                        <button class="remove-btn" aria-label="Remove ${item.title}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>`;
                 card.querySelector('.remove-btn').addEventListener('click', () => removeItem(item.id, card));
                 list.appendChild(card);
             });
 
-            // Totals
             document.getElementById('summarySubtotal').textContent = fmtUSD(totalUSD);
 
             const totalEl = document.getElementById('summaryTotal');
@@ -1272,7 +1447,6 @@
                 totalNote.style.display = 'none';
             }
 
-            // Thumbnails
             thumbRow.innerHTML = '';
             const MAX = 5;
             cart.slice(0, MAX).forEach(item => {
@@ -1356,48 +1530,13 @@
             }
         }
 
-        /* ── NAV SsROLL ── */
-        window.addEventListener('scroll', () =>
-            document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 50)
-        );
-
-        /* ── THEME ── */
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.body.dataset.theme = savedTheme;
-        document.getElementById('themeBtn').addEventListener('click', () => {
-            const next = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
-            document.body.dataset.theme = next;
-            localStorage.setItem('theme', next);
-        });
-
-        /* ── AUTH BUTTON ── */
-        async function updateAuthButton() {
-            const authBtn = document.getElementById('authBtn');
-            const authBtnText = document.getElementById('authBtnText');
-
-            try {
-                const res = await fetch('/api/user/profile', { credentials: 'include' });
-                if (res.ok) {
-                    authBtn.href = '/p/dashboard';
-                    authBtnText.textContent = 'My Account';
-                } else {
-                    authBtn.href = '/p/login';
-                    authBtnText.textContent = 'Login';
-                }
-            } catch {
-                authBtn.href = '/p/login';
-                authBtnText.textContent = 'Login';
-            }
-            authBtn.style.display = 'inline-flex';
-        }
-
         /* ── INIT ── */
         window.addEventListener('load', () => {
-            updateCurrencyPill(); // show cached currency immediately
+            updateCurrencyPill();
             updateCartCount();
-            renderCart();         // render with cached/USD prices right away
+            renderCart();
             updateAuthButton();
-            detectCurrency();     // async: hits /api/user-location, gets Stripe live rate, re-renders
+            detectCurrency();
         });
     </script>
 </body>
