@@ -296,7 +296,6 @@
             padding: 100px 2rem 80px;
         }
 
-        /* Breadcrumb */
         .breadcrumb {
             display: flex;
             align-items: center;
@@ -327,14 +326,13 @@
             align-items: start;
         }
 
-        /* LEFT COLUMN */
         .detail-left {
             display: flex;
             flex-direction: column;
             gap: 2rem;
         }
 
-        /* ── IMAGE GALLERY ── */
+        /* ── GALLERY ── */
         .gallery {
             background: var(--bg2);
             border: 1px solid var(--glass-border);
@@ -342,10 +340,9 @@
             overflow: hidden;
         }
 
-        /* Main image — 16:9 */
         .gallery-main {
             width: 100%;
-            aspect-ratio: 16 / 9;
+            aspect-ratio: 16/9;
             background: #0d0d0d;
             overflow: hidden;
             position: relative;
@@ -364,7 +361,6 @@
             background: #000;
         }
 
-        /* Nav arrows */
         .gallery-arrow {
             position: absolute;
             top: 50%;
@@ -398,7 +394,6 @@
             right: 12px;
         }
 
-        /* Counter */
         .gallery-counter {
             position: absolute;
             bottom: 12px;
@@ -412,7 +407,6 @@
             border-radius: 20px;
         }
 
-        /* Thumbnails */
         .gallery-thumbs {
             display: flex;
             gap: 0.5rem;
@@ -572,7 +566,6 @@
             width: 24px;
         }
 
-        /* Individual review */
         .review-item {
             padding: 1.2rem;
             background: var(--review-bg);
@@ -670,6 +663,33 @@
             text-decoration: underline;
         }
 
+        .write-review .not-logged-in {
+            padding: 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--subtext);
+        }
+
+        .write-review .not-logged-in a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .write-review .already-reviewed {
+            padding: 0.75rem 1rem;
+            background: rgba(0, 212, 255, 0.07);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            font-size: 0.84rem;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .star-picker {
             display: flex;
             gap: 0.3rem;
@@ -724,12 +744,32 @@
             transition: all 0.25s;
         }
 
-        .submit-review-btn:hover {
+        .submit-review-btn:hover:not(:disabled) {
             background: #0052cc;
             transform: translateY(-1px);
         }
 
-        /* RIGHT COLUMN — SIDEBAR */
+        .submit-review-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .reviews-loader {
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .reviews-loader .mini-spin {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--glass-border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* ── SIDEBAR ── */
         .detail-sidebar {
             position: sticky;
             top: 90px;
@@ -898,7 +938,6 @@
             pointer-events: none;
         }
 
-        /* Details list */
         .sidebar-details {
             padding: 0 1.4rem 1.4rem;
         }
@@ -1206,12 +1245,12 @@
         @keyframes slideIn {
             from {
                 transform: translateX(420px);
-                opacity: 0
+                opacity: 0;
             }
 
             to {
                 transform: translateX(0);
-                opacity: 1
+                opacity: 1;
             }
         }
 
@@ -1227,7 +1266,7 @@
 
         @keyframes spin {
             to {
-                transform: rotate(360deg)
+                transform: rotate(360deg);
             }
         }
 
@@ -1307,7 +1346,6 @@
 
 <body data-theme="dark">
 
-    <!-- NAV -->
     <nav id="nav">
         <div class="nav-container">
             <a href="/" class="logo">SupStore</a>
@@ -1338,7 +1376,6 @@
         </div>
     </nav>
 
-    <!-- PAGE -->
     <div class="page-wrap">
         <div class="breadcrumb" id="breadcrumb">
             <a href="/p/assets">Assets</a>
@@ -1352,7 +1389,6 @@
             </div>
         </div>
 
-        <!-- RECOMMENDED -->
         <div class="recommended-section" id="recommendedSection" style="display:none;">
             <div class="rec-head">
                 <div>
@@ -1373,7 +1409,6 @@
         </div>
     </div>
 
-    <!-- FOOTER -->
     <footer>
         <div class="footer-content">
             <div class="footer-brand">
@@ -1438,30 +1473,16 @@
             return html;
         }
 
-        /* ── REVIEWS STORAGE ── */
-        function getReviews(assetId) {
-            return JSON.parse(localStorage.getItem(`reviews_${assetId}`) || '[]');
-        }
-        function saveReview(assetId, review) {
-            const reviews = getReviews(assetId);
-            reviews.unshift(review);
-            localStorage.setItem(`reviews_${assetId}`, JSON.stringify(reviews));
-        }
-
         /* ── GALLERY ── */
-        let galleryMedia = [];
-        let galleryIndex = 0;
+        let galleryMedia = [], galleryIndex = 0;
 
         function initGallery(asset) {
-            // Build media list from image_url + extra_images + video_url
             galleryMedia = [];
             if (asset.image_url) galleryMedia.push({ type: 'image', src: asset.image_url });
             if (asset.extra_images && Array.isArray(asset.extra_images)) {
                 asset.extra_images.forEach(src => galleryMedia.push({ type: 'image', src }));
             }
             if (asset.video_url) galleryMedia.push({ type: 'video', src: asset.video_url });
-
-            // If only one media, still show it
             galleryIndex = 0;
             renderGallery();
         }
@@ -1472,7 +1493,6 @@
             const counterEl = document.getElementById('galleryCounter');
             const prevEl = document.getElementById('galleryPrev');
             const nextEl = document.getElementById('galleryNext');
-
             if (!mainEl) return;
 
             const media = galleryMedia[galleryIndex];
@@ -1483,165 +1503,205 @@
             }
 
             counterEl.textContent = `${galleryIndex + 1} / ${galleryMedia.length}`;
-
-            // arrows
             prevEl.style.display = galleryMedia.length > 1 ? 'flex' : 'none';
             nextEl.style.display = galleryMedia.length > 1 ? 'flex' : 'none';
             prevEl.disabled = galleryIndex === 0;
             nextEl.disabled = galleryIndex === galleryMedia.length - 1;
 
-            // thumbs
             thumbsEl.style.display = galleryMedia.length > 1 ? 'flex' : 'none';
             thumbsEl.innerHTML = galleryMedia.map((m, i) => `
-        <div class="gallery-thumb ${i === galleryIndex ? 'active' : ''}" onclick="setGalleryIndex(${i})">
-            ${m.type === 'video'
+                <div class="gallery-thumb ${i === galleryIndex ? 'active' : ''}" onclick="setGalleryIndex(${i})">
+                    ${m.type === 'video'
                     ? `<div class="play-icon"><i class="fas fa-play"></i></div>`
-                    : `<img src="${m.src}" alt="">`
+                    : `<img src="${m.src}" alt="">`}
+                </div>
+            `).join('');
+        }
+
+        function setGalleryIndex(i) { galleryIndex = i; renderGallery(); }
+        function galleryPrev() { if (galleryIndex > 0) { galleryIndex--; renderGallery(); } }
+        function galleryNext() { if (galleryIndex < galleryMedia.length - 1) { galleryIndex++; renderGallery(); } }
+
+        /* ── REVIEWS — fully server-side ── */
+        let selectedStars = 0;
+
+        async function loadAndRenderReviews(assetId, asset, isLoggedIn, isPurchased) {
+            const container = document.getElementById('reviewsCard');
+            if (!container) return;
+
+            // Show loading state
+            container.innerHTML = `
+                <div class="reviews-card" id="reviewsSection">
+                    <div class="reviews-header"><h3>Reviews</h3></div>
+                    <div class="reviews-loader"><div class="mini-spin"></div></div>
+                </div>`;
+
+            let reviews = [], userAlreadyReviewed = false;
+
+            try {
+                const res = await fetch(`/api/assets/${assetId}/reviews`);
+                if (res.ok) {
+                    const data = await res.json();
+                    reviews = data.reviews || [];
+                    userAlreadyReviewed = data.user_already_reviewed || false;
                 }
-        </div>
-    `).join('');
+            } catch (err) {
+                console.error('Failed to load reviews:', err);
+            }
+
+            renderReviewsUI(assetId, asset, reviews, userAlreadyReviewed, isLoggedIn, isPurchased);
         }
 
-        function setGalleryIndex(i) {
-            galleryIndex = i;
-            renderGallery();
-        }
+        function renderReviewsUI(assetId, asset, reviews, userAlreadyReviewed, isLoggedIn, isPurchased) {
+            const container = document.getElementById('reviewsCard');
+            if (!container) return;
 
-        function galleryPrev() {
-            if (galleryIndex > 0) { galleryIndex--; renderGallery(); }
-        }
-        function galleryNext() {
-            if (galleryIndex < galleryMedia.length - 1) { galleryIndex++; renderGallery(); }
-        }
+            const count = reviews.length;
 
-        /* ── REVIEWS RENDER ── */
-        function renderReviews(assetId, asset) {
-            const reviews = getReviews(assetId);
-            const score = parseFloat(asset.rating_score || asset.rating || 0);
-            const count = reviews.length + (asset.rating_count || 0);
-
-            // Distribution (fake for demo, with real reviews on top)
+            // Compute distribution from loaded reviews
             const dist = [0, 0, 0, 0, 0];
             reviews.forEach(r => { if (r.stars >= 1 && r.stars <= 5) dist[r.stars - 1]++; });
             const totalDist = dist.reduce((a, b) => a + b, 0) || 1;
 
+            // Compute average from actual reviews (supplement asset score)
+            const avgScore = count > 0
+                ? reviews.reduce((sum, r) => sum + r.stars, 0) / count
+                : parseFloat(asset.rating_score || asset.rating || 0);
+
             let reviewsHTML = '';
             reviews.forEach(r => {
-                const initials = (r.name || 'A').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                const initials = (r.reviewer_name || 'A').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                const dateStr = new Date(r.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
                 reviewsHTML += `
-        <div class="review-item">
-            <div class="review-top">
-                <div class="review-author">
-                    <div class="review-avatar">${initials}</div>
-                    <div>
-                        <div class="review-name">${r.name || 'Anonymous'}</div>
-                        <div class="review-date">${r.date}</div>
-                    </div>
-                </div>
-                <div class="review-stars">${renderStars(r.stars, '0.72rem')}</div>
-            </div>
-            <div class="review-text">${r.text}</div>
-        </div>`;
+                    <div class="review-item">
+                        <div class="review-top">
+                            <div class="review-author">
+                                <div class="review-avatar">${initials}</div>
+                                <div>
+                                    <div class="review-name">${r.reviewer_name || 'Verified Buyer'}</div>
+                                    <div class="review-date">${dateStr}</div>
+                                </div>
+                            </div>
+                            <div class="review-stars">${renderStars(r.stars, '0.72rem')}</div>
+                        </div>
+                        <div class="review-text">${r.review_text}</div>
+                    </div>`;
             });
 
             if (!reviewsHTML) {
                 reviewsHTML = `<p style="color:var(--subtext);font-size:0.88rem;text-align:center;padding:1rem 0;">No reviews yet. Be the first!</p>`;
             }
 
-            const isPurchased = getCart().find(i => i.id === assetId) ||
-                JSON.parse(localStorage.getItem('purchases') || '[]').includes(assetId);
+            // Decide what to show in write-review area
+            let writeReviewHTML = '';
+            if (!isLoggedIn) {
+                writeReviewHTML = `
+                    <div class="write-review">
+                        <div class="not-logged-in">
+                            <i class="fas fa-user" style="margin-bottom:0.5rem;display:block;font-size:1.2rem;color:var(--subtext)"></i>
+                            <a href="/p/login">Log in</a> to leave a review.
+                        </div>
+                    </div>`;
+            } else if (!isPurchased) {
+                writeReviewHTML = `
+                    <div class="write-review">
+                        <div class="not-purchased">
+                            <i class="fas fa-lock" style="margin-bottom:0.5rem;display:block;font-size:1.2rem;color:var(--subtext)"></i>
+                            You must <a href="/p/assets">purchase this asset</a> to leave a review.
+                        </div>
+                    </div>`;
+            } else if (userAlreadyReviewed) {
+                writeReviewHTML = `
+                    <div class="write-review">
+                        <div class="already-reviewed">
+                            <i class="fas fa-check-circle"></i> You've already reviewed this asset. Thank you!
+                        </div>
+                    </div>`;
+            } else {
+                writeReviewHTML = `
+                    <div class="write-review">
+                        <h4>Write a Review</h4>
+                        <div class="star-picker" id="starPicker">
+                            ${[1, 2, 3, 4, 5].map(n => `<i class="fas fa-star" data-star="${n}"></i>`).join('')}
+                        </div>
+                        <textarea class="review-input" id="reviewText" placeholder="Share your experience with this asset…"></textarea>
+                        <button class="submit-review-btn" id="submitReviewBtn" onclick="submitReview('${assetId}')">Post Review</button>
+                    </div>`;
+            }
 
-            const writeReviewHTML = isPurchased ? `
-        <div class="write-review">
-            <h4>Write a Review</h4>
-            <div class="star-picker" id="starPicker">
-                ${[1, 2, 3, 4, 5].map(n => `<i class="fas fa-star" data-star="${n}"></i>`).join('')}
-            </div>
-            <textarea class="review-input" id="reviewText" placeholder="Share your experience with this asset…"></textarea>
-            <button class="submit-review-btn" onclick="submitReview('${assetId}')">Post Review</button>
-        </div>
-    ` : `
-        <div class="write-review">
-            <div class="not-purchased">
-                <i class="fas fa-lock" style="margin-bottom:0.5rem;display:block;font-size:1.2rem;color:var(--subtext)"></i>
-                You must <a href="/p/login">purchase this asset</a> to leave a review.
-            </div>
-        </div>
-    `;
+            container.innerHTML = `
+                <div class="reviews-card" id="reviewsSection">
+                    <div class="reviews-header">
+                        <h3>Reviews</h3>
+                        <span style="font-size:0.8rem;color:var(--subtext);">${count} review${count !== 1 ? 's' : ''}</span>
+                    </div>
+                    ${avgScore > 0 ? `
+                    <div class="reviews-summary">
+                        <div class="reviews-big-score">
+                            <div class="score">${avgScore.toFixed(1)}</div>
+                            <div class="stars-row" style="display:flex;justify-content:center;gap:2px;margin:0.4rem 0;">${renderStars(avgScore, '0.82rem')}</div>
+                            <div class="out-of">out of 5</div>
+                        </div>
+                        <div class="reviews-bars">
+                            ${[5, 4, 3, 2, 1].map(n => `
+                            <div class="bar-row">
+                                <span class="bar-label">${n}</span>
+                                <div class="bar-track"><div class="bar-fill" style="width:${Math.round(dist[n - 1] / totalDist * 100) || 0}%"></div></div>
+                                <span class="bar-count">${dist[n - 1]}</span>
+                            </div>`).join('')}
+                        </div>
+                    </div>` : ''}
+                    <div id="reviewsList">${reviewsHTML}</div>
+                    ${writeReviewHTML}
+                </div>`;
 
-            return `
-    <div class="reviews-card" id="reviewsSection">
-        <div class="reviews-header">
-            <h3>Reviews</h3>
-            <span style="font-size:0.8rem;color:var(--subtext);">${count} review${count !== 1 ? 's' : ''}</span>
-        </div>
-        ${score > 0 ? `
-        <div class="reviews-summary">
-            <div class="reviews-big-score">
-                <div class="score">${score.toFixed(1)}</div>
-                <div class="stars-row" style="display:flex;justify-content:center;gap:2px;margin:0.4rem 0;">${renderStars(score, '0.82rem')}</div>
-                <div class="out-of">out of 5</div>
-            </div>
-            <div class="reviews-bars">
-                ${[5, 4, 3, 2, 1].map(n => `
-                <div class="bar-row">
-                    <span class="bar-label">${n}</span>
-                    <div class="bar-track"><div class="bar-fill" style="width:${Math.round(dist[n - 1] / totalDist * 100) || 0}%"></div></div>
-                    <span class="bar-count">${dist[n - 1]}</span>
-                </div>`).join('')}
-            </div>
-        </div>` : ''}
-        <div id="reviewsList">${reviewsHTML}</div>
-        ${writeReviewHTML}
-    </div>`;
+            initStarPicker();
         }
 
-        let selectedStars = 0;
-
         function initStarPicker() {
+            selectedStars = 0;
             const picker = document.getElementById('starPicker');
             if (!picker) return;
             picker.querySelectorAll('i').forEach(star => {
                 star.addEventListener('mouseenter', () => {
                     const n = parseInt(star.dataset.star);
-                    picker.querySelectorAll('i').forEach((s, i) => {
-                        s.classList.toggle('lit', i < n);
-                    });
+                    picker.querySelectorAll('i').forEach((s, i) => s.classList.toggle('lit', i < n));
                 });
                 star.addEventListener('mouseleave', () => {
-                    picker.querySelectorAll('i').forEach((s, i) => {
-                        s.classList.toggle('lit', i < selectedStars);
-                    });
+                    picker.querySelectorAll('i').forEach((s, i) => s.classList.toggle('lit', i < selectedStars));
                 });
                 star.addEventListener('click', () => {
                     selectedStars = parseInt(star.dataset.star);
-                    picker.querySelectorAll('i').forEach((s, i) => {
-                        s.classList.toggle('lit', i < selectedStars);
-                    });
+                    picker.querySelectorAll('i').forEach((s, i) => s.classList.toggle('lit', i < selectedStars));
                 });
             });
         }
 
-        function submitReview(assetId) {
+        async function submitReview(assetId) {
             if (!selectedStars) { showToast('Please select a star rating', '#e44'); return; }
             const text = document.getElementById('reviewText').value.trim();
             if (!text) { showToast('Please write a review', '#e44'); return; }
 
-            const profile = JSON.parse(localStorage.getItem('user_profile') || '{}');
-            const name = profile.name || profile.email || 'Verified Buyer';
-            const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            const btn = document.getElementById('submitReviewBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Posting…'; }
 
-            saveReview(assetId, { stars: selectedStars, text, name, date });
-            showToast('Review posted!');
+            try {
+                const res = await fetch(`/api/assets/${assetId}/reviews`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ stars: selectedStars, review_text: text }),
+                });
 
-            // Re-render reviews area
-            const card = document.getElementById('reviewsCard');
-            if (card) {
-                const assetData = window._currentAsset;
-                if (assetData) {
-                    card.innerHTML = renderReviews(assetId, assetData);
-                    initStarPicker();
-                }
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to post review');
+
+                showToast('Review posted!');
+                // Reload reviews from server
+                await loadAndRenderReviews(assetId, window._currentAsset, window._isLoggedIn, window._isPurchased);
+            } catch (err) {
+                showToast(err.message || 'Failed to post review', '#e44');
+                if (btn) { btn.disabled = false; btn.textContent = 'Post Review'; }
             }
         }
 
@@ -1659,11 +1719,29 @@
             }
 
             try {
-                const res = await fetch(`/api/assets/${id}`);
-                if (!res.ok) throw new Error('Not found');
-                const asset = await res.json();
+                // Fetch asset, purchase status, and auth in parallel
+                const [assetRes, purchasesRes, profileRes] = await Promise.all([
+                    fetch(`/api/assets/${id}`),
+                    fetch('/api/user/purchases', { credentials: 'include' }).catch(() => null),
+                    fetch('/api/user/profile', { credentials: 'include' }).catch(() => null),
+                ]);
+
+                if (!assetRes.ok) throw new Error('Not found');
+                const asset = await assetRes.json();
                 selectedAsset = asset;
                 window._currentAsset = asset;
+
+                // Auth status
+                const isLoggedIn = profileRes && profileRes.ok;
+                window._isLoggedIn = isLoggedIn;
+
+                // Purchase status
+                let isPurchased = false;
+                if (purchasesRes && purchasesRes.ok) {
+                    const ids = await purchasesRes.json();
+                    isPurchased = ids.includes(String(asset.id));
+                }
+                window._isPurchased = isPurchased;
 
                 document.getElementById('breadcrumbName').textContent = asset.title;
                 document.title = `${asset.title} — SupStore`;
@@ -1682,78 +1760,70 @@
                 ];
 
                 grid.innerHTML = `
-        <div class="detail-left">
-            <!-- Gallery -->
-            <div class="gallery">
-                <div class="gallery-main" id="galleryMain">
-                    <img src="${asset.image_url}" alt="${asset.title}">
-                    <button class="gallery-arrow prev" id="galleryPrev" onclick="galleryPrev()" style="display:none;"><i class="fas fa-chevron-left"></i></button>
-                    <button class="gallery-arrow next" id="galleryNext" onclick="galleryNext()" style="display:none;"><i class="fas fa-chevron-right"></i></button>
-                    <span class="gallery-counter" id="galleryCounter">1 / 1</span>
-                </div>
-                <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
-            </div>
-
-            <!-- Description -->
-            <div class="desc-card">
-                <h3>Description</h3>
-                <p>${asset.description || 'No description available.'}</p>
-            </div>
-
-            <!-- Reviews -->
-            <div id="reviewsCard">${renderReviews(id, asset)}</div>
-        </div>
-
-        <!-- SIDEBAR -->
-        <div class="detail-sidebar">
-            <div class="sidebar-card">
-                <div class="sidebar-header">
-                    <span class="asset-category-badge">${tag}</span>
-                    <h1 class="sidebar-title">${asset.title}</h1>
-                    <div class="sidebar-author">by <a href="#">${author}</a></div>
-                    ${score > 0 ? `
-                    <div class="sidebar-rating">
-                        <span class="score-num">${score.toFixed(1)}</span>
-                        <div class="stars">${renderStars(score, '0.8rem')}</div>
-                        <span class="review-link" onclick="document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'})">(${count} ratings)</span>
-                    </div>` : ''}
-                </div>
-
-                <div class="sidebar-price-block">
-                    <div class="price-label">Price</div>
-                    <div class="sidebar-price">$${asset.price.toLocaleString()}</div>
-                    <div class="price-note">Taxes not included</div>
-                </div>
-
-                <div class="sidebar-actions">
-                    <button class="btn-buy-now" onclick="buyNow()">
-                        <i class="fas fa-bolt"></i> Buy Now
-                    </button>
-                    <button class="btn-add-cart ${inCart ? 'added' : ''}" id="addCartBtn" onclick="addToCart()">
-                        <i class="fas ${inCart ? 'fa-check' : 'fa-cart-plus'}"></i>
-                        ${inCart ? 'Added to Cart' : 'Add to Cart'}
-                    </button>
-                </div>
-
-                <div class="sidebar-details">
-                    <h4>Details</h4>
-                    ${details.map(d => `
-                    <div class="detail-row">
-                        <span class="dk">${d.k}</span>
-                        <span class="dv">${d.v}</span>
-                    </div>`).join('')}
-                </div>
-            </div>
-        </div>`;
+                    <div class="detail-left">
+                        <div class="gallery">
+                            <div class="gallery-main" id="galleryMain">
+                                <img src="${asset.image_url}" alt="${asset.title}">
+                                <button class="gallery-arrow prev" id="galleryPrev" onclick="galleryPrev()" style="display:none;"><i class="fas fa-chevron-left"></i></button>
+                                <button class="gallery-arrow next" id="galleryNext" onclick="galleryNext()" style="display:none;"><i class="fas fa-chevron-right"></i></button>
+                                <span class="gallery-counter" id="galleryCounter">1 / 1</span>
+                            </div>
+                            <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
+                        </div>
+                        <div class="desc-card">
+                            <h3>Description</h3>
+                            <p>${asset.description || 'No description available.'}</p>
+                        </div>
+                        <div id="reviewsCard"></div>
+                    </div>
+                    <div class="detail-sidebar">
+                        <div class="sidebar-card">
+                            <div class="sidebar-header">
+                                <span class="asset-category-badge">${tag}</span>
+                                <h1 class="sidebar-title">${asset.title}</h1>
+                                <div class="sidebar-author">by <a href="#">${author}</a></div>
+                                ${score > 0 ? `
+                                <div class="sidebar-rating">
+                                    <span class="score-num">${score.toFixed(1)}</span>
+                                    <div class="stars">${renderStars(score, '0.8rem')}</div>
+                                    <span class="review-link" onclick="document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'})">(${count} ratings)</span>
+                                </div>` : ''}
+                            </div>
+                            <div class="sidebar-price-block">
+                                <div class="price-label">Price</div>
+                                <div class="sidebar-price">$${asset.price.toLocaleString()}</div>
+                                <div class="price-note">Taxes not included</div>
+                            </div>
+                            <div class="sidebar-actions">
+                                <button class="btn-buy-now" onclick="buyNow()">
+                                    <i class="fas fa-bolt"></i> Buy Now
+                                </button>
+                                <button class="btn-add-cart ${inCart ? 'added' : ''}" id="addCartBtn" onclick="addToCart()">
+                                    <i class="fas ${inCart ? 'fa-check' : 'fa-cart-plus'}"></i>
+                                    ${inCart ? 'Added to Cart' : 'Add to Cart'}
+                                </button>
+                            </div>
+                            <div class="sidebar-details">
+                                <h4>Details</h4>
+                                ${details.map(d => `
+                                <div class="detail-row">
+                                    <span class="dk">${d.k}</span>
+                                    <span class="dv">${d.v}</span>
+                                </div>`).join('')}
+                            </div>
+                        </div>
+                    </div>`;
 
                 initGallery(asset);
-                initStarPicker();
 
-                // Load recommended
+                // Load reviews from server
+                await loadAndRenderReviews(id, asset, isLoggedIn, isPurchased);
+
+                // Recommended carousel
                 const recRes = await fetch('/api/assets?limit=20');
                 if (recRes.ok) {
                     const recJson = await recRes.json();
-                    const recs = (Array.isArray(recJson.data) ? recJson.data : []).filter(a => a.id !== id).slice(0, 14);
+                    const recs = (Array.isArray(recJson.data) ? recJson.data : []).filter(a => a.id !== parseInt(id)).slice(0, 14);
                     if (recs.length > 0) buildCarousel(recs);
                 }
 
@@ -1774,10 +1844,7 @@
             } else {
                 showToast('Already in cart!');
             }
-            if (btn) {
-                btn.classList.add('added');
-                btn.innerHTML = '<i class="fas fa-check"></i> Added to Cart';
-            }
+            if (btn) { btn.classList.add('added'); btn.innerHTML = '<i class="fas fa-check"></i> Added to Cart'; }
         }
 
         function buyNow() {
@@ -1798,26 +1865,22 @@
             const track = document.getElementById('carouselTrack');
             const section = document.getElementById('recommendedSection');
             track.innerHTML = '';
-
             assets.forEach(asset => {
                 const score = parseFloat(asset.rating_score || asset.rating || 0);
                 const a = document.createElement('a');
                 a.className = 'carousel-card';
                 a.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
                 a.innerHTML = `
-            <div class="carousel-card-thumb">
-                <img src="${asset.image_url}" alt="${asset.title}" loading="lazy">
-            </div>
-            <div class="carousel-card-body">
-                <div class="carousel-card-title">${asset.title}</div>
-                <div class="carousel-card-footer">
-                    <div class="carousel-card-price">$${asset.price.toLocaleString()}</div>
-                    ${score > 0 ? `<div class="carousel-card-stars">${renderStars(score, '0.6rem')}</div>` : ''}
-                </div>
-            </div>`;
+                    <div class="carousel-card-thumb"><img src="${asset.image_url}" alt="${asset.title}" loading="lazy"></div>
+                    <div class="carousel-card-body">
+                        <div class="carousel-card-title">${asset.title}</div>
+                        <div class="carousel-card-footer">
+                            <div class="carousel-card-price">$${asset.price.toLocaleString()}</div>
+                            ${score > 0 ? `<div class="carousel-card-stars">${renderStars(score, '0.6rem')}</div>` : ''}
+                        </div>
+                    </div>`;
                 track.appendChild(a);
             });
-
             totalCards = assets.length;
             maxIdx = Math.max(0, totalCards - PER_PAGE);
             section.style.display = 'block';
@@ -1845,14 +1908,8 @@
             document.getElementById('nextBtn').disabled = carouselIdx >= maxIdx;
         }
 
-        document.getElementById('prevBtn').addEventListener('click', () => {
-            carouselIdx = Math.max(0, carouselIdx - PER_PAGE);
-            updateCarousel();
-        });
-        document.getElementById('nextBtn').addEventListener('click', () => {
-            carouselIdx = Math.min(maxIdx, carouselIdx + PER_PAGE);
-            updateCarousel();
-        });
+        document.getElementById('prevBtn').addEventListener('click', () => { carouselIdx = Math.max(0, carouselIdx - PER_PAGE); updateCarousel(); });
+        document.getElementById('nextBtn').addEventListener('click', () => { carouselIdx = Math.min(maxIdx, carouselIdx + PER_PAGE); updateCarousel(); });
 
         /* ── THEME + NAV ── */
         const themeSwitch = document.getElementById('themeSwitch');
@@ -1867,10 +1924,7 @@
 
         const hamburger = document.getElementById('hamburger');
         const navLinks = document.getElementById('navLinks');
-        hamburger.addEventListener('click', () => {
-            hamburger.classList.toggle('active');
-            navLinks.classList.toggle('active');
-        });
+        hamburger.addEventListener('click', () => { hamburger.classList.toggle('active'); navLinks.classList.toggle('active'); });
 
         const navEl = document.getElementById('nav');
         window.addEventListener('scroll', () => navEl.classList.toggle('scrolled', window.scrollY > 50));

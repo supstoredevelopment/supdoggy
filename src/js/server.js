@@ -1135,6 +1135,20 @@ app.get('/api/user/orders', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/user/purchases', authenticateToken, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('user_assets')
+      .select('asset_id')
+      .eq('user_id', req.userId);
+
+    if (error) return res.status(500).json({ error: 'Failed to fetch purchases' });
+    res.json(data.map(d => String(d.asset_id)));
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.get('/api/user-location', async (req, res) => {
   try {
     const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim()
@@ -1229,6 +1243,139 @@ app.get('/api/asset/:assetId/versions', authenticateToken, async (req, res) => {
     if (error) return res.status(500).json({ error: 'Failed to fetch versions' });
     res.json(data);
   } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/api/assets/:id/reviews', async (req, res) => {
+  try {
+    const assetId = parseInt(req.params.id);
+    if (!Number.isInteger(assetId) || assetId < 1) {
+      return res.status(400).json({ error: 'Invalid asset ID' });
+    }
+
+    // Fetch all reviews for this asset, newest first
+    const { data: reviews, error } = await supabaseAdmin
+      .from('asset_reviews')
+      .select('id, stars, review_text, reviewer_name, created_at, user_id')
+      .eq('asset_id', assetId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Failed to fetch reviews:', error.message);
+      return res.status(500).json({ error: 'Failed to fetch reviews' });
+    }
+
+    // Check if the requesting user already reviewed — try to read JWT
+    // from cookie or Authorization header (same logic as authenticateToken
+    // but non-blocking: we don't reject if no token).
+    let userAlreadyReviewed = false;
+    try {
+      let token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token) token = req.cookies.jwt;
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userAlreadyReviewed = reviews.some(r => r.user_id === decoded.userId);
+      }
+    } catch (_) {
+      // Not logged in — that's fine
+    }
+
+    // Strip internal user_id before sending to client
+    const safeReviews = reviews.map(({ user_id, ...rest }) => rest);
+
+    res.json({ reviews: safeReviews, user_already_reviewed: userAlreadyReviewed });
+  } catch (err) {
+    console.error('GET reviews error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+const reviewLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  message: 'Too many reviews submitted, please try again later',
+});
+
+app.post('/api/assets/:id/reviews', reviewLimiter, authenticateToken, async (req, res) => {
+  try {
+    const assetId = parseInt(req.params.id);
+    if (!Number.isInteger(assetId) || assetId < 1) {
+      return res.status(400).json({ error: 'Invalid asset ID' });
+    }
+
+    const { stars, review_text } = req.body;
+
+    // Validate stars
+    const starsInt = parseInt(stars);
+    if (!Number.isInteger(starsInt) || starsInt < 1 || starsInt > 5) {
+      return res.status(400).json({ error: 'Stars must be between 1 and 5' });
+    }
+
+    // Validate review text
+    if (!review_text || typeof review_text !== 'string') {
+      return res.status(400).json({ error: 'Review text is required' });
+    }
+    const trimmedText = validator.trim(review_text);
+    if (!validator.isLength(trimmedText, { min: 10, max: 2000 })) {
+      return res.status(400).json({ error: 'Review must be between 10 and 2000 characters' });
+    }
+
+    // Verify the user actually purchased this asset
+    const { count, error: purchaseErr } = await supabaseAdmin
+      .from('user_assets')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', req.userId)
+      .eq('asset_id', assetId);
+
+    if (purchaseErr) {
+      console.error('Purchase check error:', purchaseErr.message);
+      return res.status(500).json({ error: 'Could not verify purchase' });
+    }
+
+    if (count === 0) {
+      return res.status(403).json({ error: 'You must purchase this asset before reviewing it' });
+    }
+
+    // Get reviewer display name from their profile
+    const reviewerName = req.user.user_metadata?.full_name
+      || req.user.email?.split('@')[0]
+      || 'Verified Buyer';
+
+    // Insert review — unique constraint on (user_id, asset_id) prevents duplicates
+    const { data: review, error: insertErr } = await supabaseAdmin
+      .from('asset_reviews')
+      .insert({
+        asset_id: assetId,
+        user_id: req.userId,
+        reviewer_name: reviewerName,
+        stars: starsInt,
+        review_text: trimmedText,
+      })
+      .select('id, stars, review_text, reviewer_name, created_at')
+      .single();
+
+    if (insertErr) {
+      // Unique violation = already reviewed
+      if (insertErr.code === '23505') {
+        return res.status(409).json({ error: 'You have already reviewed this asset' });
+      }
+      console.error('Review insert error:', insertErr.message);
+      return res.status(500).json({ error: 'Failed to save review' });
+    }
+
+    await auditLog({
+      user_id: req.userId,
+      action: 'review_submitted',
+      resource: 'asset',
+      resource_id: String(assetId),
+      status: 'success',
+      details: { stars: starsInt, review_id: review.id },
+    });
+
+    res.status(201).json({ review });
+  } catch (err) {
+    console.error('POST review error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
