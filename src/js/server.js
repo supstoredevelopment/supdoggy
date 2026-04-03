@@ -1130,33 +1130,55 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     console.log('   Free items:', freeItems.length, '| Paid items:', paidItems.length);
 
     // ── Grant free items immediately ──────────────────────────────
+    // ── Grant free items immediately ──────────────────────────────
     for (const { product } of freeItems) {
-      const { error: insertError } = await supabaseAdmin
+      const { data: inserted, error: insertError } = await supabaseAdmin
         .from('user_assets')
         .insert({
           user_id: userId,
           asset_id: product.id,
           purchased_at: new Date().toISOString(),
-        });
+        })
+        .select();
 
       if (insertError && insertError.code !== '23505') {
         console.error('❌ Failed to grant free asset:', product.id, insertError.message);
         return res.status(500).json({ error: 'Failed to grant free asset' });
       }
 
-      console.log('✅ Free asset granted:', product.id);
+      if (insertError?.code === '23505') {
+        console.log('ℹ️ Free asset already owned:', product.id);
+      } else {
+        console.log('✅ Free asset granted, row:', inserted?.[0]?.id ?? 'unknown');
+      }
     }
 
     if (paidItems.length === 0) {
+      const freeSessionId = `free_${crypto.randomUUID()}`;
+
       const { error: orderErr } = await supabaseAdmin.from('orders').insert({
         user_id: userId,
-        session_id: `free_${crypto.randomUUID()}`,
+        session_id: freeSessionId,
         total_amount: 0,
         status: 'completed',
         payment_date: new Date().toISOString(),
         currency: (currency || 'USD').toUpperCase(),
       });
       if (orderErr) console.error('⚠️ Failed to log free order:', orderErr.message);
+
+      await auditLog({
+        user_id: userId,
+        action: 'payment',
+        resource: 'order',
+        status: 'completed',
+        details: {
+          amount: 0,
+          currency: (currency || 'USD').toUpperCase(),
+          assets_granted: freeItems.length,
+          type: 'free',
+        },
+      });
+
       return res.json({ free: true, url: `${process.env.FRONTEND_URL}/p/success/?free=true` });
     }
 

@@ -153,60 +153,69 @@
             try {
                 localStorage.removeItem('cart');
                 window.dispatchEvent(new Event('cartCleared'));
-            } catch (err) { console.error('Failed to clear cart:', err); }
+            } catch (err) {
+                console.error('Failed to clear cart:', err);
+            }
         }
 
         function updateStatus(message, isSuccess = null) {
             const statusDiv = document.getElementById('downloadStatus');
             let icon = '<span class="loading"></span>';
             if (isSuccess === true) icon = '<i class="fas fa-check-circle success-badge"></i> ';
-            else if (isSuccess === false) icon = '<i class="fas fa-exclamation-circle error-badge"></i> ';
+            if (isSuccess === false) icon = '<i class="fas fa-exclamation-circle error-badge"></i> ';
             statusDiv.innerHTML = `<p>${icon}${message}</p>`;
         }
 
-        // Poll /api/session-assets/:sessionId until order is 'completed' (webhook has run)
+        // Poll /api/session-assets/:sessionId until the webhook has run and the order is completed
         async function pollSessionAssets(maxAttempts = 12, intervalMs = 3000) {
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                updateStatus(`Confirming your purchase...(${attempt}/${maxAttempts})`); try {
+                updateStatus(`Confirming your purchase... (${attempt}/${maxAttempts})`);
+                try {
                     const res = await fetch(`/api/session-assets/${sessionId}`, {
-                        credentials: 'include'
-                    }); if (res.status === 401) {
+                        credentials: 'include',
+                    });
+                    if (res.status === 401) {
                         updateStatus('Please log in to access your assets.', false);
                         return null;
-                    } if (!res.ok) throw new Error(`HTTP ${res.status}`); const data = await res.json();
-                    console.log(`Attempt ${attempt}:`, data); if (data.ready && data.assets && data.assets.length > 0) {
-                        return data.assets;
                     }
-
-                    // Not ready yet — webhook hasn't fired
-                    if (attempt < maxAttempts) {
-                        await new Promise(r => setTimeout(r, intervalMs));
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const data = await res.json();
+                    console.log(`Attempt ${attempt}:`, data);
+                    if (data.ready && data.assets && data.assets.length > 0) {
+                        return data.assets;
                     }
                 } catch (err) {
                     console.error(`Attempt ${attempt} failed:`, err);
-                    if (attempt < maxAttempts) {
-                        await new Promise(r => setTimeout(r, intervalMs));
-                    }
                 }
+                if (attempt < maxAttempts) await new Promise(r => setTimeout(r, intervalMs));
             }
             return null;
         }
 
-        // For free orders — assets granted synchronously, just fetch them directly
-        async function pollFreeAssets(maxAttempts = 4, intervalMs = 1500) {
+        // For free orders — assets are granted synchronously on the server before the redirect,
+        // but we add an initial delay and more attempts to absorb any DB commit lag.
+        async function pollFreeAssets(maxAttempts = 8, intervalMs = 1500) {
+            // Give the server's DB write a moment to fully commit before the first attempt
+            await new Promise(r => setTimeout(r, 800));
+
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                updateStatus(`Getting your free asset...
-                    (${attempt}/${maxAttempts})`); try {
+                updateStatus(`Getting your free asset... (${attempt}/${maxAttempts})`);
+                try {
                     const res = await fetch('/api/user/assets', {
-                        credentials: 'include'
-                    }); if (res.status === 401) {
-                        updateStatus('Please log in to access your assets.', false); return null;
-                    } if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    const assets = await res.json(); if (assets && assets.length > 0) return assets;
-                    if (attempt < maxAttempts) await new Promise(r => setTimeout(r, intervalMs));
+                        credentials: 'include',
+                    });
+                    if (res.status === 401) {
+                        updateStatus('Please log in to access your assets.', false);
+                        return null;
+                    }
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const assets = await res.json();
+                    console.log(`Free poll attempt ${attempt}:`, assets);
+                    if (assets && assets.length > 0) return assets;
                 } catch (err) {
-                    if (attempt < maxAttempts) await new Promise(r => setTimeout(r, intervalMs));
+                    console.warn(`Free poll attempt ${attempt} failed:`, err);
                 }
+                if (attempt < maxAttempts) await new Promise(r => setTimeout(r, intervalMs));
             }
             return null;
         }
@@ -214,19 +223,21 @@
         async function downloadAssets(assets) {
             updateStatus(`Found ${assets.length} asset(s). Starting download${assets.length > 1 ? 's' : ''}...`);
 
-            let downloaded = 0, failed = 0;
+            let downloaded = 0;
+            let failed = 0;
 
             for (const asset of assets) {
                 try {
-                    const vres = await fetch(`/api/asset/${asset.id}/versions`, { credentials: 'include' });
+                    const vres = await fetch(`/api/asset/${asset.id}/versions`, {
+                        credentials: 'include',
+                    });
                     if (!vres.ok) { failed++; continue; }
 
                     const versions = await vres.json();
                     if (!versions || versions.length === 0) { failed++; continue; }
 
                     const dlRes = await fetch(`/api/download/${asset.id}/${versions[0].id}`, {
-                        credentials:
-                            'include'
+                        credentials: 'include',
                     });
                     if (!dlRes.ok) { failed++; continue; }
 
@@ -268,8 +279,10 @@
             }
 
             if (!assets || assets.length === 0) {
-                updateStatus('Your assets are being processed — they\'ll appear in your dashboard shortly.',
-                    false);
+                updateStatus(
+                    "Your assets are being processed — they'll appear in your dashboard shortly.",
+                    false
+                );
                 return;
             }
 
