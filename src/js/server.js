@@ -231,42 +231,7 @@ app.post(
           }
         }
 
-        // ── Fallback 2: recent pending order for this user ────────────
-        // Kept intentionally — metadata can be missing in some edge cases.
-        // Scoped tightly: only pending orders created within the last 2 hours.
-        if (userId && !orderId) {
-          console.log('\n⚠️  orderId still missing — trying fallback 2: most recent pending order for user (within 2h)...');
 
-          const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-
-          const { data: recentOrder, error: recentErr } = await supabaseAdmin
-            .from('orders')
-            .select('id, user_id, status, created_at, session_id')
-            .eq('user_id', userId)
-            .eq('status', 'pending')
-            .gte('created_at', twoHoursAgo)          // ← tight time window
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (recentErr) {
-            console.error('   ❌ Fallback 2 DB error:', recentErr.message);
-          } else if (!recentOrder) {
-            console.warn('   ⚠️  Fallback 2: no recent pending order found for user:', userId);
-          } else {
-            console.log('   ✅ Fallback 2 resolved — order:', recentOrder.id, '| created_at:', recentOrder.created_at);
-            orderId = recentOrder.id;
-
-            if (!recentOrder.session_id) {
-              const { error: linkErr } = await supabaseAdmin
-                .from('orders')
-                .update({ session_id: session.id })
-                .eq('id', orderId);
-              if (linkErr) console.error('   ⚠️  Failed to link session_id (fallback 2):', linkErr.message);
-              else console.log('   🔗 session_id linked to order via fallback 2');
-            }
-          }
-        }
 
         // ── Give up if still unresolvable ─────────────────────────────
         if (!userId || !orderId) {
@@ -314,17 +279,10 @@ app.post(
           return res.json({ received: true, note: 'Already completed' });
         }
 
-        // ── Safety check: if order was already cancelled (e.g. by cancel
-        //    page hitting /api/cancel-order), do NOT re-open it.
-        //    This only applies to Fallback 2 matches — if metadata gave us
-        //    the orderId directly and it's cancelled, something is wrong
-        //    and we should not override it either.
+
         if (existingOrder.status === 'cancelled') {
           console.warn('⚠️  Order is already cancelled — but Stripe says payment is confirmed.');
           console.warn('   Re-opening order as completed since payment is verified by Stripe.');
-          // We intentionally fall through here and mark it completed,
-          // because Stripe's re-verified payment_status === 'paid' is the
-          // source of truth. If money was taken, the user gets their assets.
         }
 
         // ── Mark order completed ──────────────────────────────────────
@@ -770,6 +728,98 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+app.post('/api/resolve-session', authenticateToken, async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 200) {
+      return res.status(400).json({ error: 'Invalid session ID' });
+    }
+
+    // Always ask Stripe — never trust the client
+    let stripeSession;
+    try {
+      stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid session ID' });
+    }
+
+    const paymentStatus = stripeSession.payment_status; // 'paid' | 'unpaid' | 'no_payment_required'
+    const orderId = stripeSession.metadata?.orderId;
+
+    console.log(`\n🔄 /api/resolve-session — session: ${sessionId} | payment_status: ${paymentStatus} | orderId: ${orderId}`);
+
+    if (!orderId) {
+      // Try session_id fallback
+      const { data: order } = await supabaseAdmin
+        .from('orders')
+        .select('id, status')
+        .eq('session_id', sessionId)
+        .eq('user_id', req.userId)
+        .maybeSingle();
+
+      if (!order) {
+        return res.json({ resolved: false, note: 'No order found' });
+      }
+
+      return resolveOrder(res, order, paymentStatus, sessionId, req.userId);
+    }
+
+    const { data: order } = await supabaseAdmin
+      .from('orders')
+      .select('id, status')
+      .eq('id', orderId)
+      .eq('user_id', req.userId)
+      .maybeSingle();
+
+    if (!order) {
+      return res.json({ resolved: false, note: 'Order not found for this user' });
+    }
+
+    return resolveOrder(res, order, paymentStatus, sessionId, req.userId);
+
+  } catch (err) {
+    console.error('❌ /api/resolve-session error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+async function resolveOrder(res, order, paymentStatus, sessionId, userId) {
+  if (order.status === 'completed' && (paymentStatus === 'paid' || paymentStatus === 'no_payment_required')) {
+    return res.json({ resolved: true, status: 'completed' }); // idempotent
+  }
+
+  const newStatus = (paymentStatus === 'paid' || paymentStatus === 'no_payment_required')
+    ? 'completed'
+    : 'cancelled';
+
+  if (order.status === newStatus) {
+    return res.json({ resolved: true, status: newStatus }); // already correct
+  }
+
+  const { error } = await supabaseAdmin
+    .from('orders')
+    .update({ status: newStatus, ...(newStatus === 'completed' ? { payment_date: new Date().toISOString() } : {}) })
+    .eq('id', order.id);
+
+  if (error) {
+    console.error('❌ resolve-session update failed:', error.message);
+    return res.status(500).json({ error: 'DB update failed' });
+  }
+
+  await auditLog({
+    user_id: userId,
+    action: newStatus === 'completed' ? 'payment' : 'order_cancelled',
+    resource: 'order',
+    resource_id: order.id,
+    status: newStatus,
+    details: { session_id: sessionId, payment_status: paymentStatus, resolved_by: 'resolve-session' },
+  });
+
+  console.log(`✅ Order ${order.id} resolved to: ${newStatus}`);
+  return res.json({ resolved: true, status: newStatus });
+}
 
 
 // ── Routes ────────────────────────────────────────────────────────────────────

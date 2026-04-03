@@ -142,30 +142,23 @@
         const params = new URLSearchParams(window.location.search);
         const sessionId = params.get('session_id');
 
-        if (sessionId) {
-            document.getElementById('sessionId').textContent = sessionId;
+        window.addEventListener('load', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const sessionId = params.get('session_id');
+            if (!sessionId) return;
 
-            // ── Eagerly cancel the order the moment the user lands here.
-            // We read the JWT from the cookie (same-site, httpOnly=false path)
-            // or fall back to localStorage if your frontend stores it there.
-            const token = localStorage.getItem('token') || getCookieValue('jwt');
-
-            if (token) {
-                fetch('/api/cancel-order', {
+            try {
+                await fetch('/api/resolve-session', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ sessionId }),
-                })
-                    .then(r => r.json())
-                    .then(data => console.log('🚫 Cancel order result:', data))
-                    .catch(err => console.warn('⚠️ Cancel order call failed (non-critical):', err));
-            } else {
-                console.warn('⚠️ No auth token found — cancel-order not called. Webhook will handle it.');
+                });
+            } catch (e) {
+                console.warn('Could not resolve session on cancel page:', e);
             }
-        }
+        });
+
 
         function getCookieValue(name) {
             const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
