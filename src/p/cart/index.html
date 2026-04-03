@@ -1516,7 +1516,7 @@
                 const session = await res.json();
 
                 if (session.free) {
-                    window.location.href = '/p/success';
+                    window.location.href = session.url || '/p/success/?free=true';
                 } else if (session.url) {
                     window.location.href = session.url;
                 } else {

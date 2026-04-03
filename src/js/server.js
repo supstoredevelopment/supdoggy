@@ -308,21 +308,7 @@ app.post(
         console.log('\n🛒 Resolving line items...');
         let lineItems = session.line_items?.data;
 
-        if (!lineItems) {
-          console.log('   line_items not on session object — fetching via retrieve()...');
-          try {
-            const sessionExpanded = await stripe.checkout.sessions.retrieve(session.id, {
-              expand: ['line_items'],
-            });
-            lineItems = sessionExpanded.line_items?.data || [];
-            console.log('   ✅ Expanded line items fetched, count:', lineItems.length);
-          } catch (stripeErr) {
-            console.error('   ❌ Failed to expand line items:', stripeErr.message);
-            lineItems = [];
-          }
-        } else {
-          console.log('   Line items already on session, count:', lineItems.length);
-        }
+        console.log('   Line items from expanded session, count:', lineItems.length);
 
         // ── Fetch all assets for price matching ───────────────────────
         const { data: allAssets, error: assetsErr } = await supabaseAdmin
