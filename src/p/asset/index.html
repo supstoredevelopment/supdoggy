@@ -1751,6 +1751,7 @@
                 const tag = Array.isArray(asset.tag) ? asset.tag[0] : (asset.tag || 'Asset');
                 const author = asset.author || asset.seller || 'SupStore';
                 const inCart = !!getCart().find(i => i.id === asset.id);
+                const isFree = asset.price === 0;
 
                 const details = [
                     { k: 'Last Updated', v: asset.updated_at ? new Date(asset.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A' },
@@ -1791,12 +1792,12 @@
                             </div>
                             <div class="sidebar-price-block">
                                 <div class="price-label">Price</div>
-                                <div class="sidebar-price">$${asset.price.toLocaleString()}</div>
-                                <div class="price-note">Taxes not included</div>
+                                <div class="sidebar-price">${isFree ? '<span style="color:var(--accent)">FREE</span>' : '$' + asset.price.toLocaleString()}</div>
+                                <div class="price-note">${isFree ? 'No payment required' : 'Taxes not included'}</div>
                             </div>
                             <div class="sidebar-actions">
                                 <button class="btn-buy-now" onclick="buyNow()">
-                                    <i class="fas fa-bolt"></i> Buy Now
+                                    <i class="fas fa-bolt"></i> ${isFree ? 'Get Now' : 'Buy Now'}
                                 </button>
                                 <button class="btn-add-cart ${inCart ? 'added' : ''}" id="addCartBtn" onclick="addToCart()">
                                     <i class="fas ${inCart ? 'fa-check' : 'fa-cart-plus'}"></i>
@@ -1875,7 +1876,7 @@
                     <div class="carousel-card-body">
                         <div class="carousel-card-title">${asset.title}</div>
                         <div class="carousel-card-footer">
-                            <div class="carousel-card-price">$${asset.price.toLocaleString()}</div>
+                            <div class="carousel-card-price">${asset.price === 0 ? 'FREE' : '$' + asset.price.toLocaleString()}</div>
                             ${score > 0 ? `<div class="carousel-card-stars">${renderStars(score, '0.6rem')}</div>` : ''}
                         </div>
                     </div>`;

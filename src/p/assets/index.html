@@ -1122,6 +1122,7 @@
                 const count = asset.rating_count || asset.reviews || 0;
                 const tag = Array.isArray(asset.tag) ? asset.tag[0] : (asset.tag || '');
                 const author = asset.author || asset.seller || 'SupStore';
+                const isFree = asset.price === 0;
 
                 const el = document.createElement('a');
                 el.className = 'asset-card';
@@ -1142,7 +1143,9 @@
                         ${count > 0 ? `<span class="rating-count">(${count})</span>` : ''}
                     </div>` : ''}
                     <div class="asset-card-price">
-                        <span class="from-label">From</span>$${asset.price.toLocaleString()}
+                        ${isFree
+                        ? '<span style="color:var(--accent);font-weight:800;">FREE</span>'
+                        : '<span class="from-label">From</span>$' + asset.price.toLocaleString()}
                     </div>
                 </div>`;
 

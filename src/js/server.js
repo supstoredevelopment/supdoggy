@@ -22,6 +22,15 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+// ── Domain redirect ───────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  const host = req.headers.host || '';
+  if (host === 'supdoggy.store' || host === 'www.supdoggy.store') {
+    return res.redirect(301, `https://supstore.dev${req.originalUrl}`);
+  }
+  next();
+});
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const supabase = createClient(
