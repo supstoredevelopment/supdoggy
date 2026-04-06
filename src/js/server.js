@@ -1090,6 +1090,115 @@ app.post('/api/auth/oauth-callback', async (req, res) => {
   }
 });
 
+// ── Testing mode helpers ──────────────────────────────────────────────────────
+
+async function isTestingModeEnabled() {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('config')
+      .select('value')
+      .eq('key', 'testing_mode')
+      .maybeSingle();
+    if (error || !data) return false;
+    return data.value === true || data.value === 'true';
+  } catch {
+    return false;
+  }
+}
+
+// Public endpoint — frontend polls this to show/hide the testing mode banner
+app.get('/api/testing-mode', async (req, res) => {
+  const enabled = await isTestingModeEnabled();
+  res.json({ enabled });
+});
+
+// Mock checkout — only works when testing_mode is on
+app.post('/api/create-test-checkout', checkoutLimiter, authenticateToken, async (req, res) => {
+  try {
+    const testingEnabled = await isTestingModeEnabled();
+    if (!testingEnabled) {
+      return res.status(403).json({ error: 'Testing mode is not enabled' });
+    }
+
+    const { cart, currency } = req.body;
+    const userId = req.userId;
+
+    if (!Array.isArray(cart) || cart.length === 0 || cart.length > 100) {
+      return res.status(400).json({ error: 'Invalid cart' });
+    }
+
+    const validatedCart = cart.map(validateCartItem);
+
+    const { data: products, error: productsError } = await supabase
+      .from('assets')
+      .select('id, title, price')
+      .in('id', validatedCart.map(item => item.id));
+
+    if (productsError || !products) {
+      return res.status(400).json({ error: 'Failed to fetch products' });
+    }
+
+    const productMap = new Map(products.map(p => [p.id, p]));
+    let totalAmount = 0;
+    const grantedAssets = [];
+
+    for (const item of validatedCart) {
+      const product = productMap.get(item.id);
+      if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
+      totalAmount += (product.price || 0) * item.quantity;
+
+      const { error: insertError } = await supabaseAdmin
+        .from('user_assets')
+        .insert({
+          user_id: userId,
+          asset_id: product.id,
+          purchased_at: new Date().toISOString(),
+        });
+
+      if (insertError && insertError.code !== '23505') {
+        console.error('❌ [TEST] Failed to grant asset:', product.id, insertError.message);
+        return res.status(500).json({ error: 'Failed to grant test asset' });
+      }
+
+      grantedAssets.push(product.id);
+    }
+
+    const testSessionId = `test_${crypto.randomUUID()}`;
+
+    const { error: orderErr } = await supabaseAdmin.from('orders').insert({
+      user_id: userId,
+      session_id: testSessionId,
+      total_amount: Math.round(totalAmount * 100) / 100,
+      status: 'completed',
+      payment_date: new Date().toISOString(),
+      currency: (currency || 'USD').toUpperCase(),
+    });
+
+    if (orderErr) console.error('⚠️ [TEST] Failed to log test order:', orderErr.message);
+
+    await auditLog({
+      user_id: userId,
+      action: 'test_purchase',
+      resource: 'order',
+      status: 'completed',
+      details: {
+        session_id: testSessionId,
+        assets_granted: grantedAssets.length,
+        amount: totalAmount,
+        currency: (currency || 'USD').toUpperCase(),
+        type: 'test',
+      },
+    });
+
+    console.log('🧪 [TEST] Mock purchase complete — session:', testSessionId, '| assets:', grantedAssets);
+
+    return res.json({ free: true, url: `${process.env.FRONTEND_URL}/p/success/?free=true&test=true` });
+  } catch (err) {
+    console.error('❌ [TEST] Test checkout error:', err.message);
+    res.status(500).json({ error: 'Test checkout failed' });
+  }
+});
+
 app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, async (req, res) => {
   try {
     console.log('\n🛒 Checkout request received');
@@ -1097,6 +1206,57 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     console.log('   userEmail :', req.user.email);
     console.log('   cart      :', JSON.stringify(req.body.cart));
     console.log('   currency  :', req.body.currency);
+
+    // ── Testing mode intercept ────────────────────────────────────
+    if (await isTestingModeEnabled()) {
+      console.log('🧪 Testing mode ON — routing to mock checkout');
+      // Reuse the mock checkout handler logic inline
+      const { cart: tCart, currency: tCurrency } = req.body;
+      if (!Array.isArray(tCart) || tCart.length === 0 || tCart.length > 100) {
+        return res.status(400).json({ error: 'Invalid cart' });
+      }
+      const validatedTestCart = tCart.map(validateCartItem);
+      const { data: testProducts, error: testProductsError } = await supabase
+        .from('assets')
+        .select('id, title, price')
+        .in('id', validatedTestCart.map(item => item.id));
+      if (testProductsError || !testProducts) {
+        return res.status(400).json({ error: 'Failed to fetch products' });
+      }
+      const testProductMap = new Map(testProducts.map(p => [p.id, p]));
+      let testTotal = 0;
+      for (const item of validatedTestCart) {
+        const product = testProductMap.get(item.id);
+        if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
+        testTotal += (product.price || 0) * item.quantity;
+        const { error: insertError } = await supabaseAdmin.from('user_assets').insert({
+          user_id: req.userId,
+          asset_id: product.id,
+          purchased_at: new Date().toISOString(),
+        });
+        if (insertError && insertError.code !== '23505') {
+          return res.status(500).json({ error: 'Failed to grant test asset' });
+        }
+      }
+      const testSessionId = `test_${crypto.randomUUID()}`;
+      await supabaseAdmin.from('orders').insert({
+        user_id: req.userId,
+        session_id: testSessionId,
+        total_amount: Math.round(testTotal * 100) / 100,
+        status: 'completed',
+        payment_date: new Date().toISOString(),
+        currency: (tCurrency || 'USD').toUpperCase(),
+      });
+      await auditLog({
+        user_id: req.userId,
+        action: 'test_purchase',
+        resource: 'order',
+        status: 'completed',
+        details: { session_id: testSessionId, amount: testTotal, type: 'test' },
+      });
+      console.log('🧪 [TEST] Mock purchase complete — session:', testSessionId);
+      return res.json({ free: true, url: `${process.env.FRONTEND_URL}/p/success/?free=true&test=true` });
+    }
 
     const { cart, currency } = req.body;
     const userId = req.userId;
