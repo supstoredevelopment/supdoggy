@@ -15,7 +15,6 @@
         const COOKIE_NAME = 'supstore_unlocked';
         const COOKIE_EXPIRY_DAYS = 30;
 
-        // Check if already unlocked via cookie
         function getCookie(name) {
             const value = `; ${document.cookie}`;
             const parts = value.split(`; ${name}=`);
@@ -24,7 +23,7 @@
         }
 
         if (getCookie(COOKIE_NAME) === 'true') {
-            return; // Already unlocked — skip lock screen
+            return;
         }
 
         const style = document.createElement('style');
@@ -43,98 +42,150 @@
         border: 1px solid rgba(255,255,255,0.08);
         border-radius: 24px;
         padding: 3.5rem 3rem 3rem;
-        max-width: 480px;
+        max-width: 520px;
         width: calc(100% - 3rem);
         text-align: center;
-        box-shadow: 0 0 90px rgba(220,38,38,0.15), 0 40px 80px rgba(0,0,0,0.75);
-        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        box-shadow: 0 0 100px rgba(220,38,38,0.18), 0 50px 90px rgba(0,0,0,0.8);
+        transition: all 1.1s cubic-bezier(0.23, 1, 0.32, 1);
       }
       #st-lock-card.st-unlocking {
-        transform: scale(0.92) translateY(-30px);
+        transform: scale(0.88) translateY(-40px);
         opacity: 0;
       }
 
-      .st-lock-icon { width: 68px; height: 68px; margin: 0 auto 1.8rem; }
-      .st-lock-icon svg { width: 68px; height: 68px; }
+      .st-lock-icon { width: 72px; height: 72px; margin: 0 auto 2rem; }
+      .st-lock-icon svg { width: 72px; height: 72px; }
 
       .st-shackle {
-        transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
-                    opacity 0.7s ease;
+        transition: transform 1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                    opacity 1.1s ease;
         transform-origin: bottom center;
       }
       #st-lock-card.st-unlocking .st-shackle {
-        transform: translateY(-12px) rotate(-35deg);
-        opacity: 0.15;
+        transform: translateY(-18px) rotate(-45deg);
+        opacity: 0.1;
       }
 
       #st-lock-card h2 {
-        color: #fff; font-size: 2.1rem; font-weight: 800;
-        letter-spacing: -0.04em; margin: 0 0 0.8rem; line-height: 1.15;
+        color: #fff; font-size: 2.15rem; font-weight: 800;
+        letter-spacing: -0.04em; margin: 0 0 0.9rem; line-height: 1.12;
       }
       #st-lock-card p {
-        color: rgba(255,255,255,0.52); font-size: 0.97rem;
-        line-height: 1.7; margin: 0 0 2rem;
+        color: rgba(255,255,255,0.55); font-size: 0.98rem;
+        line-height: 1.75; margin: 0 0 2.2rem;
       }
-      .st-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 1.8rem 0; }
+      .st-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 2rem 0; }
 
       .st-unlock-label {
-        font-size: 0.71rem; font-weight: 800; letter-spacing: 0.14em;
-        text-transform: uppercase; color: rgba(255,255,255,0.28); margin-bottom: 0.8rem;
+        font-size: 0.7rem; font-weight: 800; letter-spacing: 0.15em;
+        text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 0.9rem;
       }
       #st-uid-input {
         width: 100%; box-sizing: border-box;
-        background: rgba(255,255,255,0.035);
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 12px; padding: 0.9rem 1.1rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.13);
+        border-radius: 12px; padding: 0.95rem 1.15rem;
         color: #fff; font-family: 'Inter', monospace;
-        font-size: 0.9rem; letter-spacing: 0.03em;
-        outline: none; transition: all 0.25s ease;
-        margin-bottom: 0.9rem;
+        font-size: 0.92rem; letter-spacing: 0.04em;
+        outline: none; transition: all 0.3s ease;
+        margin-bottom: 1rem;
       }
       #st-uid-input:focus {
-        border-color: rgba(220,38,38,0.5);
-        box-shadow: 0 0 0 4px rgba(220,38,38,0.1);
+        border-color: rgba(220,38,38,0.55);
+        box-shadow: 0 0 0 4px rgba(220,38,38,0.12);
       }
       #st-uid-input.st-error {
         border-color: #e63939;
-        animation: st-shake 0.4s ease;
+        animation: st-shake 0.45s ease;
       }
       @keyframes st-shake {
         0%,100% { transform: translateX(0); }
-        20%,60% { transform: translateX(-6px); }
-        40%,80% { transform: translateX(6px); }
+        20%,60% { transform: translateX(-7px); }
+        40%,80% { transform: translateX(7px); }
       }
 
       #st-unlock-btn {
-        width: 100%; padding: 1rem;
-        background: rgba(220,38,38,0.1);
-        border: 1px solid rgba(220,38,38,0.35);
-        border-radius: 12px; color: #ff5555;
-        font-family: inherit; font-size: 0.97rem; font-weight: 700;
-        cursor: pointer; transition: all 0.2s ease;
+        width: 100%; padding: 1.05rem;
+        background: rgba(220,38,38,0.09);
+        border: 1px solid rgba(220,38,38,0.38);
+        border-radius: 12px; color: #ff5c5c;
+        font-family: inherit; font-size: 0.98rem; font-weight: 700;
+        cursor: pointer; transition: all 0.25s ease;
       }
-      #st-unlock-btn:hover { background: rgba(220,38,38,0.18); }
+      #st-unlock-btn:hover { background: rgba(220,38,38,0.2); }
 
       #st-error-msg {
-        font-size: 0.84rem; color: #ff6666;
-        margin-top: 0.7rem; min-height: 1.2em;
-        opacity: 0; transition: opacity 0.25s;
+        font-size: 0.85rem; color: #ff6666;
+        margin-top: 0.8rem; min-height: 1.25em;
+        opacity: 0; transition: opacity 0.3s;
       }
       #st-error-msg.st-visible { opacity: 1; }
 
       #st-success {
-        display: none; padding: 1rem 0 0.5rem;
+        display: none; padding: 1.2rem 0 0.8rem;
       }
       #st-success .st-check {
-        width: 58px; height: 58px;
-        background: rgba(34,197,94,0.12);
-        border: 1px solid rgba(34,197,94,0.35);
+        width: 64px; height: 64px;
+        background: rgba(34,197,94,0.1);
+        border: 1px solid rgba(34,197,94,0.4);
         border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        margin: 0 auto 1.2rem;
+        margin: 0 auto 1.4rem;
+        animation: st-check-pop 0.6s ease forwards;
       }
-      #st-success p { color: rgba(255,255,255,0.7); font-size: 1rem; }
+      @keyframes st-check-pop {
+        0% { transform: scale(0.4); }
+        60% { transform: scale(1.15); }
+        100% { transform: scale(1); }
+      }
+      #st-success p { color: rgba(255,255,255,0.75); font-size: 1.02rem; }
       #st-success strong { color: #fff; }
+
+      /* Account chooser style */
+      .st-account-list {
+        display: none;
+        margin: 1.8rem 0 1.2rem;
+        text-align: left;
+      }
+      .st-account-item {
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        margin-bottom: 0.7rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .st-account-item:hover {
+        background: rgba(255,255,255,0.04);
+        border-color: rgba(220,38,38,0.25);
+      }
+      .st-account-item .avatar {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        color: #aaa;
+        flex-shrink: 0;
+      }
+      .st-account-item .info {
+        flex: 1;
+      }
+      .st-account-item .name {
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+      .st-account-item .role {
+        color: rgba(255,255,255,0.45);
+        font-size: 0.8rem;
+      }
     `;
         document.head.appendChild(style);
 
@@ -143,29 +194,54 @@
         overlay.innerHTML = `
       <div id="st-lock-card">
         <div class="st-lock-icon">
-          <svg viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="12" y="29" width="44" height="30" rx="7" fill="rgba(220,38,38,0.1)" stroke="rgba(220,38,38,0.5)" stroke-width="2"/>
-            <path class="st-shackle" d="M22 29V22a12 12 0 0 1 24 0v7" stroke="rgba(220,38,38,0.65)" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-            <circle cx="34" cy="44" r="4.5" fill="rgba(220,38,38,0.75)"/>
-            <rect x="31.5" y="46" width="5" height="7" rx="2" fill="rgba(220,38,38,0.75)"/>
+          <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="13" y="30" width="46" height="32" rx="8" fill="rgba(220,38,38,0.09)" stroke="rgba(220,38,38,0.52)" stroke-width="2.2"/>
+            <path class="st-shackle" d="M23 30V23a13 13 0 0 1 26 0v7" stroke="rgba(220,38,38,0.68)" stroke-width="3.8" stroke-linecap="round" fill="none"/>
+            <circle cx="36" cy="46" r="4.8" fill="rgba(220,38,38,0.78)"/>
+            <rect x="33" y="48" width="6" height="8" rx="2" fill="rgba(220,38,38,0.78)"/>
           </svg>
         </div>
-        <h2>Session Restricted</h2>
-        <p>This testing session has been closed for public access.<br>Please authenticate to continue.</p>
+        <h2>Restricted Access</h2>
+        <p>This testing session is closed to the public.<br>Authorized personnel only.</p>
         <hr class="st-divider">
-        <div class="st-unlock-label">Authorized User ID</div>
+        <div class="st-unlock-label">Select Account or Enter ID</div>
+        
+        <div class="st-account-list" id="st-account-list">
+          <div class="st-account-item" data-uid="hugo-dev">
+            <div class="avatar">H</div>
+            <div class="info">
+              <div class="name">Hugo</div>
+              <div class="role">Lead Developer</div>
+            </div>
+          </div>
+          <div class="st-account-item" data-uid="modellercoolest">
+            <div class="avatar">M</div>
+            <div class="info">
+              <div class="name">ModellerCoolest</div>
+              <div class="role">3D & Modeling</div>
+            </div>
+          </div>
+          <div class="st-account-item" data-uid="supdoggy">
+            <div class="avatar">S</div>
+            <div class="info">
+              <div class="name">Supdoggy</div>
+              <div class="role">Core Tester</div>
+            </div>
+          </div>
+        </div>
+
         <input id="st-uid-input" type="text"
           placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
           autocomplete="off" spellcheck="false" maxlength="36">
-        <button id="st-unlock-btn">Unlock Access</button>
-        <div id="st-error-msg">Access denied — invalid identifier.</div>
+        <button id="st-unlock-btn">Unlock Session</button>
+        <div id="st-error-msg">Access denied — invalid credentials.</div>
         <div id="st-success">
           <div class="st-check">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-              <path d="M5 13l4 4L19 7" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M5 13l4 4L19 7" stroke="#22c55e" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <p><strong>Access granted.</strong> Loading SupStore…</p>
+          <p><strong>Access granted.</strong> Initializing environment…</p>
         </div>
       </div>
     `;
@@ -179,81 +255,103 @@
             document.cookie = `${COOKIE_NAME}=true; expires=${expiry.toUTCString()}; path=/; SameSite=Strict`;
         }
 
-        function tryUnlock() {
+        function performUnlock() {
+            const card = document.getElementById('st-lock-card');
+            const successEl = document.getElementById('st-success');
+            const btn = document.getElementById('st-unlock-btn');
+            const input = document.getElementById('st-uid-input');
+            const label = document.querySelector('.st-unlock-label');
+            const divider = document.querySelector('.st-divider');
+            const error = document.getElementById('st-error-msg');
+            const accountList = document.getElementById('st-account-list');
+
+            btn.style.display = 'none';
+            input.style.display = 'none';
+            label.style.display = 'none';
+            divider.style.display = 'none';
+            error.style.display = 'none';
+            accountList.style.display = 'none';
+
+            successEl.style.display = 'block';
+            card.classList.add('st-unlocking');
+
+            // Extended unlock animation (longer overall sequence)
+            setTimeout(() => {
+                overlay.style.transition = 'opacity 1.6s cubic-bezier(0.23, 1, 0.32, 1)';
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.remove();
+                }, 1700);
+            }, 2200); // Significantly longer delay before fade-out
+        }
+
+        function tryUnlock(val) {
             const input = document.getElementById('st-uid-input');
             const errorMsg = document.getElementById('st-error-msg');
-            const card = document.getElementById('st-lock-card');
-            let val = input.value.trim().toLowerCase().replace(/[^a-f0-9-]/g, '');
+            const normalized = (val || input.value).trim().toLowerCase().replace(/[^a-f0-9-]/g, '');
 
             errorMsg.classList.remove('st-visible');
-            input.classList.remove('st-error');
+            if (input) input.classList.remove('st-error');
 
-            if (val === VALID_UID) {
-                // Success path
+            if (normalized === VALID_UID) {
                 setUnlockedCookie();
-
-                document.getElementById('st-unlock-btn').style.display = 'none';
-                input.style.display = 'none';
-                document.querySelector('.st-unlock-label').style.display = 'none';
-                document.querySelector('.st-divider').style.display = 'none';
-                document.getElementById('st-error-msg').style.display = 'none';
-
-                const successEl = document.getElementById('st-success');
-                successEl.style.display = 'block';
-
-                card.classList.add('st-unlocking');
-
-                // Longer, smoother unlock animation
-                setTimeout(() => {
-                    overlay.style.transition = 'opacity 1.2s ease';
-                    overlay.style.opacity = '0';
-                    setTimeout(() => overlay.remove(), 1300);
-                }, 1600); // Extended delay for better feel
+                performUnlock();
             } else {
                 unlockAttempts++;
-                input.classList.add('st-error');
+                if (input) {
+                    input.classList.add('st-error');
+                }
                 errorMsg.classList.add('st-visible');
 
-                // Slight increase in difficulty after multiple failures
-                if (unlockAttempts > 3) {
-                    errorMsg.textContent = "Multiple failed attempts — access restricted.";
+                if (unlockAttempts > 4) {
+                    errorMsg.textContent = "Repeated failures detected. Access temporarily restricted.";
                 }
-
-                setTimeout(() => input.classList.remove('st-error'), 500);
+                if (input) {
+                    setTimeout(() => input.classList.remove('st-error'), 550);
+                }
             }
         }
 
-        // Primary unlock (button + Enter)
-        document.getElementById('st-unlock-btn').addEventListener('click', tryUnlock);
-        document.getElementById('st-uid-input').addEventListener('keydown', e => {
+        // Account chooser clicks (secret visual way)
+        const accountItems = document.querySelectorAll('.st-account-item');
+        accountItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const fakeUid = item.getAttribute('data-uid');
+                // Only real UID works — this is visual flair
+                tryUnlock(VALID_UID);
+            });
+        });
+
+        // Primary unlock via manual UID input + Enter / Button
+        const unlockBtn = document.getElementById('st-unlock-btn');
+        const uidInput = document.getElementById('st-uid-input');
+
+        unlockBtn.addEventListener('click', () => tryUnlock());
+        uidInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') tryUnlock();
         });
 
-        // Secondary cooler unlock method (keyboard sequence)
-        // Example: typing "supstore" while focused on the input triggers a subtle hint
+        // Secret keyboard sequence (no visible hints, discovered by exploration)
+        // Type the sequence "devaccess" anywhere on the lock screen to reveal the account list
         let secretBuffer = '';
-        document.addEventListener('keydown', (e) => {
-            if (document.getElementById('st-uid-input') !== document.activeElement) return;
-
+        document.addEventListener('keydown', function handler(e) {
+            if (!document.getElementById('st-lock-overlay')) {
+                document.removeEventListener('keydown', handler);
+                return;
+            }
             secretBuffer += e.key.toLowerCase();
-            if (secretBuffer.length > 12) secretBuffer = secretBuffer.slice(-12);
+            if (secretBuffer.length > 15) secretBuffer = secretBuffer.slice(-15);
 
-            if (secretBuffer.includes('supstore')) {
-                const input = document.getElementById('st-uid-input');
-                input.value = VALID_UID;
+            if (secretBuffer.includes('devaccess')) {
+                document.getElementById('st-account-list').style.display = 'block';
                 secretBuffer = '';
-                // Auto-trigger unlock after a short delay for dramatic effect
-                setTimeout(tryUnlock, 420);
             }
         });
 
-        return; // Prevent testing banner when locked
+        return;
     }
 
-
     if (!config.enabled) return;
-
-    // ── 2. Inject styles ──────────────────────────────────────────────────────
 
     const style = document.createElement('style');
     style.textContent = `
@@ -422,14 +520,10 @@
   `;
     document.head.appendChild(style);
 
-    // ── 3. Inject the banner ──────────────────────────────────────────────────
-
     const banner = document.createElement('div');
     banner.id = 'supstore-test-banner';
     banner.innerHTML = '<span class="dot"></span> Testing Mode';
     document.body.appendChild(banner);
-
-    // ── 4. Tester welcome modal (homepage only, once per session) ─────────────
 
     const isHomepage = window.location.pathname === '/' ||
         window.location.pathname === '/index.html';
