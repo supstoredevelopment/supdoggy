@@ -99,12 +99,8 @@
             background: linear-gradient(to bottom, var(--gradient-start-light) 0%, var(--gradient-end-light) 100%);
         }
 
-        [data-theme="light"] .carousel-section {
+        [data-theme="light"] .asset-categories {
             background: linear-gradient(to bottom, var(--gradient-end-light), var(--gradient-start-light));
-        }
-
-        [data-theme="light"] .features {
-            background: linear-gradient(to bottom, var(--gradient-start-light), var(--gradient-end-light));
         }
 
         [data-theme="light"] .faq-section {
@@ -158,10 +154,6 @@
             color: var(--subtext-light);
         }
 
-        [data-theme="light"] .stats {
-            background: linear-gradient(135deg, rgba(0, 102, 255, 0.05), rgba(0, 212, 255, 0.02));
-        }
-
         [data-theme="light"] .cta {
             background: linear-gradient(to bottom, var(--gradient-end-light), var(--gradient-start-light));
         }
@@ -174,21 +166,29 @@
             background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.04) 0%, transparent 80%);
         }
 
-        [data-theme="light"] .card-tag,
-        [data-theme="light"] .asset-tag {
+        [data-theme="light"] .asset-card-tag {
             background: rgba(0, 212, 255, 0.15);
             color: var(--primary);
         }
 
-        [data-theme="light"] .feature-icon {
-            background: linear-gradient(135deg, var(--accent), var(--primary));
+        [data-theme="light"] .asset-card {
+            background: var(--glass-bg-light);
+            border-color: var(--glass-border-light);
+            box-shadow: 0 4px 20px var(--shadow-light);
         }
 
-        [data-theme="light"] .carousel-card,
-        [data-theme="light"] .feature-card,
-        [data-theme="light"] .stat-item,
-        [data-theme="light"] .modal-content {
-            box-shadow: 0 15px 50px var(--shadow);
+        [data-theme="light"] .asset-card:hover {
+            box-shadow: 0 8px 30px rgba(0, 102, 255, 0.15);
+        }
+
+        [data-theme="light"] .category-row-header h3 {
+            color: var(--text-light);
+        }
+
+        [data-theme="light"] .scroll-btn {
+            background: rgba(0, 0, 0, 0.06);
+            border-color: rgba(0, 0, 0, 0.12);
+            color: var(--text-light);
         }
 
         [data-theme="light"] footer {
@@ -196,23 +196,8 @@
             border-top: 1px solid rgba(0, 0, 0, 0.03);
         }
 
-        [data-theme="light"] .asset-item::after {
-            background: rgba(255, 255, 255, 0.8);
-            color: var(--text-light);
-        }
-
-        [data-theme="light"] .pagination-btn {
-            background: rgba(0, 0, 0, 0.03);
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        [data-theme="light"] .pagination-btn:hover {
-            background: rgba(0, 0, 0, 0.05);
-        }
-
-        [data-theme="light"] .pagination-btn.active {
-            background: var(--primary);
-            color: var(--light);
+        [data-theme="light"] .modal-content {
+            box-shadow: 0 15px 50px var(--shadow);
         }
 
         html {
@@ -230,6 +215,7 @@
             transition: background var(--transition-fast), color var(--transition-fast);
         }
 
+        /* ── Theme toggle ── */
         .theme-toggle {
             display: flex;
             align-items: center;
@@ -266,6 +252,7 @@
             transform: translateX(26px);
         }
 
+        /* ── Nav ── */
         nav {
             position: fixed;
             top: 0;
@@ -308,7 +295,6 @@
             color: var(--accent);
         }
 
-        /* ── Truly centered nav links ── */
         .nav-links {
             display: flex;
             gap: var(--spacing-extra-large);
@@ -381,6 +367,7 @@
             transform: rotate(-45deg) translate(7px, -6px);
         }
 
+        /* ── Hero ── */
         .hero {
             min-height: 100vh;
             display: flex;
@@ -391,261 +378,6 @@
             overflow: hidden;
             background: radial-gradient(ellipse at top, var(--gradient-start-dark), transparent 50%),
                 radial-gradient(ellipse at bottom, var(--gradient-end-dark), transparent 50%);
-        }
-
-        .faq-section {
-            padding: 120px var(--spacing-extra-large);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 60px;
-        }
-
-        .section-badge {
-            display: inline-block;
-            background: var(--glass-bg-dark);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border-dark);
-            color: var(--accent);
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .section-header h2 {
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 800;
-            margin-bottom: 1rem;
-            letter-spacing: -1px;
-            background: linear-gradient(135deg, var(--text-dark) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .section-header p {
-            color: var(--subtext-dark);
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .faq-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .faq-item {
-            background: var(--glass-bg-dark);
-            backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid var(--glass-border-dark);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        .faq-item:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
-        }
-
-        .faq-question {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.75rem 2rem;
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.3s ease;
-        }
-
-        .faq-question h3 {
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: var(--text-dark);
-            flex: 1;
-            margin-right: 1rem;
-            line-height: 1.5;
-        }
-
-        .faq-icon {
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: 8px;
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-        }
-
-        .faq-item.active .faq-icon {
-            transform: rotate(180deg);
-        }
-
-        .faq-answer {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
-            padding: 0 2rem;
-        }
-
-        .faq-item.active .faq-answer {
-            max-height: 500px;
-            padding: 0 2rem 1.75rem;
-        }
-
-        .faq-answer p {
-            color: var(--subtext-dark);
-            line-height: 1.8;
-            font-size: 1rem;
-        }
-
-        .faq-answer ul {
-            margin-top: 1rem;
-            padding-left: 1.5rem;
-            color: var(--subtext-dark);
-        }
-
-        .faq-answer li {
-            margin-bottom: 0.5rem;
-            line-height: 1.7;
-        }
-
-        .contact-cta {
-            text-align: center;
-            padding: 2.5rem;
-            background: var(--glass-bg-dark);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border-dark);
-            border-radius: 16px;
-            max-width: 400px;
-            margin: 75px auto;
-        }
-
-        .contact-cta h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-        }
-
-        .contact-cta p {
-            color: var(--subtext-dark);
-            margin-bottom: 1.5rem;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 1rem 2rem;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 40px rgba(0, 102, 255, 0.4);
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 50px rgba(0, 102, 255, 0.6);
-        }
-
-        @media (max-width: 892px) {
-            .faq-section {
-                padding: 60px 20px;
-            }
-
-            #authBtn {
-                padding: 0.7rem;
-            }
-
-            #authBtnText {
-                display: none;
-            }
-
-            .faq-question {
-                padding: 1.5rem 1.25rem;
-            }
-
-            .faq-question h3 {
-                font-size: 1rem;
-            }
-
-            .faq-item.active .faq-answer {
-                padding: 0 1.25rem 1.5rem;
-            }
-
-            .contact-cta {
-                padding: 2rem 1.5rem;
-            }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .faq-item {
-            animation: fadeInUp 0.6s ease backwards;
-        }
-
-        .faq-item:nth-child(1) {
-            animation-delay: 0.1s;
-        }
-
-        .faq-item:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .faq-item:nth-child(3) {
-            animation-delay: 0.3s;
-        }
-
-        .faq-item:nth-child(4) {
-            animation-delay: 0.4s;
-        }
-
-        .faq-item:nth-child(5) {
-            animation-delay: 0.5s;
-        }
-
-        .faq-item:nth-child(6) {
-            animation-delay: 0.6s;
-        }
-
-        .faq-item:nth-child(7) {
-            animation-delay: 0.7s;
-        }
-
-        .faq-item:nth-child(8) {
-            animation-delay: 0.8s;
         }
 
         .hero::before {
@@ -744,6 +476,19 @@
             animation: fadeInUp var(--animation-duration-short) ease 0.6s both;
         }
 
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Buttons ── */
         .btn {
             padding: var(--spacing-medium) 2.5rem;
             border: none;
@@ -799,350 +544,466 @@
             transform: translateY(-3px);
         }
 
-        .btn:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(var(--primary), 0.3);
-        }
-
-        .carousel-section {
-            padding: 100px var(--spacing-extra-large);
+        /* ── Asset Categories Section ── */
+        .asset-categories {
+            padding: 80px 0 100px;
             position: relative;
             overflow: hidden;
         }
 
-        .carousel-container {
+        .asset-categories-inner {
             max-width: 1400px;
             margin: 0 auto;
+            padding: 0 var(--spacing-extra-large);
+        }
+
+        /* Category Row */
+        .category-row {
+            margin-bottom: 56px;
+        }
+
+        .category-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .category-row-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .category-row-header h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.5px;
+        }
+
+        .category-row-header .view-all {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: gap var(--transition-fast), opacity var(--transition-fast);
+            opacity: 0.8;
+        }
+
+        .category-row-header .view-all:hover {
+            gap: 8px;
+            opacity: 1;
+        }
+
+        /* Scroll container */
+        .cards-scroll-wrapper {
             position: relative;
         }
 
-        .carousel-wrapper {
-            position: relative;
-            height: 600px;
-            perspective: 2000px;
+        .cards-scroll {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding-bottom: 8px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            cursor: grab;
+        }
+
+        .cards-scroll:active {
+            cursor: grabbing;
+        }
+
+        .cards-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Scroll buttons */
+        .scroll-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .carousel-card {
-            position: absolute;
-            min-height: 500px;
-            height: auto;
-            background: var(--glass-bg);
-            backdrop-filter: blur(var(--blur-large)) saturate(180%);
-            -webkit-backdrop-filter: blur(var(--blur-large)) saturate(180%);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-extra-large);
-            padding: var(--spacing-extra-large);
-            transition: transform var(--transition-slow), opacity var(--transition-slow), filter var(--transition-slow), scale var(--transition-slow);
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 20px 60px var(--shadow);
-            will-change: transform, opacity, filter;
-            overflow: hidden;
-        }
-
-        .carousel-card.center {
-            transform: translateX(0) scale(1) translateZ(0);
+            transition: all var(--transition-fast);
             z-index: 10;
-            opacity: 1;
-            filter: blur(0);
-        }
-
-        .carousel-card.center:hover {
-            transform: translateX(0) scale(var(--scale-medium)) translateZ(0);
-            border-color: rgba(0, 212, 255, 0.3);
-            box-shadow: 0 25px 70px rgba(0, 102, 255, 0.4);
-        }
-
-        .carousel-card.left {
-            transform: translateX(-600px) scale(var(--scale-small)) translateZ(-200px);
-            z-index: 5;
-            opacity: var(--opacity-low);
-            filter: blur(var(--blur-small));
-            pointer-events: none;
-        }
-
-        .carousel-card.right {
-            transform: translateX(600px) scale(var(--scale-small)) translateZ(-200px);
-            z-index: 5;
-            opacity: var(--opacity-low);
-            filter: blur(var(--blur-small));
-            pointer-events: none;
-        }
-
-        .carousel-card.hidden {
             opacity: 0;
-            transform: scale(0.5);
             pointer-events: none;
         }
 
-        .card-image {
+        .cards-scroll-wrapper:hover .scroll-btn {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .scroll-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .scroll-btn.prev {
+            left: -16px;
+        }
+
+        .scroll-btn.next {
+            right: -16px;
+        }
+
+        /* Asset Card */
+        .asset-card {
+            flex: 0 0 220px;
+            background: var(--glass-bg-dark);
+            border: 1px solid var(--glass-border-dark);
+            border-radius: 14px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+            position: relative;
+            user-select: none;
+        }
+
+        [data-theme="light"] .asset-card {
+            background: white;
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .asset-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 212, 255, 0.3);
+            box-shadow: 0 12px 40px rgba(0, 102, 255, 0.25);
+        }
+
+        [data-theme="light"] .asset-card:hover {
+            box-shadow: 0 12px 40px rgba(0, 102, 255, 0.15);
+        }
+
+        .asset-card-img {
             width: 100%;
-            height: 250px;
+            height: 140px;
             object-fit: cover;
-            border-radius: var(--border-radius-medium);
-            margin-bottom: 1.5rem;
-            transition: transform var(--transition-fast);
+            display: block;
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.15), rgba(0, 212, 255, 0.08));
+            position: relative;
         }
 
-        .carousel-card:hover .card-image {
-            transform: scale(var(--scale-large));
+        /* Placeholder shimmer for loading */
+        .asset-card-img-placeholder {
+            width: 100%;
+            height: 140px;
+            background: linear-gradient(90deg,
+                    rgba(255, 255, 255, 0.04) 25%,
+                    rgba(255, 255, 255, 0.08) 50%,
+                    rgba(255, 255, 255, 0.04) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
         }
 
-        .card-tag {
+        [data-theme="light"] .asset-card-img-placeholder {
+            background: linear-gradient(90deg,
+                    rgba(0, 0, 0, 0.04) 25%,
+                    rgba(0, 0, 0, 0.08) 50%,
+                    rgba(0, 0, 0, 0.04) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .asset-card-body {
+            padding: 12px 14px 14px;
+        }
+
+        .asset-card-tag {
             display: inline-block;
             background: rgba(0, 212, 255, 0.1);
             color: var(--accent);
-            padding: var(--spacing-small) var(--spacing-medium);
-            border-radius: var(--border-radius-small);
-            font-size: var(--font-size-small);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
-            margin-bottom: var(--spacing-medium);
-            letter-spacing: 1px;
-            width: fit-content;
+            letter-spacing: 0.8px;
+            margin-bottom: 6px;
         }
 
-        .card-title {
-            font-size: var(--font-size-extra-large);
-            font-weight: 800;
-            margin-bottom: var(--spacing-medium);
-            letter-spacing: -1px;
-            line-height: 1.2;
-        }
-
-        .card-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .card-description {
-            font-size: 1rem;
-            color: var(--subtext);
-            line-height: 1.6;
-            overflow: hidden;
-            transition: font-size var(--transition-fast);
-        }
-
-        .card-price {
-            font-size: var(--font-size-large);
-            font-weight: 900;
-            color: var(--accent);
-            letter-spacing: -1px;
-        }
-
-        .carousel-controls {
-            display: flex;
-            gap: var(--spacing-medium);
-            justify-content: center;
-            margin-top: var(--spacing-extra-large);
-        }
-
-        .carousel-btn {
-            width: 60px;
-            height: 60px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(var(--blur-medium));
-            -webkit-backdrop-filter: blur(var(--blur-medium));
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-circle);
+        .asset-card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
             color: var(--text);
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin-bottom: 4px;
+            line-height: 1.35;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .carousel-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(var(--scale-large));
-            border-color: var(--accent);
+        .asset-card-price {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--accent);
+            letter-spacing: -0.5px;
         }
 
-        .carousel-btn:active {
-            transform: scale(0.95);
+        .asset-card-price.free {
+            color: #22c55e;
         }
 
-        .carousel-btn:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(var(--primary), 0.3);
+        /* Skeleton cards for loading state */
+        .skeleton-card {
+            flex: 0 0 220px;
+            background: var(--glass-bg-dark);
+            border: 1px solid var(--glass-border-dark);
+            border-radius: 14px;
+            overflow: hidden;
         }
 
-        .features {
+        [data-theme="light"] .skeleton-card {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.06);
+        }
+
+        .skeleton-img {
+            width: 100%;
+            height: 140px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.09) 50%, rgba(255, 255, 255, 0.04) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        [data-theme="light"] .skeleton-img {
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 25%, rgba(0, 0, 0, 0.09) 50%, rgba(0, 0, 0, 0.04) 75%);
+            background-size: 200% 100%;
+        }
+
+        .skeleton-body {
+            padding: 12px 14px 14px;
+        }
+
+        .skeleton-line {
+            height: 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        [data-theme="light"] .skeleton-line {
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.05) 25%, rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.05) 75%);
+            background-size: 200% 100%;
+        }
+
+        .skeleton-line.short {
+            width: 55%;
+        }
+
+        .skeleton-line.medium {
+            width: 75%;
+        }
+
+        .skeleton-line.price {
+            width: 35%;
+            height: 14px;
+            margin-bottom: 0;
+        }
+
+        /* ── FAQ ── */
+        .faq-section {
             padding: 120px var(--spacing-extra-large);
-            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.05), transparent 70%);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
         }
 
         .section-header {
-            max-width: 700px;
-            margin: 0 auto 80px;
             text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            background: var(--glass-bg-dark);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border-dark);
+            color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .section-header h2 {
             font-size: clamp(2.5rem, 5vw, 4rem);
             font-weight: 800;
-            margin-bottom: var(--spacing-medium);
+            margin-bottom: 1rem;
             letter-spacing: -1px;
-        }
-
-        .section-header p {
-            color: var(--subtext);
-            font-size: 1.1rem;
-        }
-
-        .features-grid {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: var(--spacing-large);
-        }
-
-        .feature-card {
-            padding: var(--spacing-extra-large);
-            background: var(--glass-bg);
-            backdrop-filter: blur(var(--blur-large));
-            -webkit-backdrop-filter: blur(var(--blur-large));
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-large);
-            transition: all var(--transition-medium);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform var(--transition-medium);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .feature-card:hover::before {
-            transform: scaleX(1);
-        }
-
-        .feature-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: var(--border-radius-medium);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            transition: all var(--transition-fast);
-        }
-
-        .feature-card:hover .feature-icon {
-            transform: scale(var(--scale-large)) rotate(5deg);
-        }
-
-        .feature-card h3 {
-            font-size: var(--font-size-large);
-            font-weight: 800;
-            margin-bottom: var(--spacing-medium);
-        }
-
-        .feature-card p {
-            color: var(--subtext);
-            line-height: 1.7;
-        }
-
-        .stats {
-            padding: 120px var(--spacing-extra-large);
-            background: linear-gradient(135deg, rgba(0, 102, 255, 0.1), rgba(0, 212, 255, 0.05));
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stats::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -10%;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(0, 212, 255, 0.1), transparent);
-            animation: rotate 20s linear infinite;
-        }
-
-        @keyframes rotate {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .stats-grid {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--spacing-large);
-            position: relative;
-            z-index: 1;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: var(--spacing-extra-large) var(--spacing-large);
-            background: var(--glass-bg);
-            backdrop-filter: blur(var(--blur-large));
-            -webkit-backdrop-filter: blur(var(--blur-large));
-            border: 1px solid var(--glass-border);
-            border-radius: var(--border-radius-large);
-            transition: all var(--transition-medium);
-        }
-
-        .stat-item:hover {
-            transform: translateY(-10px);
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .stat-number {
-            font-size: 4rem;
-            font-weight: 900;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--accent), var(--primary));
+            background: linear-gradient(135deg, var(--text-dark) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--subtext);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
+        .section-header p {
+            color: var(--subtext-dark);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
+        .faq-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .faq-item {
+            background: var(--glass-bg-dark);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border-dark);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            max-width: 500px;
+            margin: 0 auto;
+            animation: fadeInUp 0.6s ease backwards;
+        }
+
+        .faq-item:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .faq-item:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .faq-item:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .faq-item:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .faq-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .faq-question {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.75rem 2rem;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+        }
+
+        .faq-question h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            flex: 1;
+            margin-right: 1rem;
+            line-height: 1.5;
+        }
+
+        .faq-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: black;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
+            padding: 0 2rem;
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 500px;
+            padding: 0 2rem 1.75rem;
+        }
+
+        .faq-answer p {
+            color: var(--subtext-dark);
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .faq-answer ul {
+            margin-top: 1rem;
+            padding-left: 1.5rem;
+            color: var(--subtext-dark);
+        }
+
+        .faq-answer li {
+            margin-bottom: 0.5rem;
+            line-height: 1.7;
+        }
+
+        .contact-cta {
+            text-align: center;
+            padding: 2.5rem;
+            background: var(--glass-bg-dark);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border-dark);
+            border-radius: 16px;
+            max-width: 400px;
+            margin: 75px auto;
+        }
+
+        .contact-cta h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .contact-cta p {
+            color: var(--subtext-dark);
+            margin-bottom: 1.5rem;
+        }
+
+        /* ── CTA ── */
         .cta {
             padding: 120px var(--spacing-extra-large);
             text-align: center;
@@ -1184,6 +1045,7 @@
             line-height: 1.8;
         }
 
+        /* ── Footer ── */
         footer {
             background: rgba(10, 10, 10, 0.8);
             backdrop-filter: blur(var(--blur-large));
@@ -1270,48 +1132,6 @@
             z-index: 1;
         }
 
-        .btn-secondary {
-            background: var(--glass-bg);
-            color: var(--text);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(10px);
-            padding: 0.7rem 1.5rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .loader {
-            border: 4px solid var(--glass-border);
-            border-top: 4px solid var(--primary);
-            border-radius: var(--border-radius-circle);
-            width: 40px;
-            height: 40px;
-            animation: spin var(--animation-duration-medium) linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
         .nav-actions {
             display: flex;
             align-items: center;
@@ -1341,40 +1161,56 @@
             color: var(--accent);
         }
 
-        @media (max-width: 1024px) {
-            .carousel-card {
-                min-height: 200px;
-                height: auto;
+        .btn-nav-secondary {
+            background: var(--glass-bg);
+            color: var(--text);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            padding: 0.7rem 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-nav-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 892px) {
+            .faq-section {
+                padding: 60px 20px;
             }
 
-            .carousel-card.left {
-                transform: translateX(-500px) scale(0.75) translateZ(-200px);
+            #authBtn {
+                padding: 0.7rem;
             }
 
-            .carousel-card.right {
-                transform: translateX(500px) scale(0.75) translateZ(-200px);
+            #authBtnText {
+                display: none;
             }
 
-            .card-title {
-                font-size: 2rem;
+            .faq-question {
+                padding: 1.5rem 1.25rem;
             }
 
-            .nav-container {
-                padding: 0 2rem;
+            .faq-question h3 {
+                font-size: 1rem;
             }
 
-            .hero {
-                padding: 120px 2rem 80px;
+            .faq-item.active .faq-answer {
+                padding: 0 1.25rem 1.5rem;
             }
 
-            .features,
-            .stats,
-            .cta {
-                padding: 100px 2rem;
-            }
-
-            .footer-content {
-                gap: 3rem;
+            .contact-cta {
+                padding: 2rem 1.5rem;
             }
         }
 
@@ -1383,7 +1219,6 @@
                 display: flex;
             }
 
-            /* Reset absolute centering; show as full-width dropdown */
             .nav-links {
                 display: none;
                 position: fixed;
@@ -1411,45 +1246,38 @@
             }
 
             .hero,
-            .carousel-section,
-            .features,
-            .stats,
+            .asset-categories,
             .cta {
                 padding: 80px 1.5rem;
             }
 
-            .carousel-wrapper {
-                height: 500px;
+            .asset-card {
+                flex: 0 0 175px;
             }
 
-            .carousel-card {
-                width: 90%;
-                max-width: 350px;
-                height: 400px;
-                padding: var(--spacing-large);
+            .asset-card-img {
+                height: 115px;
             }
 
-            .carousel-card.left,
-            .carousel-card.right {
-                opacity: 0.6;
-                transform: translateX(-30%) scale(0.8) translateZ(-100px);
+            .asset-card-img-placeholder {
+                height: 115px;
             }
 
-            .carousel-card.right {
-                transform: translateX(30%) scale(0.8) translateZ(-100px);
+            .skeleton-img {
+                height: 115px;
             }
 
-            .card-title {
-                font-size: 1.8rem;
-            }
-
-            .card-image {
-                height: 200px;
+            .skeleton-card {
+                flex: 0 0 175px;
             }
 
             .footer-content {
                 grid-template-columns: 1fr;
                 gap: var(--spacing-large);
+            }
+
+            .asset-categories-inner {
+                padding: 0 1.5rem;
             }
         }
 
@@ -1468,43 +1296,20 @@
                 font-size: 0.95rem;
             }
 
-            .carousel-section {
-                padding: 60px 1rem;
+            .asset-categories {
+                padding: 60px 0 80px;
             }
 
-            .carousel-card {
-                padding: 1.5rem;
-                height: 420px;
+            .asset-categories-inner {
+                padding: 0 1rem;
             }
 
-            .card-title {
-                font-size: 1.5rem;
+            .asset-card {
+                flex: 0 0 155px;
             }
 
-            .card-price {
-                font-size: 2rem;
-            }
-
-            .features,
-            .stats,
             .cta {
                 padding: 60px 1rem;
-            }
-
-            .feature-card {
-                padding: var(--spacing-large);
-            }
-
-            .stat-item {
-                padding: var(--spacing-large) var(--spacing-medium);
-            }
-
-            .nav-links {
-                gap: 1.5rem;
-            }
-
-            .nav-links a {
-                font-size: 0.85rem;
             }
         }
 
@@ -1515,79 +1320,6 @@
 
             .hero p {
                 font-size: 1rem;
-            }
-
-            .btn {
-                padding: 0.8rem 1.8rem;
-                font-size: 0.9rem;
-            }
-
-            .feature-card h3 {
-                font-size: 1.3rem;
-            }
-
-            .stat-number {
-                font-size: 3rem;
-            }
-        }
-
-        @media (min-width: 1440px) {
-
-            .nav-container,
-            .carousel-container,
-            .features-grid,
-            .stats-grid,
-            .footer-content {
-                max-width: 1600px;
-            }
-
-            .hero-content {
-                max-width: 1000px;
-            }
-
-            .carousel-card {
-                width: 550px;
-                height: 550px;
-            }
-
-            .card-image {
-                height: 280px;
-            }
-        }
-
-        @media (min-width: 1920px) {
-            .hero h1 {
-                font-size: 7rem;
-            }
-
-            .section-header h2 {
-                font-size: 4.5rem;
-            }
-
-            .cta h2 {
-                font-size: 5rem;
-            }
-        }
-
-        @media print {
-
-            nav,
-            footer,
-            .carousel-controls,
-            .btn {
-                display: none;
-            }
-
-            body {
-                background: white;
-                color: black;
-            }
-
-            .hero,
-            .features,
-            .stats,
-            .cta {
-                background: none;
             }
         }
     </style>
@@ -1608,7 +1340,7 @@
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span id="cartCount">0</span>
                 </a>
-                <a href="/p/login" id="authBtn" class="btn btn-secondary" style="display: none;">
+                <a href="/p/login" id="authBtn" class="btn-nav-secondary" style="display: none;">
                     <i class="fas fa-user"></i>
                     <span id="authBtnText">Login</span>
                 </a>
@@ -1639,57 +1371,276 @@
         </div>
     </section>
 
-    <section class="carousel-section" id="carousel">
-        <div class="carousel-container">
-            <div class="carousel-wrapper" id="carouselWrapper"></div>
-            <div class="carousel-controls">
-                <button class="carousel-btn" id="prevBtn">‹</button>
-                <button class="carousel-btn" id="nextBtn">›</button>
+    <!-- Category Rows -->
+    <section class="asset-categories" id="features">
+        <div class="asset-categories-inner">
+            <!-- Most Popular row -->
+            <div class="category-row" id="row-popular">
+                <div class="category-row-header">
+                    <h3>Most Popular</h3>
+                    <a href="/p/assets?sort=popular" class="view-all">View all <i class="fas fa-arrow-right"
+                            style="font-size:0.75rem"></i></a>
+                </div>
+                <div class="cards-scroll-wrapper">
+                    <button class="scroll-btn prev" onclick="scrollRow('popular', -1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="cards-scroll" id="scroll-popular">
+                        <!-- Skeleton placeholders -->
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="scroll-btn next" onclick="scrollRow('popular', 1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
             </div>
-        </div>
-    </section>
 
-    <section class="features" id="features">
-        <div class="section-header">
-            <h2>Why Developers Choose SupStore</h2>
-            <p>Trusted by studios and indie developers building games that matter</p>
-        </div>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">⚙</div>
-                <h3>Production Grade</h3>
-                <p>Every asset is tested, optimized, and verified for production use. No compromises on quality.</p>
+            <!-- Scripts row -->
+            <div class="category-row" id="row-scripts">
+                <div class="category-row-header">
+                    <h3>Scripts</h3>
+                    <a href="/p/assets?tag=scripts" class="view-all">View all <i class="fas fa-arrow-right"
+                            style="font-size:0.75rem"></i></a>
+                </div>
+                <div class="cards-scroll-wrapper">
+                    <button class="scroll-btn prev" onclick="scrollRow('scripts', -1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="cards-scroll" id="scroll-scripts">
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="scroll-btn next" onclick="scrollRow('scripts', 1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">🔥</div>
-                <h3>Lightning Fast</h3>
-                <p>Optimized for performance. Run at 60 FPS on any device. That's our minimum standard.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">💰</div>
-                <h3>No Limits</h3>
-                <p>Full commercial license. Use in unlimited projects. Zero royalties. Build what you want.</p>
-            </div>
-        </div>
-    </section>
 
-    <section class="stats" id="stats">
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-number">1.2M+</div>
-                <div class="stat-label">Assets Users</div>
+            <!-- 3D Models row -->
+            <div class="category-row" id="row-models">
+                <div class="category-row-header">
+                    <h3>3D Models</h3>
+                    <a href="/p/assets?tag=3d" class="view-all">View all <i class="fas fa-arrow-right"
+                            style="font-size:0.75rem"></i></a>
+                </div>
+                <div class="cards-scroll-wrapper">
+                    <button class="scroll-btn prev" onclick="scrollRow('models', -1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="cards-scroll" id="scroll-models">
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="scroll-btn next" onclick="scrollRow('models', 1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
             </div>
-            <div class="stat-item">
-                <div class="stat-number">50K+</div>
-                <div class="stat-label">Active Developers</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">$50M+</div>
-                <div class="stat-label">Games Revenue</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">4.9★</div>
-                <div class="stat-label">User Rating</div>
+
+            <!-- UI Kits row -->
+            <div class="category-row" id="row-ui">
+                <div class="category-row-header">
+                    <h3>UI Kits</h3>
+                    <a href="/p/assets?tag=ui" class="view-all">View all <i class="fas fa-arrow-right"
+                            style="font-size:0.75rem"></i></a>
+                </div>
+                <div class="cards-scroll-wrapper">
+                    <button class="scroll-btn prev" onclick="scrollRow('ui', -1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="cards-scroll" id="scroll-ui">
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line price"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="scroll-btn next" onclick="scrollRow('ui', 1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </section>
@@ -1699,8 +1650,7 @@
             <h2>Ready to Ship Better Games?</h2>
             <p>Join the developers who are shipping faster and building better with SupStore. Get instant access to our
                 entire premium library.</p>
-            <a href="/p/assets" class="btn btn-primary">Start Building
-                Now</a>
+            <a href="/p/assets" class="btn btn-primary">Start Building Now</a>
         </div>
     </section>
 
@@ -1757,7 +1707,7 @@
         <div class="contact-cta">
             <h3>Still have questions?</h3>
             <p>Our support team is here to help. Get in touch and we'll respond within 24 hours.</p>
-            <a href="/p/contact" class="btn">
+            <a href="/p/contact" class="btn btn-primary">
                 <i class="fas fa-envelope"></i>
                 Contact Support
             </a>
@@ -1804,113 +1754,19 @@
     </footer>
 
     <script>
-        let currentIndex = 0;
-        const carousel = document.getElementById('carouselWrapper');
+        // ── Helpers ──────────────────────────────────────────────────────────
+        function getCart() { return JSON.parse(localStorage.getItem('cart') || '[]'); }
+        function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); updateCartCount(); }
+        function updateCartCount() { document.getElementById('cartCount').textContent = getCart().length; }
+
+        // ── Nav ──────────────────────────────────────────────────────────────
         const nav = document.getElementById('nav');
-        let cards = [];
-        let assets = [];
-        const cartCount = document.getElementById('cartCount');
         const hamburger = document.getElementById('hamburger');
         const navLinks = document.querySelector('.nav-links');
 
         hamburger.addEventListener('click', () => {
             hamburger.classList.toggle('active');
             navLinks.classList.toggle('active');
-        });
-
-        function getCart() { return JSON.parse(localStorage.getItem('cart') || '[]'); }
-        function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); updateCartCount(); }
-        function updateCartCount() { cartCount.textContent = getCart().length; }
-
-        async function fetchAssets() {
-            const res = await fetch('/api/assets/top-selling');
-            if (!res.ok) throw new Error('Failed to load assets');
-            return await res.json();
-        }
-
-        async function initCarousel() {
-            assets = await fetchAssets();
-            if (assets.length === 0) { console.warn('No assets fetched.'); return; }
-
-            assets.forEach((asset, index) => {
-                const card = document.createElement('div');
-                card.className = 'carousel-card';
-                card.dataset.index = index;
-                card.innerHTML = `
-                    <div class="card-content">
-                        <img src="${asset.image_url}" alt="${asset.title}" class="card-image">
-                        <span class="card-tag">${asset.tag}</span>
-                        <h3 class="card-title">${asset.title}</h3>
-                        <p class="card-description scalable-text">${asset.description}</p>
-                        <div class="card-price">$${asset.price.toLocaleString()}</div>
-                    </div>`;
-                card.addEventListener('click', () => {
-                    if (card.classList.contains('center'))
-                        window.location.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
-                });
-                cards.push(card);
-                carousel.appendChild(card);
-            });
-            updateCarousel();
-        }
-
-        function updateCarousel() {
-            cards.forEach((card, i) => {
-                const position = (i - currentIndex + cards.length) % cards.length;
-                card.classList.remove('center', 'left', 'right', 'hidden');
-                void card.offsetHeight;
-                if (position === 0) card.classList.add('center');
-                else if (position === 1) card.classList.add('right');
-                else if (position === cards.length - 1) card.classList.add('left');
-                else card.classList.add('hidden');
-            });
-            scaleTextToFit();
-        }
-
-        const faqItems = document.querySelectorAll('.faq-item');
-        faqItems.forEach(item => {
-            item.querySelector('.faq-question').addEventListener('click', () => {
-                const isActive = item.classList.contains('active');
-                faqItems.forEach(o => o.classList.remove('active'));
-                if (!isActive) item.classList.add('active');
-            });
-        });
-
-        function scaleTextToFit() {
-            document.querySelectorAll('.scalable-text').forEach(el => {
-                let fontSize = parseFloat(window.getComputedStyle(el).fontSize);
-                const orig = fontSize;
-                el.style.fontSize = `${fontSize}px`;
-                while (el.scrollHeight > el.clientHeight && fontSize > 8) {
-                    fontSize -= 0.5;
-                    el.style.fontSize = `${fontSize}px`;
-                }
-                if (el.scrollHeight <= el.clientHeight) el.style.fontSize = `${orig}px`;
-            });
-        }
-
-        const themeSwitch = document.getElementById('themeSwitch');
-        const currentTheme = localStorage.getItem('theme') || 'dark';
-        document.body.dataset.theme = currentTheme;
-        themeSwitch.checked = currentTheme === 'light';
-        themeSwitch.addEventListener('change', e => {
-            const theme = e.target.checked ? 'light' : 'dark';
-            document.body.dataset.theme = theme;
-            localStorage.setItem('theme', theme);
-        });
-
-        document.getElementById('prevBtn').addEventListener('click', () => {
-            currentIndex = (currentIndex - 1 + cards.length) % cards.length;
-            updateCarousel();
-        });
-        document.getElementById('nextBtn').addEventListener('click', () => {
-            currentIndex = (currentIndex + 1) % cards.length;
-            updateCarousel();
-        });
-
-        document.addEventListener('keydown', e => {
-            if (e.key === 'ArrowLeft') { currentIndex = (currentIndex - 1 + cards.length) % cards.length; updateCarousel(); }
-            else if (e.key === 'ArrowRight') { currentIndex = (currentIndex + 1) % cards.length; updateCarousel(); }
         });
 
         window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 50));
@@ -1923,48 +1779,135 @@
             });
         });
 
-        window.addEventListener('load', scaleTextToFit);
-        window.addEventListener('resize', scaleTextToFit);
+        // ── Theme ────────────────────────────────────────────────────────────
+        const themeSwitch = document.getElementById('themeSwitch');
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        document.body.dataset.theme = currentTheme;
+        themeSwitch.checked = currentTheme === 'light';
+        themeSwitch.addEventListener('change', e => {
+            const theme = e.target.checked ? 'light' : 'dark';
+            document.body.dataset.theme = theme;
+            localStorage.setItem('theme', theme);
+        });
 
-        let touchStartX = 0, touchEndX = 0;
-        carousel.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, false);
-        carousel.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }, false);
+        // ── FAQ ──────────────────────────────────────────────────────────────
+        document.querySelectorAll('.faq-item').forEach(item => {
+            item.querySelector('.faq-question').addEventListener('click', () => {
+                const isActive = item.classList.contains('active');
+                document.querySelectorAll('.faq-item').forEach(o => o.classList.remove('active'));
+                if (!isActive) item.classList.add('active');
+            });
+        });
 
-        function handleSwipe() {
-            if (touchEndX < touchStartX - 50) { currentIndex = (currentIndex + 1) % cards.length; updateCarousel(); }
-            if (touchEndX > touchStartX + 50) { currentIndex = (currentIndex - 1 + cards.length) % cards.length; updateCarousel(); }
+        // ── Scroll row buttons ────────────────────────────────────────────────
+        function scrollRow(rowId, direction) {
+            const el = document.getElementById('scroll-' + rowId);
+            if (el) el.scrollBy({ left: direction * 700, behavior: 'smooth' });
         }
 
-        window.addEventListener('load', () => {
-            document.body.style.opacity = '0';
-            setTimeout(() => { document.body.style.transition = 'opacity 0.5s ease'; document.body.style.opacity = '1'; }, 100);
-        });
+        // ── Drag to scroll ───────────────────────────────────────────────────
+        document.querySelectorAll('.cards-scroll').forEach(el => {
+            let isDown = false, startX, scrollLeft;
 
-        const observer = new IntersectionObserver(entries => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
+            el.addEventListener('mousedown', e => {
+                isDown = true;
+                el.classList.add('dragging');
+                startX = e.pageX - el.offsetLeft;
+                scrollLeft = el.scrollLeft;
             });
-        }, { threshold: 0.1, rootMargin: '0px 0px -100px 0px' });
 
-        document.querySelectorAll('.feature-card, .stat-item').forEach(el => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(30px)';
-            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            observer.observe(el);
+            el.addEventListener('mouseleave', () => { isDown = false; el.classList.remove('dragging'); });
+            el.addEventListener('mouseup', () => { isDown = false; el.classList.remove('dragging'); });
+            el.addEventListener('mousemove', e => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - el.offsetLeft;
+                el.scrollLeft = scrollLeft - (x - startX) * 1.5;
+            });
         });
 
-        initCarousel();
-        updateCartCount();
+        // ── Build asset card ─────────────────────────────────────────────────
+        function buildAssetCard(asset) {
+            const card = document.createElement('div');
+            card.className = 'asset-card';
+            card.dataset.id = asset.id;
 
+            const priceStr = (!asset.price || asset.price === 0)
+                ? '<span class="asset-card-price free">Free</span>'
+                : `<span class="asset-card-price">$${Number(asset.price).toLocaleString()}</span>`;
 
+            card.innerHTML = `
+                <img src="${asset.image_url || ''}" alt="${asset.title}" class="asset-card-img"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                <div class="asset-card-img-placeholder" style="display:none"></div>
+                <div class="asset-card-body">
+                    <span class="asset-card-tag">${asset.tag || 'Asset'}</span>
+                    <div class="asset-card-title" title="${asset.title}">${asset.title}</div>
+                    ${priceStr}
+                </div>`;
 
+            card.addEventListener('click', () => {
+                window.location.href = `/p/asset/?id=${encodeURIComponent(asset.id)}`;
+            });
+
+            return card;
+        }
+
+        // ── Populate a row ───────────────────────────────────────────────────
+        function populateRow(rowId, assets) {
+            const container = document.getElementById('scroll-' + rowId);
+            if (!container) return;
+            container.innerHTML = '';
+            if (!assets || assets.length === 0) {
+                container.innerHTML = '<p style="color:var(--subtext);padding:1rem 0;font-size:0.9rem">No assets found.</p>';
+                return;
+            }
+            assets.forEach(asset => container.appendChild(buildAssetCard(asset)));
+        }
+
+        // ── Fetch & render categories ────────────────────────────────────────
+        async function loadCategories() {
+            try {
+                // Most Popular — uses existing top-selling endpoint
+                const popularRes = await fetch('/api/assets/top-selling?limit=20');
+                if (popularRes.ok) {
+                    const popularAssets = await popularRes.json();
+                    populateRow('popular', popularAssets);
+                }
+            } catch (e) {
+                console.error('Failed to load popular assets:', e);
+                populateRow('popular', []);
+            }
+
+            // Per-category rows — uses paginated assets endpoint with tag filter
+            const categories = [
+                { id: 'scripts', tag: 'Scripts' },
+                { id: 'models', tag: '3D' },
+                { id: 'ui', tag: 'UI' },
+            ];
+
+            for (const cat of categories) {
+                try {
+                    const res = await fetch(`/api/assets?limit=20&page=1`);
+                    if (res.ok) {
+                        const json = await res.json();
+                        // Filter client-side by tag (case-insensitive partial match)
+                        const filtered = (json.data || []).filter(a =>
+                            a.tag && a.tag.toLowerCase() === cat.tag.toLowerCase()
+                        );
+                        populateRow(cat.id, filtered);
+                    }
+                } catch (e) {
+                    console.error(`Failed to load ${cat.id}:`, e);
+                    populateRow(cat.id, []);
+                }
+            }
+        }
+
+        // ── Auth button ──────────────────────────────────────────────────────
         async function updateAuthButton() {
             const authBtn = document.getElementById('authBtn');
             const authBtnText = document.getElementById('authBtnText');
-
             try {
                 const res = await fetch('/api/user/profile', { credentials: 'include' });
                 if (res.ok) {
@@ -1981,10 +1924,20 @@
             authBtn.style.display = 'inline-flex';
         }
 
+        // ── Page load ────────────────────────────────────────────────────────
+        window.addEventListener('load', () => {
+            document.body.style.opacity = '0';
+            setTimeout(() => {
+                document.body.style.transition = 'opacity 0.5s ease';
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+
+        updateCartCount();
         updateAuthButton();
+        loadCategories();
     </script>
     <script src="/js/testing-mode.js"></script>
 </body>
-
 
 </html>

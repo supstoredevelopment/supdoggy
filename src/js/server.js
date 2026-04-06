@@ -1090,26 +1090,30 @@ app.post('/api/auth/oauth-callback', async (req, res) => {
   }
 });
 
-// ── Testing mode helpers ──────────────────────────────────────────────────────
-
-async function isTestingModeEnabled() {
+async function getTestingConfig() {
   try {
     const { data, error } = await supabaseAdmin
       .from('config')
-      .select('value')
-      .eq('key', 'testing_mode')
-      .maybeSingle();
-    if (error || !data) return false;
-    return data.value === true || data.value === 'true';
+      .select('key, value')
+      .in('key', ['testing_mode', 'locked']);
+    if (error || !data) return { enabled: false, locked: false };
+    const cfg = Object.fromEntries(data.map(r => [r.key, r.value]));
+    return {
+      enabled: cfg.testing_mode === true || cfg.testing_mode === 'true',
+      locked: cfg.locked === true || cfg.locked === 'true',
+    };
   } catch {
-    return false;
+    return { enabled: false, locked: false };
   }
 }
 
-// Public endpoint — frontend polls this to show/hide the testing mode banner
+async function isTestingModeEnabled() {
+  return (await getTestingConfig()).enabled;
+}
+
 app.get('/api/testing-mode', async (req, res) => {
-  const enabled = await isTestingModeEnabled();
-  res.json({ enabled });
+  const config = await getTestingConfig();
+  res.json(config); // { enabled: bool, locked: bool }
 });
 
 // Mock checkout — only works when testing_mode is on

@@ -1,19 +1,187 @@
 (async function () {
     'use strict';
 
-    // ── 1. Check testing mode ─────────────────────────────────────────────────
-
-    let testingEnabled = false;
+    let config = { enabled: false, locked: false };
     try {
         const res = await fetch('/api/testing-mode');
-        if (res.ok) {
-            const data = await res.json();
-            testingEnabled = data.enabled === true;
-        }
+        if (res.ok) config = await res.json();
     } catch {
-        // Silently fail — never break the page
         return;
     }
+
+    // ── LOCKED MODE ────────────────────────────────────────────────
+    if (config.locked) {
+        const VALID_UID = 'cdf93381-6dd0-4722-9b7e-ec59dfda50f9';
+
+        const style = document.createElement('style');
+        style.textContent = `
+      #st-lock-overlay {
+        position: fixed; inset: 0; z-index: 9999999;
+        background: #080808;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        animation: st-fadein 0.4s ease;
+      }
+      @keyframes st-fadein { from { opacity: 0; } to { opacity: 1; } }
+
+      #st-lock-card {
+        background: #0d0d0d;
+        border: 1px solid rgba(255,255,255,0.09);
+        border-radius: 20px;
+        padding: 3rem 2.8rem 2.5rem;
+        max-width: 460px;
+        width: calc(100% - 3rem);
+        text-align: center;
+        box-shadow: 0 0 80px rgba(220,38,38,0.12), 0 30px 60px rgba(0,0,0,0.6);
+        transition: transform 0.6s cubic-bezier(0.22,1,0.36,1), opacity 0.6s ease;
+      }
+      #st-lock-card.st-unlocking { transform: scale(0.95) translateY(-20px); opacity: 0; }
+
+      .st-lock-icon { width: 56px; height: 56px; margin: 0 auto 1.5rem; }
+      .st-lock-icon svg { width: 56px; height: 56px; }
+      .st-shackle { transition: transform 0.4s ease, opacity 0.4s ease; transform-origin: bottom center; }
+      #st-lock-card.st-unlocking .st-shackle { transform: translateY(-5px) rotate(-20deg); opacity: 0.2; }
+
+      #st-lock-card h2 {
+        color: #fff; font-size: 1.85rem; font-weight: 800;
+        letter-spacing: -0.03em; margin: 0 0 0.65rem; line-height: 1.2;
+      }
+      #st-lock-card p {
+        color: rgba(255,255,255,0.48); font-size: 0.95rem;
+        line-height: 1.65; margin: 0 0 1.5rem;
+      }
+      .st-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 1.4rem 0; }
+      .st-unlock-label {
+        font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em;
+        text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 0.65rem;
+      }
+      #st-uid-input {
+        width: 100%; box-sizing: border-box;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px; padding: 0.75rem 1rem;
+        color: #fff; font-family: 'Inter', monospace;
+        font-size: 0.87rem; letter-spacing: 0.02em;
+        outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+        margin-bottom: 0.75rem;
+      }
+      #st-uid-input:focus {
+        border-color: rgba(220,38,38,0.45);
+        box-shadow: 0 0 0 3px rgba(220,38,38,0.12);
+      }
+      #st-uid-input.st-error {
+        border-color: rgba(220,38,38,0.7);
+        box-shadow: 0 0 0 3px rgba(220,38,38,0.18);
+        animation: st-shake 0.35s ease;
+      }
+      @keyframes st-shake {
+        0%,100% { transform: translateX(0); }
+        20% { transform: translateX(-8px); }
+        40% { transform: translateX(8px); }
+        60% { transform: translateX(-5px); }
+        80% { transform: translateX(5px); }
+      }
+      #st-unlock-btn {
+        width: 100%; padding: 0.88rem;
+        background: rgba(220,38,38,0.12);
+        border: 1px solid rgba(220,38,38,0.3);
+        border-radius: 10px; color: #ff6666;
+        font-family: inherit; font-size: 0.95rem; font-weight: 700;
+        cursor: pointer; transition: background 0.2s, transform 0.15s;
+      }
+      #st-unlock-btn:hover { background: rgba(220,38,38,0.22); }
+      #st-unlock-btn:active { transform: scale(0.98); }
+      #st-error-msg {
+        font-size: 0.82rem; color: #ff6666;
+        margin-top: 0.55rem; min-height: 1.1em;
+        opacity: 0; transition: opacity 0.2s;
+      }
+      #st-error-msg.st-visible { opacity: 1; }
+      #st-success {
+        display: none; padding: 0.5rem 0;
+      }
+      #st-success .st-check {
+        width: 52px; height: 52px;
+        background: rgba(34,197,94,0.1);
+        border: 1px solid rgba(34,197,94,0.28);
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 1rem;
+      }
+      #st-success p { color: rgba(255,255,255,0.65); font-size: 0.95rem; }
+      #st-success strong { color: #fff; }
+    `;
+        document.head.appendChild(style);
+
+        const overlay = document.createElement('div');
+        overlay.id = 'st-lock-overlay';
+        overlay.innerHTML = `
+      <div id="st-lock-card">
+        <div class="st-lock-icon">
+          <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="26" width="36" height="24" rx="5"
+              fill="rgba(220,38,38,0.12)" stroke="rgba(220,38,38,0.45)" stroke-width="1.5"/>
+            <path class="st-shackle" d="M18 26V20a10 10 0 0 1 20 0v6"
+              stroke="rgba(220,38,38,0.55)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <circle cx="28" cy="37" r="3.5" fill="rgba(220,38,38,0.65)"/>
+            <rect x="26.5" y="38" width="3" height="5" rx="1.5" fill="rgba(220,38,38,0.65)"/>
+          </svg>
+        </div>
+        <h2>Testing session closed</h2>
+        <p>This testing session has now been closed.<br>Public access is restricted.</p>
+        <hr class="st-divider">
+        <div class="st-unlock-label">Unlock with user ID</div>
+        <input id="st-uid-input" type="text"
+          placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+          autocomplete="off" spellcheck="false">
+        <button id="st-unlock-btn">Unlock access</button>
+        <div id="st-error-msg">Invalid user ID — access denied.</div>
+        <div id="st-success">
+          <div class="st-check">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M5 13l4 4L19 7" stroke="rgba(34,197,94,0.85)"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p><strong>Access granted.</strong> Loading SupStore…</p>
+        </div>
+      </div>
+    `;
+        document.body.appendChild(overlay);
+
+        function tryUnlock() {
+            const input = document.getElementById('st-uid-input');
+            const errorMsg = document.getElementById('st-error-msg');
+            const card = document.getElementById('st-lock-card');
+            const val = input.value.trim().toLowerCase();
+
+            errorMsg.classList.remove('st-visible');
+            input.classList.remove('st-error');
+
+            if (val === VALID_UID) {
+                document.getElementById('st-unlock-btn').style.display = 'none';
+                input.style.display = 'none';
+                document.querySelector('.st-unlock-label').style.display = 'none';
+                document.querySelector('.st-divider').style.display = 'none';
+                document.getElementById('st-error-msg').style.display = 'none';
+                document.getElementById('st-success').style.display = 'block';
+                card.classList.add('st-unlocking');
+                setTimeout(() => overlay.remove(), 1800);
+            } else {
+                input.classList.add('st-error');
+                errorMsg.classList.add('st-visible');
+                setTimeout(() => input.classList.remove('st-error'), 400);
+            }
+        }
+
+        document.getElementById('st-unlock-btn').addEventListener('click', tryUnlock);
+        document.getElementById('st-uid-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') tryUnlock();
+        });
+
+        return; // Don't show the testing banner
+    }
+
 
     if (!testingEnabled) return;
 
