@@ -205,21 +205,21 @@
         overlay.innerHTML = `
       <div id="supstore-tester-card">
         <div class="badge"><span class="dot"></span> Testing Mode Active</div>
-        <h2>Hello, Tester! 👋</h2>
+        <h2>Hello, Tester!</h2>
         <p>
           Thanks for helping us make SupStore better. You're accessing the site
-          with <strong style="color:#fff">testing mode enabled</strong> — your
+          with <strong style="color:#fff">testing mode enabled</strong> your
           feedback is incredibly valuable to us.
         </p>
         <p>
           Feel free to browse, add things to your cart, and go through the full
           checkout flow. <strong style="color:#fff">No real money will be charged</strong>
-          — purchases are simulated and assets are granted instantly.
+          purchases are simulated and assets are granted instantly.
         </p>
         <div class="tip-box">
           <p>
             <strong>🧪 What's different in testing mode?</strong><br>
-            Payments are mocked — Stripe is never contacted. Orders are completed
+            Payments are fake so Stripe is never contacted. Orders are completed
             immediately and assets appear in your dashboard as normal. The red
             <strong>TESTING MODE</strong> badge in the corner will remind you.
           </p>
