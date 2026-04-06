@@ -45,7 +45,7 @@
         width: calc(100% - 3rem);
         text-align: center;
         box-shadow: 0 0 100px rgba(220,38,38,0.15), 0 50px 90px rgba(0,0,0,0.75);
-        transition: transform 1.4s cubic-bezier(0.23, 1, 0.32, 1), opacity 1.4s ease;
+        transition: all 1.4s cubic-bezier(0.23, 1, 0.32, 1);
       }
       #st-lock-card.st-unlocking {
         transform: scale(0.86) translateY(-40px);
@@ -216,7 +216,7 @@
 
       #st-success {
         display: none; 
-        padding: 2rem 0 1.5rem;
+        padding: 2.2rem 0 1.8rem;
         opacity: 1;
       }
       #st-success .st-check {
@@ -334,14 +334,14 @@
             successEl.style.display = 'block';
             card.classList.add('st-unlocking');
 
-            // Hold success screen visibly for a full 5 seconds before any fade begins
+            // Success screen stays visible for 7 full seconds before fade begins
             setTimeout(() => {
-                overlay.style.transition = 'opacity 2s cubic-bezier(0.25, 0.1, 0.25, 1)';
+                overlay.style.transition = 'opacity 2.2s cubic-bezier(0.25, 0.1, 0.25, 1)';
                 overlay.style.opacity = '0';
                 setTimeout(() => {
                     overlay.remove();
-                }, 2100);
-            }, 5000); // Success screen remains clearly visible for 5 seconds
+                }, 2300);
+            }, 7000); // Extended hold time for "Access granted" screen
         }
 
         function tryUnlock(val) {
