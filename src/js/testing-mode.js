@@ -40,24 +40,24 @@
         background: #0a0a0a;
         border: 1px solid rgba(255,255,255,0.08);
         border-radius: 24px;
-        padding: 3.5rem 3.2rem 3.2rem;
+        padding: 3.8rem 3.4rem 3.4rem;
         max-width: 540px;
         width: calc(100% - 3rem);
         text-align: center;
-        box-shadow: 0 0 100px rgba(220,38,38,0.18), 0 50px 90px rgba(0,0,0,0.75);
-        transition: all 1.3s cubic-bezier(0.23, 1, 0.32, 1);
+        box-shadow: 0 0 100px rgba(220,38,38,0.15), 0 50px 90px rgba(0,0,0,0.75);
+        transition: transform 1.4s cubic-bezier(0.23, 1, 0.32, 1), opacity 1.4s ease;
       }
       #st-lock-card.st-unlocking {
-        transform: scale(0.87) translateY(-45px);
+        transform: scale(0.86) translateY(-40px);
         opacity: 0;
       }
 
-      .st-lock-icon { width: 74px; height: 74px; margin: 0 auto 2rem; }
+      .st-lock-icon { width: 74px; height: 74px; margin: 0 auto 2.1rem; }
       .st-lock-icon svg { width: 74px; height: 74px; }
 
       .st-shackle {
-        transition: transform 1.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
-                    opacity 1.3s ease;
+        transition: transform 1.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                    opacity 1.4s ease;
         transform-origin: bottom center;
       }
       #st-lock-card.st-unlocking .st-shackle {
@@ -100,8 +100,8 @@
         background: rgba(255,255,255,0.02);
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 16px;
-        padding: 1.6rem 1.4rem;
-        margin: 1.6rem 0 2rem;
+        padding: 1.7rem 1.5rem;
+        margin: 1.7rem 0 2.1rem;
       }
       .st-account-frame-header {
         font-size: 0.75rem; 
@@ -109,28 +109,29 @@
         letter-spacing: 0.1em;
         text-transform: uppercase; 
         color: rgba(255,255,255,0.55); 
-        margin-bottom: 1.2rem;
+        margin-bottom: 1.3rem;
         text-align: center;
       }
       .st-account-list {
         display: flex;
         flex-direction: column;
-        gap: 0.8rem;
+        gap: 0.85rem;
       }
       .st-account-item {
         background: rgba(255,255,255,0.025);
         border: 1px solid rgba(255,255,255,0.08);
         border-radius: 12px;
-        padding: 1rem 1.2rem;
+        padding: 1.05rem 1.25rem;
         cursor: pointer;
-        transition: all 0.25s ease;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 15px;
       }
       .st-account-item:hover {
-        background: rgba(255,255,255,0.04);
-        border-color: rgba(220,38,38,0.3);
+        background: rgba(255,255,255,0.045);
+        border-color: rgba(220,38,38,0.25);
+        transform: translateY(-1px);
       }
       .st-account-item .avatar {
         width: 42px; 
@@ -143,10 +144,8 @@
         font-weight: 600;
         color: #ddd;
         flex-shrink: 0;
+        background: #1f2937;
       }
-      .st-account-item.hugo .avatar { background: #1f2937; }
-      .st-account-item.modeller .avatar { background: #1f2937; }
-      .st-account-item.supdoggy .avatar { background: #1f2937; }
       .st-account-item .info {
         flex: 1;
         text-align: left;
@@ -192,7 +191,7 @@
 
       #st-unlock-btn {
         width: 100%; 
-        padding: 1rem;
+        padding: 1.05rem;
         background: rgba(220,38,38,0.08);
         border: 1px solid rgba(220,38,38,0.35);
         border-radius: 12px; 
@@ -217,7 +216,8 @@
 
       #st-success {
         display: none; 
-        padding: 1.8rem 0 1.2rem;
+        padding: 2rem 0 1.5rem;
+        opacity: 1;
       }
       #st-success .st-check {
         width: 68px; 
@@ -228,17 +228,17 @@
         display: flex; 
         align-items: center; 
         justify-content: center;
-        margin: 0 auto 1.5rem;
-        animation: st-check-pop 0.7s ease forwards;
+        margin: 0 auto 1.6rem;
+        animation: st-check-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
       }
       @keyframes st-check-pop {
-        0% { transform: scale(0.4); }
-        55% { transform: scale(1.18); }
-        100% { transform: scale(1); }
+        0% { transform: scale(0.35); opacity: 0; }
+        60% { transform: scale(1.22); }
+        100% { transform: scale(1); opacity: 1; }
       }
       #st-success p {
-        color: rgba(255,255,255,0.85); 
-        font-size: 1.08rem; 
+        color: rgba(255,255,255,0.9); 
+        font-size: 1.12rem; 
         font-weight: 600;
         margin: 0;
       }
@@ -334,14 +334,14 @@
             successEl.style.display = 'block';
             card.classList.add('st-unlocking');
 
-            // Hold "Access granted" visibly longer before starting fade
+            // Hold success screen visibly for a full 5 seconds before any fade begins
             setTimeout(() => {
-                overlay.style.transition = 'opacity 1.8s cubic-bezier(0.25, 0.1, 0.25, 1)';
+                overlay.style.transition = 'opacity 2s cubic-bezier(0.25, 0.1, 0.25, 1)';
                 overlay.style.opacity = '0';
                 setTimeout(() => {
                     overlay.remove();
-                }, 1900);
-            }, 4800); // Success message stays clearly visible for ~4.8 seconds
+                }, 2100);
+            }, 5000); // Success screen remains clearly visible for 5 seconds
         }
 
         function tryUnlock(val) {
