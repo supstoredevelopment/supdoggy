@@ -183,7 +183,7 @@
     }
 
 
-    if (!testingEnabled) return;
+    if (!config.enabled) return;
 
     // ── 2. Inject styles ──────────────────────────────────────────────────────
 

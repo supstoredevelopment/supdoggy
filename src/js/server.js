@@ -49,9 +49,7 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://supdoggy.onrend
 
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 
-// ── Audit log helper (safe fire-and-forget) ───────────────────────────────────
-// Supabase query builders are NOT native Promises — never call .catch() on them
-// directly. Always await or use this helper.
+// ── Audit log helper ──────────────────────────────────────────────────────────
 const auditLog = async (data) => {
   try {
     const { error } = await supabaseAdmin.from('audit_logs').insert(data);
@@ -62,7 +60,6 @@ const auditLog = async (data) => {
 };
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -82,10 +79,6 @@ app.use((req, res, next) => {
   console.log(`📨 ${req.method} ${req.path} from ${req.get('origin') || 'no-origin'}`);
   next();
 });
-
-
-
-
 
 app.options('/api/stripe-webhook', (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
@@ -142,10 +135,6 @@ app.post(
       // CHECKOUT COMPLETED
       // ════════════════════════════════════════════════════════════════
       if (event.type === 'checkout.session.completed') {
-
-        // ── Re-fetch from Stripe for authoritative payment_status ─────
-        // The event payload can be stale in edge cases. Fetching live
-        // guarantees we never mark an order complete for an unpaid session.
         let session;
         try {
           session = await stripe.checkout.sessions.retrieve(event.data.object.id, {
@@ -166,7 +155,6 @@ app.post(
         console.log('   Customer email  :', session.customer_email);
         console.log('   Raw metadata    :', JSON.stringify(session.metadata));
 
-        // ── CRITICAL: only proceed if Stripe confirms payment ─────────
         const isPaid = session.payment_status === 'paid';
         const isFree = session.payment_status === 'no_payment_required';
         const isUnpaid = session.payment_status === 'unpaid';
@@ -213,7 +201,6 @@ app.post(
           return res.json({ received: true, note: 'Payment not confirmed on re-verification — skipped' });
         }
 
-        // ── Resolve userId & orderId ──────────────────────────────────
         let userId = session.metadata?.userId || null;
         let orderId = session.metadata?.orderId || null;
 
@@ -221,7 +208,6 @@ app.post(
         console.log('   userId from metadata  :', userId || '[MISSING]');
         console.log('   orderId from metadata :', orderId || '[MISSING]');
 
-        // ── Fallback 1: session_id lookup ─────────────────────────────
         if (!userId || !orderId) {
           console.log('\n⚠️  Metadata incomplete — trying fallback 1: lookup by session_id...');
 
@@ -242,9 +228,6 @@ app.post(
           }
         }
 
-
-
-        // ── Give up if still unresolvable ─────────────────────────────
         if (!userId || !orderId) {
           console.error('\n❌ UNRESOLVABLE — could not determine userId or orderId after all fallbacks');
           console.error('   userId    :', userId);
@@ -267,7 +250,6 @@ app.post(
 
         console.log('\n✅ Resolution complete — userId:', userId, '| orderId:', orderId);
 
-        // ── Idempotency guard ─────────────────────────────────────────
         const { data: existingOrder, error: existingErr } = await supabaseAdmin
           .from('orders')
           .select('id, status, session_id')
@@ -290,13 +272,11 @@ app.post(
           return res.json({ received: true, note: 'Already completed' });
         }
 
-
         if (existingOrder.status === 'cancelled') {
           console.warn('⚠️  Order is already cancelled — but Stripe says payment is confirmed.');
           console.warn('   Re-opening order as completed since payment is verified by Stripe.');
         }
 
-        // ── Mark order completed ──────────────────────────────────────
         console.log('\n📝 Marking order as completed...');
         const { error: updateError } = await supabaseAdmin
           .from('orders')
@@ -313,10 +293,8 @@ app.post(
         }
         console.log('✅ Order marked as completed:', orderId);
 
-
         console.log('\n🛒 Resolving line items...');
 
-        // Must use listLineItems() — expand on retrieve doesn't work in webhook context
         let lineItems = [];
         try {
           const lineItemsPage = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
@@ -330,7 +308,7 @@ app.post(
         if (lineItems.length === 0) {
           console.warn('   ⚠️  No line items returned — cannot grant assets');
         }
-        // ── Fetch all assets for price matching ───────────────────────
+
         const { data: allAssets, error: assetsErr } = await supabaseAdmin
           .from('assets')
           .select('id, title, stripe_price_id, stripe_prices_multi');
@@ -342,7 +320,6 @@ app.post(
 
         console.log('   Total assets in DB for matching:', allAssets.length);
 
-        // ── Grant assets per line item ────────────────────────────────
         let grantedCount = 0;
         let skippedCount = 0;
 
@@ -366,11 +343,6 @@ app.post(
 
           if (!asset) {
             console.warn('   ⚠️  No asset matched price_id:', priceId);
-            console.warn('   Known price IDs:', allAssets.map(a => ({
-              id: a.id,
-              stripe_price_id: a.stripe_price_id,
-              multi_keys: a.stripe_prices_multi ? Object.keys(a.stripe_prices_multi) : [],
-            })));
             skippedCount++;
             continue;
           }
@@ -417,7 +389,7 @@ app.post(
       }
 
       // ════════════════════════════════════════════════════════════════
-      // SESSION EXPIRED — user abandoned checkout without paying
+      // SESSION EXPIRED
       // ════════════════════════════════════════════════════════════════
       if (event.type === 'checkout.session.expired') {
         const session = event.data.object;
@@ -527,10 +499,7 @@ app.post(
   }
 );
 
-
-
 // ── Middleware ────────────────────────────────────────────────────────────────
-
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -586,7 +555,6 @@ const csrfProtection = csrf({
 });
 
 // ── Validators ────────────────────────────────────────────────────────────────
-
 const validateEmail = (email) => {
   if (!validator.isEmail(email)) throw new Error('Invalid email');
   return validator.trim(email).toLowerCase();
@@ -609,7 +577,6 @@ const validateCartItem = (item) => {
 };
 
 // ── Auth middleware ───────────────────────────────────────────────────────────
-
 const authenticateToken = async (req, res, next) => {
   try {
     let token = req.headers.authorization?.replace('Bearer ', '');
@@ -649,9 +616,6 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
     console.log('   userId   :', req.userId);
     console.log('   sessionId:', sessionId);
 
-    // ── Verify with Stripe that this session is NOT paid ─────────
-    // This is the critical guard: if somehow the user lands here
-    // after a completed payment, we must NOT cancel the order.
     let stripeSession;
     try {
       stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
@@ -668,12 +632,11 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Session is already paid — order will not be cancelled' });
     }
 
-    // ── Cancel by session_id (primary) ────────────────────────────
     const { data: updatedBySession, error: sessionErr } = await supabaseAdmin
       .from('orders')
       .update({ status: 'cancelled' })
       .eq('session_id', sessionId)
-      .eq('user_id', req.userId)   // scoped to this user — prevents cross-user abuse
+      .eq('user_id', req.userId)
       .eq('status', 'pending')
       .select('id')
       .maybeSingle();
@@ -696,7 +659,6 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
       return res.json({ cancelled: true, orderId: updatedBySession.id });
     }
 
-    // ── Fallback: cancel by orderId from Stripe metadata ─────────
     const orderId = stripeSession.metadata?.orderId;
     if (orderId) {
       console.log('   ⚠️  session_id lookup found nothing — trying orderId from Stripe metadata:', orderId);
@@ -729,7 +691,6 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
       }
     }
 
-    // Nothing found to cancel — not an error, just nothing pending
     console.log('   ℹ️  No pending order found to cancel for this session/user');
     res.json({ cancelled: false, note: 'No pending order found' });
 
@@ -747,7 +708,6 @@ app.post('/api/resolve-session', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid session ID' });
     }
 
-    // Always ask Stripe — never trust the client
     let stripeSession;
     try {
       stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
@@ -755,13 +715,12 @@ app.post('/api/resolve-session', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid session ID' });
     }
 
-    const paymentStatus = stripeSession.payment_status; // 'paid' | 'unpaid' | 'no_payment_required'
+    const paymentStatus = stripeSession.payment_status;
     const orderId = stripeSession.metadata?.orderId;
 
     console.log(`\n🔄 /api/resolve-session — session: ${sessionId} | payment_status: ${paymentStatus} | orderId: ${orderId}`);
 
     if (!orderId) {
-      // Try session_id fallback
       const { data: order } = await supabaseAdmin
         .from('orders')
         .select('id, status')
@@ -797,7 +756,7 @@ app.post('/api/resolve-session', authenticateToken, async (req, res) => {
 
 async function resolveOrder(res, order, paymentStatus, sessionId, userId) {
   if (order.status === 'completed' && (paymentStatus === 'paid' || paymentStatus === 'no_payment_required')) {
-    return res.json({ resolved: true, status: 'completed' }); // idempotent
+    return res.json({ resolved: true, status: 'completed' });
   }
 
   const newStatus = (paymentStatus === 'paid' || paymentStatus === 'no_payment_required')
@@ -805,7 +764,7 @@ async function resolveOrder(res, order, paymentStatus, sessionId, userId) {
     : 'cancelled';
 
   if (order.status === newStatus) {
-    return res.json({ resolved: true, status: newStatus }); // already correct
+    return res.json({ resolved: true, status: newStatus });
   }
 
   const { error } = await supabaseAdmin
@@ -831,7 +790,6 @@ async function resolveOrder(res, order, paymentStatus, sessionId, userId) {
   return res.json({ resolved: true, status: newStatus });
 }
 
-// Returns assets purchased in a specific checkout session (for success page)
 app.get('/api/session-assets/:sessionId', authenticateToken, async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -839,7 +797,6 @@ app.get('/api/session-assets/:sessionId', authenticateToken, async (req, res) =>
       return res.status(400).json({ error: 'Invalid session ID' });
     }
 
-    // Verify this session belongs to this user
     const { data: order, error: orderErr } = await supabaseAdmin
       .from('orders')
       .select('id, status')
@@ -855,7 +812,6 @@ app.get('/api/session-assets/:sessionId', authenticateToken, async (req, res) =>
       return res.json({ ready: false, assets: [] });
     }
 
-    // Get the line items from Stripe to know exactly which assets were bought
     let lineItems = [];
     try {
       const page = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 100 });
@@ -870,7 +826,6 @@ app.get('/api/session-assets/:sessionId', authenticateToken, async (req, res) =>
       return res.json({ ready: true, assets: [] });
     }
 
-    // Match price IDs to assets
     const { data: allAssets, error: assetsErr } = await supabaseAdmin
       .from('assets')
       .select('id, title, stripe_price_id, stripe_prices_multi');
@@ -884,7 +839,6 @@ app.get('/api/session-assets/:sessionId', authenticateToken, async (req, res) =>
       if (asset) matchedAssetIds.push(asset.id);
     }
 
-    // Verify user actually owns these (safety check)
     const { data: ownedAssets, error: ownedErr } = await supabaseAdmin
       .from('user_assets')
       .select('asset_id, assets(id, title, image_url, tag)')
@@ -902,13 +856,10 @@ app.get('/api/session-assets/:sessionId', authenticateToken, async (req, res) =>
   }
 });
 
-
 // ── Routes ────────────────────────────────────────────────────────────────────
-
 app.post('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
-
 
 app.get('/api/assets/top-selling', async (req, res) => {
   try {
@@ -1113,10 +1064,9 @@ async function isTestingModeEnabled() {
 
 app.get('/api/testing-mode', async (req, res) => {
   const config = await getTestingConfig();
-  res.json(config); // { enabled: bool, locked: bool }
+  res.json(config);
 });
 
-// Mock checkout — only works when testing_mode is on
 app.post('/api/create-test-checkout', checkoutLimiter, authenticateToken, async (req, res) => {
   try {
     const testingEnabled = await isTestingModeEnabled();
@@ -1214,7 +1164,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     // ── Testing mode intercept ────────────────────────────────────
     if (await isTestingModeEnabled()) {
       console.log('🧪 Testing mode ON — routing to mock checkout');
-      // Reuse the mock checkout handler logic inline
       const { cart: tCart, currency: tCurrency } = req.body;
       if (!Array.isArray(tCart) || tCart.length === 0 || tCart.length > 100) {
         return res.status(400).json({ error: 'Invalid cart' });
@@ -1286,12 +1235,34 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     const productMap = new Map(products.map(p => [p.id, p]));
 
+    // ── Check what the user already owns (server-side guard) ──────
+    // Prevents charging for assets already in the user's library.
+    const { data: alreadyOwned, error: ownershipErr } = await supabaseAdmin
+      .from('user_assets')
+      .select('asset_id')
+      .eq('user_id', userId)
+      .in('asset_id', validatedCart.map(i => i.id));
+
+    if (ownershipErr) {
+      console.error('❌ Failed to check ownership:', ownershipErr.message);
+      return res.status(500).json({ error: 'Failed to verify ownership' });
+    }
+
+    const ownedSet = new Set((alreadyOwned || []).map(r => String(r.asset_id)));
+    console.log('   Already owned asset IDs:', [...ownedSet]);
+
     const freeItems = [];
     const paidItems = [];
 
     for (const item of validatedCart) {
       const product = productMap.get(item.id);
       if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
+
+      // Skip assets the user already owns — silently exclude from checkout
+      if (ownedSet.has(String(product.id))) {
+        console.log(`ℹ️  Skipping already-owned asset ${product.id} (${product.title}) for user ${userId}`);
+        continue;
+      }
 
       if (!product.price || product.price === 0) {
         freeItems.push({ item, product });
@@ -1300,9 +1271,17 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       }
     }
 
+    // If every item in the cart was already owned, return success immediately
+    if (freeItems.length === 0 && paidItems.length === 0) {
+      console.log('ℹ️  All cart items are already owned — returning success');
+      return res.json({
+        free: true,
+        url: `${process.env.FRONTEND_URL}/p/success/?free=true&already_owned=true`
+      });
+    }
+
     console.log('   Free items:', freeItems.length, '| Paid items:', paidItems.length);
 
-    // ── Grant free items immediately ──────────────────────────────
     // ── Grant free items immediately ──────────────────────────────
     for (const { product } of freeItems) {
       const { data: inserted, error: insertError } = await supabaseAdmin
@@ -1406,7 +1385,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       line_items: lineItems,
       mode: 'payment',
       success_url: `${process.env.FRONTEND_URL}/p/success/?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.FRONTEND_URL}/p/cancel/?session_id={CHECKOUT_SESSION_ID}`,  // ← pass session_id to cancel page too
+      cancel_url: `${process.env.FRONTEND_URL}/p/cancel/?session_id={CHECKOUT_SESSION_ID}`,
       allow_promotion_codes: true,
       metadata: {
         userId,
@@ -1572,7 +1551,6 @@ app.get('/api/assets/review-aggregates', async (req, res) => {
 
     if (error) return res.status(500).json({ error: 'Failed to fetch reviews' });
 
-    // Aggregate in JS
     const map = {};
     for (const row of data) {
       if (!map[row.asset_id]) map[row.asset_id] = { sum: 0, count: 0 };
@@ -1601,7 +1579,6 @@ app.get('/api/assets/:id/reviews', async (req, res) => {
       return res.status(400).json({ error: 'Invalid asset ID' });
     }
 
-    // Fetch all reviews for this asset, newest first
     const { data: reviews, error } = await supabaseAdmin
       .from('asset_reviews')
       .select('id, stars, review_text, reviewer_name, created_at, user_id')
@@ -1613,9 +1590,6 @@ app.get('/api/assets/:id/reviews', async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch reviews' });
     }
 
-    // Check if the requesting user already reviewed — try to read JWT
-    // from cookie or Authorization header (same logic as authenticateToken
-    // but non-blocking: we don't reject if no token).
     let userAlreadyReviewed = false;
     try {
       let token = req.headers.authorization?.replace('Bearer ', '');
@@ -1625,10 +1599,9 @@ app.get('/api/assets/:id/reviews', async (req, res) => {
         userAlreadyReviewed = reviews.some(r => r.user_id === decoded.userId);
       }
     } catch (_) {
-      // Not logged in — that's fine
+      // Not logged in — fine
     }
 
-    // Strip internal user_id before sending to client
     const safeReviews = reviews.map(({ user_id, ...rest }) => rest);
 
     res.json({ reviews: safeReviews, user_already_reviewed: userAlreadyReviewed });
@@ -1639,7 +1612,7 @@ app.get('/api/assets/:id/reviews', async (req, res) => {
 });
 
 const reviewLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 60 * 1000,
   max: 10,
   message: 'Too many reviews submitted, please try again later',
 });
@@ -1653,13 +1626,11 @@ app.post('/api/assets/:id/reviews', reviewLimiter, authenticateToken, async (req
 
     const { stars, review_text } = req.body;
 
-    // Validate stars
     const starsInt = parseInt(stars);
     if (!Number.isInteger(starsInt) || starsInt < 1 || starsInt > 5) {
       return res.status(400).json({ error: 'Stars must be between 1 and 5' });
     }
 
-    // Validate review text
     if (!review_text || typeof review_text !== 'string') {
       return res.status(400).json({ error: 'Review text is required' });
     }
@@ -1668,7 +1639,6 @@ app.post('/api/assets/:id/reviews', reviewLimiter, authenticateToken, async (req
       return res.status(400).json({ error: 'Review must be between 10 and 2000 characters' });
     }
 
-    // Verify the user actually purchased this asset
     const { count, error: purchaseErr } = await supabaseAdmin
       .from('user_assets')
       .select('*', { count: 'exact', head: true })
@@ -1684,12 +1654,10 @@ app.post('/api/assets/:id/reviews', reviewLimiter, authenticateToken, async (req
       return res.status(403).json({ error: 'You must purchase this asset before reviewing it' });
     }
 
-    // Get reviewer display name from their profile
     const reviewerName = req.user.user_metadata?.full_name
       || req.user.email?.split('@')[0]
       || 'Verified Buyer';
 
-    // Insert review — unique constraint on (user_id, asset_id) prevents duplicates
     const { data: review, error: insertErr } = await supabaseAdmin
       .from('asset_reviews')
       .insert({
@@ -1703,7 +1671,6 @@ app.post('/api/assets/:id/reviews', reviewLimiter, authenticateToken, async (req
       .single();
 
     if (insertErr) {
-      // Unique violation = already reviewed
       if (insertErr.code === '23505') {
         return res.status(409).json({ error: 'You have already reviewed this asset' });
       }
@@ -1726,8 +1693,6 @@ app.post('/api/assets/:id/reviews', reviewLimiter, authenticateToken, async (req
     res.status(500).json({ error: 'Server error' });
   }
 });
-
-
 
 app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res) => {
   try {
@@ -1873,7 +1838,6 @@ app.get('/api/assets/:id', async (req, res) => {
 });
 
 // ── Debug endpoint ────────────────────────────────────────────────────────────
-
 app.get('/api/debug/session/:sessionId', authenticateToken, async (req, res) => {
   const { sessionId } = req.params;
 
@@ -1932,7 +1896,6 @@ app.get('/api/debug/session/:sessionId', authenticateToken, async (req, res) => 
 });
 
 // ── Static files & SPA fallback ───────────────────────────────────────────────
-
 app.use(express.static(path.join(__dirname, '..')));
 
 app.get(/^\/(?!api).*/, (req, res) => {
@@ -1940,7 +1903,6 @@ app.get(/^\/(?!api).*/, (req, res) => {
 });
 
 // ── Error handler ─────────────────────────────────────────────────────────────
-
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
     return res.status(403).json({ error: 'CSRF validation failed' });
@@ -1953,7 +1915,6 @@ app.use((err, req, res, next) => {
 });
 
 // ── Stripe sync ───────────────────────────────────────────────────────────────
-
 async function syncAssetsWithStripe() {
   console.log('🔄 Starting Stripe synchronization...');
 
@@ -2104,7 +2065,6 @@ async function syncAssetsWithStripe() {
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);

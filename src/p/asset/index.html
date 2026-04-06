@@ -883,6 +883,43 @@
             gap: 0.7rem;
         }
 
+        /* Owned state banner */
+        .owned-banner {
+            padding: 0.85rem;
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid rgba(0, 212, 255, 0.25);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            font-size: 0.92rem;
+            color: var(--accent);
+        }
+
+        .btn-my-assets {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.8rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 9px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: all 0.25s;
+        }
+
+        .btn-my-assets:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(0, 212, 255, 0.06);
+        }
+
         .btn-buy-now {
             width: 100%;
             padding: 0.85rem;
@@ -1522,14 +1559,13 @@
         function galleryPrev() { if (galleryIndex > 0) { galleryIndex--; renderGallery(); } }
         function galleryNext() { if (galleryIndex < galleryMedia.length - 1) { galleryIndex++; renderGallery(); } }
 
-        /* ── REVIEWS — fully server-side ── */
+        /* ── REVIEWS ── */
         let selectedStars = 0;
 
         async function loadAndRenderReviews(assetId, asset, isLoggedIn, isPurchased) {
             const container = document.getElementById('reviewsCard');
             if (!container) return;
 
-            // Show loading state
             container.innerHTML = `
                 <div class="reviews-card" id="reviewsSection">
                     <div class="reviews-header"><h3>Reviews</h3></div>
@@ -1539,7 +1575,7 @@
             let reviews = [], userAlreadyReviewed = false;
 
             try {
-                const res = await fetch(`/api/assets/${assetId}/reviews`);
+                const res = await fetch(`/api/assets/${assetId}/reviews`, { cache: 'no-store' });
                 if (res.ok) {
                     const data = await res.json();
                     reviews = data.reviews || [];
@@ -1557,13 +1593,10 @@
             if (!container) return;
 
             const count = reviews.length;
-
-            // Compute distribution from loaded reviews
             const dist = [0, 0, 0, 0, 0];
             reviews.forEach(r => { if (r.stars >= 1 && r.stars <= 5) dist[r.stars - 1]++; });
             const totalDist = dist.reduce((a, b) => a + b, 0) || 1;
 
-            // Compute average from actual reviews (supplement asset score)
             const avgScore = count > 0
                 ? reviews.reduce((sum, r) => sum + r.stars, 0) / count
                 : parseFloat(asset.rating_score || asset.rating || 0);
@@ -1592,7 +1625,6 @@
                 reviewsHTML = `<p style="color:var(--subtext);font-size:0.88rem;text-align:center;padding:1rem 0;">No reviews yet. Be the first!</p>`;
             }
 
-            // Decide what to show in write-review area
             let writeReviewHTML = '';
             if (!isLoggedIn) {
                 writeReviewHTML = `
@@ -1607,7 +1639,7 @@
                     <div class="write-review">
                         <div class="not-purchased">
                             <i class="fas fa-lock" style="margin-bottom:0.5rem;display:block;font-size:1.2rem;color:var(--subtext)"></i>
-                            You must <a href="/p/assets">purchase this asset</a> to leave a review.
+                            You must purchase this asset to leave a review.
                         </div>
                     </div>`;
             } else if (userAlreadyReviewed) {
@@ -1697,7 +1729,6 @@
                 if (!res.ok) throw new Error(data.error || 'Failed to post review');
 
                 showToast('Review posted!');
-                // Reload reviews from server
                 await loadAndRenderReviews(assetId, window._currentAsset, window._isLoggedIn, window._isPurchased);
             } catch (err) {
                 showToast(err.message || 'Failed to post review', '#e44');
@@ -1720,10 +1751,11 @@
 
             try {
                 // Fetch asset, purchase status, and auth in parallel
+                // cache: 'no-store' prevents stale ownership data after free purchases
                 const [assetRes, purchasesRes, profileRes] = await Promise.all([
                     fetch(`/api/assets/${id}`),
-                    fetch('/api/user/purchases', { credentials: 'include' }).catch(() => null),
-                    fetch('/api/user/profile', { credentials: 'include' }).catch(() => null),
+                    fetch('/api/user/purchases', { credentials: 'include', cache: 'no-store' }).catch(() => null),
+                    fetch('/api/user/profile', { credentials: 'include', cache: 'no-store' }).catch(() => null),
                 ]);
 
                 if (!assetRes.ok) throw new Error('Not found');
@@ -1731,11 +1763,9 @@
                 selectedAsset = asset;
                 window._currentAsset = asset;
 
-                // Auth status
                 const isLoggedIn = profileRes && profileRes.ok;
                 window._isLoggedIn = isLoggedIn;
 
-                // Purchase status
                 let isPurchased = false;
                 if (purchasesRes && purchasesRes.ok) {
                     const ids = await purchasesRes.json();
@@ -1759,6 +1789,28 @@
                     { k: 'Category', v: tag },
                     { k: 'License', v: 'Standard License' },
                 ];
+
+                // ── Ownership-aware sidebar actions ──────────────────────────
+                const sidebarActionsHTML = isPurchased ? `
+                    <div class="sidebar-actions">
+                        <div class="owned-banner">
+                            <i class="fas fa-check-circle"></i> You own this asset
+                        </div>
+                        <a href="/p/dashboard" class="btn-my-assets">
+                            <i class="fas fa-download"></i> Go to My Assets
+                        </a>
+                    </div>
+                ` : `
+                    <div class="sidebar-actions">
+                        <button class="btn-buy-now" onclick="buyNow()">
+                            <i class="fas fa-bolt"></i> ${isFree ? 'Get Now' : 'Buy Now'}
+                        </button>
+                        <button class="btn-add-cart ${inCart ? 'added' : ''}" id="addCartBtn" onclick="addToCart()">
+                            <i class="fas ${inCart ? 'fa-check' : 'fa-cart-plus'}"></i>
+                            ${inCart ? 'Added to Cart' : 'Add to Cart'}
+                        </button>
+                    </div>
+                `;
 
                 grid.innerHTML = `
                     <div class="detail-left">
@@ -1795,15 +1847,7 @@
                                 <div class="sidebar-price">${isFree ? '<span style="color:var(--accent)">FREE</span>' : '$' + asset.price.toLocaleString()}</div>
                                 <div class="price-note">${isFree ? 'No payment required' : 'Taxes not included'}</div>
                             </div>
-                            <div class="sidebar-actions">
-                                <button class="btn-buy-now" onclick="buyNow()">
-                                    <i class="fas fa-bolt"></i> ${isFree ? 'Get Now' : 'Buy Now'}
-                                </button>
-                                <button class="btn-add-cart ${inCart ? 'added' : ''}" id="addCartBtn" onclick="addToCart()">
-                                    <i class="fas ${inCart ? 'fa-check' : 'fa-cart-plus'}"></i>
-                                    ${inCart ? 'Added to Cart' : 'Add to Cart'}
-                                </button>
-                            </div>
+                            ${sidebarActionsHTML}
                             <div class="sidebar-details">
                                 <h4>Details</h4>
                                 ${details.map(d => `
@@ -1816,8 +1860,6 @@
                     </div>`;
 
                 initGallery(asset);
-
-                // Load reviews from server
                 await loadAndRenderReviews(id, asset, isLoggedIn, isPurchased);
 
                 // Recommended carousel
@@ -1836,10 +1878,23 @@
 
         function addToCart() {
             if (!selectedAsset) return;
+
+            // Guard: don't add already-owned assets to cart
+            if (window._isPurchased) {
+                showToast('You already own this asset!', '#0066ff');
+                return;
+            }
+
             const cart = getCart();
             const btn = document.getElementById('addCartBtn');
             if (!cart.find(i => i.id === selectedAsset.id)) {
-                cart.push({ id: selectedAsset.id, title: selectedAsset.title, price: selectedAsset.price, image_url: selectedAsset.image_url, stripe_price_id: selectedAsset.stripe_price_id });
+                cart.push({
+                    id: selectedAsset.id,
+                    title: selectedAsset.title,
+                    price: selectedAsset.price,
+                    image_url: selectedAsset.image_url,
+                    stripe_price_id: selectedAsset.stripe_price_id
+                });
                 saveCart(cart);
                 showToast('Added to cart!');
             } else {
@@ -1850,9 +1905,22 @@
 
         function buyNow() {
             if (!selectedAsset) return;
+
+            // Guard: redirect owners to dashboard instead of re-purchasing
+            if (window._isPurchased) {
+                window.location.href = '/p/dashboard';
+                return;
+            }
+
             const cart = getCart();
             if (!cart.find(i => i.id === selectedAsset.id)) {
-                cart.push({ id: selectedAsset.id, title: selectedAsset.title, price: selectedAsset.price, image_url: selectedAsset.image_url, stripe_price_id: selectedAsset.stripe_price_id });
+                cart.push({
+                    id: selectedAsset.id,
+                    title: selectedAsset.title,
+                    price: selectedAsset.price,
+                    image_url: selectedAsset.image_url,
+                    stripe_price_id: selectedAsset.stripe_price_id
+                });
                 saveCart(cart);
             }
             window.location.href = '/p/cart';
