@@ -1532,7 +1532,7 @@ app.get('/api/asset/:assetId/versions', authenticateToken, async (req, res) => {
 
     const { data, error } = await supabaseAdmin
       .from('asset_versions')
-      .select('id, version, created_at, release_notes')
+      .select('id, version, created_at, release_notes, file_path, files') // ADD files
       .eq('asset_id', assetId)
       .order('created_at', { ascending: false });
 
@@ -1698,6 +1698,7 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
   try {
     const assetId = parseInt(req.params.assetId);
     const versionId = parseInt(req.params.versionId);
+    const requestedFile = req.query.file; // NEW: optional filename
 
     if (!Number.isInteger(assetId) || assetId < 1 || !Number.isInteger(versionId) || versionId < 1) {
       return res.status(400).json({ error: 'Invalid asset or version ID' });
@@ -1715,7 +1716,7 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
 
     const { data: version, error: versionError } = await supabaseAdmin
       .from('asset_versions')
-      .select('file_path')
+      .select('file_path, files')
       .eq('asset_id', assetId)
       .eq('id', versionId)
       .single();
@@ -1724,7 +1725,22 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
       return res.status(404).json({ error: 'Version not found' });
     }
 
-    let filePath = version.file_path;
+    // Resolve which file path to use
+    let filePath;
+
+    if (requestedFile && Array.isArray(version.files) && version.files.length > 0) {
+      // Multi-file: find by filename
+      const fileEntry = version.files.find(f => f.name === requestedFile);
+      if (!fileEntry) return res.status(404).json({ error: 'File not found in version' });
+      filePath = fileEntry.path;
+    } else {
+      // Legacy single-file fallback
+      filePath = version.file_path;
+    }
+
+    if (!filePath) return res.status(404).json({ error: 'No file path found' });
+
+    // Normalize path
     if (filePath.startsWith('/')) filePath = filePath.substring(1);
     if (filePath.startsWith('assets/')) filePath = filePath.substring(7);
 
@@ -1744,7 +1760,7 @@ app.get('/api/download/:assetId/:versionId', authenticateToken, async (req, res)
       resource: 'asset',
       resource_id: assetId.toString(),
       status: 'success',
-      details: { version_id: versionId, file_path: filePath }
+      details: { version_id: versionId, file_path: filePath, file_name: requestedFile || null }
     });
 
     res.json({ url: signedUrlData.signedUrl });

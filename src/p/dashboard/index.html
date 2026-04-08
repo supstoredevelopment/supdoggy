@@ -1005,50 +1005,85 @@
                             vlist.innerHTML = '<p style="color: var(--subtext); font-size: 0.9rem;">No versions available</p>';
                         } else {
                             versions.forEach(version => {
-                                const btn = document.createElement('a');
-                                btn.className = 'btn-secondary';
-                                btn.style.cursor = 'pointer';
-                                btn.innerHTML = `<i class="fas fa-download"></i> v${version.version}`;
+                                // Version header label
+                                const versionLabel = document.createElement('div');
+                                versionLabel.style.cssText = 'width: 100%; font-size: 0.8rem; color: var(--subtext); margin: 0.5rem 0 0.25rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;';
+                                versionLabel.textContent = `v${version.version}`;
+                                vlist.appendChild(versionLabel);
 
-                                btn.onclick = async (e) => {
-                                    e.preventDefault();
-                                    console.log(`📥 Downloading asset ${asset.id}, version ${version.id}`);
+                                const hasMultiFiles = Array.isArray(version.files) && version.files.length > 0;
 
-                                    btn.style.opacity = '0.5';
-                                    btn.style.pointerEvents = 'none';
-                                    const originalText = btn.innerHTML;
-                                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+                                if (hasMultiFiles) {
+                                    // Render one button per file
+                                    version.files.forEach(file => {
+                                        const ext = file.name.split('.').pop().toUpperCase();
+                                        const btn = document.createElement('a');
+                                        btn.className = 'btn-secondary';
+                                        btn.style.cursor = 'pointer';
+                                        btn.innerHTML = `<i class="fas fa-download"></i> ${file.name} <span style="opacity:0.5; font-size:0.75rem;">${ext}</span>`;
 
-                                    try {
-                                        const downloadRes = await fetch(`/api/download/${asset.id}/${version.id}`, { credentials: 'include' });
-                                        console.log('Download response status:', downloadRes.status);
+                                        btn.onclick = async (e) => {
+                                            e.preventDefault();
+                                            btn.style.opacity = '0.5';
+                                            btn.style.pointerEvents = 'none';
+                                            const originalHTML = btn.innerHTML;
+                                            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
 
-                                        if (!downloadRes.ok) {
-                                            const error = await downloadRes.json();
-                                            console.error('❌ Download error:', error);
-                                            throw new Error(error.error || 'Download failed');
+                                            try {
+                                                const downloadRes = await fetch(
+                                                    `/api/download/${asset.id}/${version.id}?file=${encodeURIComponent(file.name)}`,
+                                                    { credentials: 'include' }
+                                                );
+                                                if (!downloadRes.ok) {
+                                                    const err = await downloadRes.json();
+                                                    throw new Error(err.error || 'Download failed');
+                                                }
+                                                const data = await downloadRes.json();
+                                                if (data.url) window.open(data.url, '_blank');
+                                                else throw new Error('No download URL received');
+                                            } catch (err) {
+                                                alert('Download failed: ' + err.message);
+                                            } finally {
+                                                btn.style.opacity = '1';
+                                                btn.style.pointerEvents = 'auto';
+                                                btn.innerHTML = originalHTML;
+                                            }
+                                        };
+                                        vlist.appendChild(btn);
+                                    });
+                                } else {
+                                    // Legacy single-file button
+                                    const btn = document.createElement('a');
+                                    btn.className = 'btn-secondary';
+                                    btn.style.cursor = 'pointer';
+                                    btn.innerHTML = `<i class="fas fa-download"></i> Download v${version.version}`;
+
+                                    btn.onclick = async (e) => {
+                                        e.preventDefault();
+                                        btn.style.opacity = '0.5';
+                                        btn.style.pointerEvents = 'none';
+                                        const originalHTML = btn.innerHTML;
+                                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+
+                                        try {
+                                            const downloadRes = await fetch(`/api/download/${asset.id}/${version.id}`, { credentials: 'include' });
+                                            if (!downloadRes.ok) {
+                                                const err = await downloadRes.json();
+                                                throw new Error(err.error || 'Download failed');
+                                            }
+                                            const data = await downloadRes.json();
+                                            if (data.url) window.open(data.url, '_blank');
+                                            else throw new Error('No download URL received');
+                                        } catch (err) {
+                                            alert('Download failed: ' + err.message);
+                                        } finally {
+                                            btn.style.opacity = '1';
+                                            btn.style.pointerEvents = 'auto';
+                                            btn.innerHTML = originalHTML;
                                         }
-
-                                        const data = await downloadRes.json();
-                                        console.log('✅ Download URL received:', data.url);
-
-                                        if (data.url) {
-                                            window.open(data.url, '_blank');
-                                            console.log('✅ Download started!');
-                                        } else {
-                                            throw new Error('No download URL received');
-                                        }
-                                    } catch (err) {
-                                        console.error('❌ Download failed:', err);
-                                        alert('Download failed: ' + err.message);
-                                    } finally {
-                                        btn.style.opacity = '1';
-                                        btn.style.pointerEvents = 'auto';
-                                        btn.innerHTML = originalText;
-                                    }
-                                };
-
-                                vlist.appendChild(btn);
+                                    };
+                                    vlist.appendChild(btn);
+                                }
                             });
                         }
                     } catch (verr) {
