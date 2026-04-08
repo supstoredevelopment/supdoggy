@@ -411,15 +411,16 @@
             display: flex;
             gap: 0.5rem;
             padding: 0.75rem;
-            overflow-x: auto;
+            overflow-x: hidden;
             scrollbar-width: thin;
             scrollbar-color: var(--glass-border) transparent;
         }
 
         .gallery-thumb {
             flex-shrink: 0;
-            width: 80px;
-            height: 52px;
+            flex: 1;
+            min-width: 0;
+            height: 70px;
             border-radius: 6px;
             overflow: hidden;
             border: 2px solid transparent;
@@ -429,7 +430,22 @@
         }
 
         .gallery-thumb.active {
-            border-color: var(--accent);
+            border-color: transparent;
+            position: relative;
+        }
+
+        .gallery-thumb.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent);
+
+            border-radius: 0 0 4px 4px;
+            transition: left 0.25s ease;
+
         }
 
         .gallery-thumb img {
