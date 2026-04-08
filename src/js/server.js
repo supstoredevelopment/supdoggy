@@ -1826,7 +1826,7 @@ app.get('/api/assets/:id', async (req, res) => {
 
     const { data: asset, error } = await supabase
       .from('assets')
-      .select('id, title, description, price, image_url, tag, is_top_selling, created_at, updated_at, author')
+      .select('id, title, description, price, image_url, tag, is_top_selling, created_at, updated_at, author, video_url, extra_images')
       .eq('id', id)
       .single();
 
