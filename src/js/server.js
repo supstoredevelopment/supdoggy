@@ -2088,9 +2088,9 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🎯 Webhook endpoint: http://localhost:${PORT}/api/stripe-webhook`);
   console.log(`📁 Static files directory: ${path.join(__dirname, '..')}\n`);
 
-  //setTimeout(() => {
-  //   syncAssetsWithStripe().catch(err =>
-  //   console.error('❌ Background Stripe sync failed:', err)
-  //  );
-  // }, 5000);
+  setTimeout(() => {
+    syncAssetsWithStripe().catch(err =>
+      console.error('❌ Background Stripe sync failed:', err)
+    );
+  }, 5000);
 });
