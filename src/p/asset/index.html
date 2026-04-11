@@ -1541,18 +1541,18 @@
         }
 
         function renderGallery() {
-            const mainEl = document.getElementById('galleryMain');
+            const mediaEl = document.getElementById('galleryMedia');   // ← only this gets replaced
             const thumbsEl = document.getElementById('galleryThumbs');
             const counterEl = document.getElementById('galleryCounter');
             const prevEl = document.getElementById('galleryPrev');
             const nextEl = document.getElementById('galleryNext');
-            if (!mainEl) return;
+            if (!mediaEl) return;
 
             const media = galleryMedia[galleryIndex];
             if (media.type === 'video') {
-                mainEl.innerHTML = `<video controls autoplay muted loop><source src="${media.src}"></video>`;
+                mediaEl.innerHTML = `<video controls autoplay muted loop style="width:100%;height:100%;object-fit:contain;background:#000;display:block;"><source src="${media.src}"></video>`;
             } else {
-                mainEl.innerHTML = `<img src="${media.src}" alt="Asset image">`;
+                mediaEl.innerHTML = `<img src="${media.src}" alt="Asset image" style="width:100%;height:100%;object-fit:cover;display:block;">`;
             }
 
             counterEl.textContent = `${galleryIndex + 1} / ${galleryMedia.length}`;
@@ -1563,12 +1563,12 @@
 
             thumbsEl.style.display = galleryMedia.length > 1 ? 'flex' : 'none';
             thumbsEl.innerHTML = galleryMedia.map((m, i) => `
-                <div class="gallery-thumb ${i === galleryIndex ? 'active' : ''}" onclick="setGalleryIndex(${i})">
-                    ${m.type === 'video'
+        <div class="gallery-thumb ${i === galleryIndex ? 'active' : ''}" onclick="setGalleryIndex(${i})">
+            ${m.type === 'video'
                     ? `<div class="play-icon"><i class="fas fa-play"></i></div>`
                     : `<img src="${m.src}" alt="">`}
-                </div>
-            `).join('');
+        </div>
+    `).join('');
         }
 
         function setGalleryIndex(i) { galleryIndex = i; renderGallery(); }
@@ -1831,12 +1831,12 @@
                 grid.innerHTML = `
                     <div class="detail-left">
                         <div class="gallery">
-                            <div class="gallery-main" id="galleryMain">
-                                <img src="${asset.image_url}" alt="${asset.title}">
-                                <button class="gallery-arrow prev" id="galleryPrev" onclick="galleryPrev()" style="display:none;"><i class="fas fa-chevron-left"></i></button>
-                                <button class="gallery-arrow next" id="galleryNext" onclick="galleryNext()" style="display:none;"><i class="fas fa-chevron-right"></i></button>
-                                <span class="gallery-counter" id="galleryCounter">1 / 1</span>
-                            </div>
+                           <div class="gallery-main" id="galleryMain">
+                                <div id="galleryMedia" style="width:100%;height:100%;"></div>
+                                    <button class="gallery-arrow prev" id="galleryPrev" onclick="galleryPrev()" style="display:none;"><i class="fas fa-chevron-left"></i></button>
+                                    <button class="gallery-arrow next" id="galleryNext" onclick="galleryNext()" style="display:none;"><i class="fas fa-chevron-right"></i></button>
+                                    <span class="gallery-counter" id="galleryCounter">1 / 1</span>
+                                </div>
                             <div class="gallery-thumbs" id="galleryThumbs" style="display:none;"></div>
                         </div>
                         <div class="desc-card">
