@@ -1283,7 +1283,11 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     console.log('   Free items:', freeItems.length, '| Paid items:', paidItems.length);
 
     // ── Grant free items immediately ──────────────────────────────
+    // ── Grant free items immediately ──────────────────────────────
+    const grantedFreeAssets = [];
     for (const { product } of freeItems) {
+      console.log(`   🆓 Granting free asset — user_id: ${userId} | asset_id: ${product.id} (${product.title})`);
+
       const { data: inserted, error: insertError } = await supabaseAdmin
         .from('user_assets')
         .insert({
@@ -1294,19 +1298,22 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         .select();
 
       if (insertError && insertError.code !== '23505') {
-        console.error('❌ Failed to grant free asset:', product.id, insertError.message);
+        console.error('❌ Failed to grant free asset:', product.id, '|', insertError.message, '| code:', insertError.code);
         return res.status(500).json({ error: 'Failed to grant free asset' });
       }
 
       if (insertError?.code === '23505') {
-        console.log('ℹ️ Free asset already owned:', product.id);
+        console.log(`   ℹ️  Free asset already owned: ${product.id}`);
       } else {
-        console.log('✅ Free asset granted, row:', inserted?.[0]?.id ?? 'unknown');
+        console.log(`   ✅ Free asset granted — row id: ${inserted?.[0]?.id ?? 'unknown'}`);
+        grantedFreeAssets.push(product.id);
       }
     }
 
     if (paidItems.length === 0) {
       const freeSessionId = `free_${crypto.randomUUID()}`;
+
+      console.log(`\n🆓 All items free — granted ${grantedFreeAssets.length} new asset(s).`);
 
       const { error: orderErr } = await supabaseAdmin.from('orders').insert({
         user_id: userId,
@@ -1326,10 +1333,31 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         details: {
           amount: 0,
           currency: (currency || 'USD').toUpperCase(),
-          assets_granted: freeItems.length,
+          assets_granted: grantedFreeAssets.length,
+          asset_ids: grantedFreeAssets,
           type: 'free',
         },
       });
+
+      // ── Post-grant verification ───────────────────────────────────
+      const { data: verifyRows, error: verifyErr } = await supabaseAdmin
+        .from('user_assets')
+        .select('asset_id')
+        .eq('user_id', userId)
+        .in('asset_id', freeItems.map(({ product }) => product.id));
+
+      if (verifyErr) {
+        console.error('⚠️ Could not verify free asset grants:', verifyErr.message);
+      } else {
+        const missing = freeItems
+          .map(({ product }) => product.id)
+          .filter(id => !verifyRows.find(r => String(r.asset_id) === String(id)));
+        if (missing.length > 0) {
+          console.error('   ❌ MISSING from user_assets after grant:', missing);
+        } else {
+          console.log(`   ✅ Verified — all ${verifyRows.length} free assets confirmed in user_assets`);
+        }
+      }
 
       return res.json({ free: true, url: `${process.env.FRONTEND_URL}/p/success/?free=true` });
     }
