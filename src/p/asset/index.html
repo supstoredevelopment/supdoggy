@@ -1794,7 +1794,28 @@
 
                 const score = parseFloat(asset.rating_score || asset.rating || 0);
                 const count = asset.rating_count || 0;
-                const tag = Array.isArray(asset.tag) ? asset.tag[0] : (asset.tag || 'Asset');
+
+                let displayTags = [];
+
+                if (Array.isArray(asset.tag)) {
+                    displayTags = asset.tag.map(t =>
+                        typeof t === 'string' ? t.trim() : String(t)
+                    ).filter(Boolean);
+                } else if (asset.tag) {
+                    displayTags = [String(asset.tag).trim()];
+                } else {
+                    displayTags = ['Asset'];
+                }
+
+                // For display: show first tag as main category, and all tags as badges if needed
+                const mainTag = displayTags[0] || 'Asset';
+                const allTagsHTML = displayTags.length > 1
+                    ? displayTags.map(t => `
+        <span class="asset-category-badge" style="margin-left:6px;font-size:0.72rem;padding:0.25rem 0.65rem;">
+            ${t}
+        </span>
+      `).join('')
+                    : '';
                 const author = asset.author || asset.seller || 'SupStore';
                 const inCart = !!getCart().find(i => i.id === asset.id);
                 const isFree = asset.price === 0;
@@ -1802,10 +1823,10 @@
                 const details = [
                     { k: 'Last Updated', v: asset.updated_at ? new Date(asset.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A' },
                     { k: 'Published', v: asset.created_at ? new Date(asset.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A' },
-                    { k: 'Category', v: tag },
+                    { k: 'Category', v: mainTag },
+                    { k: 'Tags', v: displayTags.join(', ') },
                     { k: 'License', v: 'Standard License' },
                 ];
-
                 // ── Ownership-aware sidebar actions ──────────────────────────
                 const sidebarActionsHTML = isPurchased ? `
                     <div class="sidebar-actions">
@@ -1847,17 +1868,20 @@
                     </div>
                     <div class="detail-sidebar">
                         <div class="sidebar-card">
-                            <div class="sidebar-header">
-                                <span class="asset-category-badge">${tag}</span>
-                                <h1 class="sidebar-title">${asset.title}</h1>
-                                <div class="sidebar-author">by <a href="#">${author}</a></div>
-                                ${score > 0 ? `
-                                <div class="sidebar-rating">
-                                    <span class="score-num">${score.toFixed(1)}</span>
-                                    <div class="stars">${renderStars(score, '0.8rem')}</div>
-                                    <span class="review-link" onclick="document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'})">(${count} ratings)</span>
-                                </div>` : ''}
-                            </div>
+                          <div class="sidebar-header">
+    <span class="asset-category-badge">${mainTag}</span>
+    ${allTagsHTML}
+    
+    <h1 class="sidebar-title">${asset.title}</h1>
+    <div class="sidebar-author">by <a href="#">${author}</a></div>
+    
+    ${score > 0 ? `
+    <div class="sidebar-rating">
+        <span class="score-num">${score.toFixed(1)}</span>
+        <div class="stars">${renderStars(score, '0.8rem')}</div>
+        <span class="review-link" onclick="document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'})">(${count} ratings)</span>
+    </div>` : ''}
+</div>
                             <div class="sidebar-price-block">
                                 <div class="price-label">Price</div>
                                 <div class="sidebar-price">${isFree ? '<span style="color:var(--accent)">FREE</span>' : '$' + asset.price.toLocaleString()}</div>

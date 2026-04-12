@@ -1868,9 +1868,11 @@
         }
 
         // ── Fetch & render categories ────────────────────────────────────────
+
+        // ── Improved loadCategories function ─────────────────────────────────────
         async function loadCategories() {
             try {
-                // Most Popular — uses existing top-selling endpoint
+                // Most Popular row
                 const popularRes = await fetch('/api/assets/top-selling?limit=20');
                 if (popularRes.ok) {
                     const popularAssets = await popularRes.json();
@@ -1881,11 +1883,11 @@
                 populateRow('popular', []);
             }
 
-            // Per-category rows — uses paginated assets endpoint with tag filter
+            // Category rows
             const categories = [
-                { id: 'scripts', tag: 'Scripts' },
-                { id: 'models', tag: '3D' },
-                { id: 'ui', tag: 'UI' },
+                { id: 'scripts', tag: 'scripts' },
+                { id: 'models', tag: 'models' },
+                { id: 'ui', tag: 'ui' }
             ];
 
             for (const cat of categories) {
@@ -1893,10 +1895,28 @@
                     const res = await fetch(`/api/assets?limit=20&page=1`);
                     if (res.ok) {
                         const json = await res.json();
-                        // Filter client-side by tag (case-insensitive partial match)
-                        const filtered = (json.data || []).filter(a =>
-                            a.tag && a.tag.toLowerCase() === cat.tag.toLowerCase()
-                        );
+                        const data = json.data || json || [];   // handle different response shapes
+
+                        const filtered = data.filter(a => {
+                            if (!a || !a.tag) return false;
+
+                            const targetTag = cat.tag.toLowerCase();
+
+                            // Handle both string and array formats
+                            if (typeof a.tag === 'string') {
+                                return a.tag.toLowerCase() === targetTag;
+                            }
+
+                            if (Array.isArray(a.tag)) {
+                                return a.tag.some(tagItem =>
+                                    typeof tagItem === 'string' &&
+                                    tagItem.toLowerCase() === targetTag
+                                );
+                            }
+
+                            return false;
+                        });
+
                         populateRow(cat.id, filtered);
                     }
                 } catch (e) {
