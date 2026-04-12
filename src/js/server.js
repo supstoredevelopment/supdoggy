@@ -499,7 +499,6 @@ app.post(
   }
 );
 
-// ── Middleware ────────────────────────────────────────────────────────────────
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -509,9 +508,14 @@ app.use(
         scriptSrcAttr: ["'unsafe-inline'", "'unsafe-hashes'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
-        imgSrc: ["'self'", "data:", "https:", "blob:"],
+        imgSrc: ["'self'", "data:", "https:", "blob:"],  // 'https:' already allows YouTube thumbnails if needed
         connectSrc: ["'self'", "https://api.stripe.com", "https://api.emailjs.com", "https://api.exchangerate-api.com", process.env.SUPABASE_URL, process.env.FRONTEND_URL || "'self'", "http://localhost:3000", "http://localhost:3001"].filter(Boolean),
-        frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+
+        // Add these for YouTube embeds:
+        frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com", "https://www.youtube.com", "https://youtube.com"],
+        childSrc: ["'self'", "https://www.youtube.com", "https://youtube.com"],  // Fallback for older browsers
+        mediaSrc: ["'self'", "https://www.youtube.com", "https://youtube.com", "https://*.googlevideo.com"],  // Covers video/audio and related media
+
         objectSrc: ["'none'"],
         upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
       },
