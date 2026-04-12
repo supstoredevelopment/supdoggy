@@ -1808,7 +1808,6 @@
                 }
 
                 // For display: show first tag as main category, and all tags as badges if needed
-                const mainTag = displayTags[0] || 'Asset';
                 const allTagsHTML = displayTags.length > 1
                     ? displayTags.map(t => `
         <span class="asset-category-badge" style="margin-left:6px;font-size:0.72rem;padding:0.25rem 0.65rem;">
@@ -1823,8 +1822,7 @@
                 const details = [
                     { k: 'Last Updated', v: asset.updated_at ? new Date(asset.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A' },
                     { k: 'Published', v: asset.created_at ? new Date(asset.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A' },
-                    { k: 'Category', v: mainTag },
-                    { k: 'Tags', v: displayTags.join(', ') },
+                    { k: 'Category', v: displayTags.join(', ') },
                     { k: 'License', v: 'Standard License' },
                 ];
                 // ── Ownership-aware sidebar actions ──────────────────────────
@@ -1869,7 +1867,6 @@
                     <div class="detail-sidebar">
                         <div class="sidebar-card">
                           <div class="sidebar-header">
-    <span class="asset-category-badge">${mainTag}</span>
     ${allTagsHTML}
     
     <h1 class="sidebar-title">${asset.title}</h1>
