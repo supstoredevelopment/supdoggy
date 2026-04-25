@@ -1674,12 +1674,11 @@
     </footer>
 
     <script>
-        // ── Helpers ──────────────────────────────────────────────────────────
         function getCart() { return JSON.parse(localStorage.getItem('cart') || '[]'); }
         function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); updateCartCount(); }
         function updateCartCount() { document.getElementById('cartCount').textContent = getCart().length; }
 
-        // ── Nav ──────────────────────────────────────────────────────────────
+
         const nav = document.getElementById('nav');
         const hamburger = document.getElementById('hamburger');
         const navLinks = document.querySelector('.nav-links');
@@ -1699,7 +1698,7 @@
             });
         });
 
-        // ── Theme ────────────────────────────────────────────────────────────
+
         const themeSwitch = document.getElementById('themeSwitch');
         const currentTheme = localStorage.getItem('theme') || 'dark';
         document.body.dataset.theme = currentTheme;
@@ -1710,7 +1709,7 @@
             localStorage.setItem('theme', theme);
         });
 
-        // ── FAQ ──────────────────────────────────────────────────────────────
+
         const faqData = [
             { q: "Can I use these assets in multiple projects?", a: "Once you purchase an asset, you can use it in as many projects as you want." },
             { q: "Are the assets optimized for mobile devices?", a: "Yes! All assets are performance-tested, so they should work with mobile devices too." },
@@ -1736,13 +1735,13 @@
             faqGrid.appendChild(item);
         });
 
-        // ── Scroll row buttons ────────────────────────────────────────────────
+
         function scrollRow(rowId, direction) {
             const el = document.getElementById('scroll-' + rowId);
             if (el) el.scrollBy({ left: direction * 700, behavior: 'smooth' });
         }
 
-        // ── Drag to scroll ───────────────────────────────────────────────────
+
         document.querySelectorAll('.cards-scroll').forEach(el => {
             let isDown = false, startX, scrollLeft;
 
@@ -1763,7 +1762,7 @@
             });
         });
 
-        // ── Build asset card ─────────────────────────────────────────────────
+
         function buildAssetCard(asset) {
             const card = document.createElement('div');
             card.className = 'asset-card';
@@ -1790,7 +1789,7 @@
             return card;
         }
 
-        // ── Populate a row ───────────────────────────────────────────────────
+
         function populateRow(rowId, assets) {
             const container = document.getElementById('scroll-' + rowId);
             if (!container) return;
@@ -1802,9 +1801,7 @@
             assets.forEach(asset => container.appendChild(buildAssetCard(asset)));
         }
 
-        // ── Fetch & render categories ────────────────────────────────────────
 
-        // ── Improved loadCategories function ─────────────────────────────────────
         async function loadCategories() {
             try {
                 // Most Popular row
@@ -1837,7 +1834,7 @@
 
                             const targetTag = cat.tag.toLowerCase();
 
-                            // Handle both string and array formats
+
                             if (typeof a.tag === 'string') {
                                 return a.tag.toLowerCase() === targetTag;
                             }
@@ -1861,7 +1858,7 @@
             }
         }
 
-        // ── Auth button ──────────────────────────────────────────────────────
+
         async function updateAuthButton() {
             const authBtn = document.getElementById('authBtn');
             const authBtnText = document.getElementById('authBtnText');
@@ -1881,7 +1878,7 @@
             authBtn.style.display = 'inline-flex';
         }
 
-        // ── Page load ────────────────────────────────────────────────────────
+
         window.addEventListener('load', () => {
             document.body.style.opacity = '0';
             setTimeout(() => {

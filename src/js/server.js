@@ -22,7 +22,6 @@ const app = express();
 
 app.set('trust proxy', 1);
 
-// ── Domain redirect ───────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   const host = req.headers.host || '';
   if (host === 'supdoggy.store' || host === 'www.supdoggy.store') {
@@ -49,7 +48,6 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://supdoggy.onrend
 
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 
-// ── Audit log helper ──────────────────────────────────────────────────────────
 const auditLog = async (data) => {
   try {
     const { error } = await supabaseAdmin.from('audit_logs').insert(data);
@@ -59,7 +57,6 @@ const auditLog = async (data) => {
   }
 };
 
-// ── CORS ──────────────────────────────────────────────────────────────────────
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -558,7 +555,7 @@ const csrfProtection = csrf({
   }
 });
 
-// ── Validators ────────────────────────────────────────────────────────────────
+
 const validateEmail = (email) => {
   if (!validator.isEmail(email)) throw new Error('Invalid email');
   return validator.trim(email).toLowerCase();
@@ -580,7 +577,7 @@ const validateCartItem = (item) => {
   return { id, quantity: item.quantity };
 };
 
-// ── Auth middleware ───────────────────────────────────────────────────────────
+
 const authenticateToken = async (req, res, next) => {
   try {
     let token = req.headers.authorization?.replace('Bearer ', '');
@@ -860,7 +857,7 @@ app.get('/api/session-assets/:sessionId', authenticateToken, async (req, res) =>
   }
 });
 
-// ── Routes ────────────────────────────────────────────────────────────────────
+
 app.post('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
@@ -1165,7 +1162,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     console.log('   cart      :', JSON.stringify(req.body.cart));
     console.log('   currency  :', req.body.currency);
 
-    // ── Testing mode intercept ────────────────────────────────────
+
     if (await isTestingModeEnabled()) {
       console.log('🧪 Testing mode ON — routing to mock checkout');
       const { cart: tCart, currency: tCurrency } = req.body;
@@ -1239,8 +1236,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     const productMap = new Map(products.map(p => [p.id, p]));
 
-    // ── Check what the user already owns (server-side guard) ──────
-    // Prevents charging for assets already in the user's library.
+
     const { data: alreadyOwned, error: ownershipErr } = await supabaseAdmin
       .from('user_assets')
       .select('asset_id')
@@ -1286,8 +1282,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     console.log('   Free items:', freeItems.length, '| Paid items:', paidItems.length);
 
-    // ── Grant free items immediately ──────────────────────────────
-    // ── Grant free items immediately ──────────────────────────────
+
     const grantedFreeAssets = [];
     for (const { product } of freeItems) {
       console.log(`   🆓 Granting free asset — user_id: ${userId} | asset_id: ${product.id} (${product.title})`);
@@ -1343,7 +1338,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         },
       });
 
-      // ── Post-grant verification ───────────────────────────────────
+
       const { data: verifyRows, error: verifyErr } = await supabaseAdmin
         .from('user_assets')
         .select('asset_id')
@@ -1366,7 +1361,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       return res.json({ free: true, url: `${process.env.FRONTEND_URL}/p/success/?free=true` });
     }
 
-    // ── Build Stripe line items ───────────────────────────────────
+
     const lineItems = [];
     let totalAmount = 0;
     const checkoutCurrency = (currency || 'usd').toLowerCase();
@@ -1392,7 +1387,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       totalAmount += product.price * item.quantity;
     }
 
-    // ── Create order FIRST so we have orderId for Stripe metadata ─
+
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -1411,7 +1406,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     console.log('✅ Order created:', order.id);
 
-    // ── Create Stripe session with BOTH userId AND orderId ────────
     const session = await stripe.checkout.sessions.create({
       customer_email: userEmail,
       line_items: lineItems,
@@ -1428,7 +1422,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     console.log('✅ Stripe session created:', session.id);
     console.log('   Metadata sent to Stripe:', { userId, orderId: order.id });
 
-    // ── Link session_id back to the order row ─────────────────────
+
     const { error: updateError } = await supabaseAdmin
       .from('orders')
       .update({ session_id: session.id })
@@ -1885,7 +1879,6 @@ app.get('/api/assets/:id', async (req, res) => {
   }
 });
 
-// ── Debug endpoint ────────────────────────────────────────────────────────────
 app.get('/api/debug/session/:sessionId', authenticateToken, async (req, res) => {
   const { sessionId } = req.params;
 
@@ -1943,14 +1936,12 @@ app.get('/api/debug/session/:sessionId', authenticateToken, async (req, res) => 
   });
 });
 
-// ── Static files & SPA fallback ───────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..')));
 
 app.get(/^\/(?!api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
-// ── Error handler ─────────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
     return res.status(403).json({ error: 'CSRF validation failed' });
@@ -1962,7 +1953,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// ── Stripe sync ───────────────────────────────────────────────────────────────
+
 async function syncAssetsWithStripe() {
   console.log('🔄 Starting Stripe synchronization...');
 
@@ -2112,7 +2103,6 @@ async function syncAssetsWithStripe() {
   }
 }
 
-// ── Start ─────────r────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
