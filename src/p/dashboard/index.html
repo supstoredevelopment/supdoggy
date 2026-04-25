@@ -92,20 +92,33 @@
 
         .nav-links {
             display: flex;
-            gap: 2rem;
+            gap: 3rem;
             list-style: none;
             align-items: center;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .nav-links a {
             color: var(--subtext);
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.3s ease;
+            font-size: 0.92rem;
+            transition: color 0.3s;
+            position: relative;
         }
 
-        .nav-links a:hover {
-            color: var(--accent);
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width 0.3s;
         }
 
         .nav-actions {
@@ -685,8 +698,7 @@
             <a href="/" class="logo">SupStore</a>
             <ul class="nav-links">
                 <li><a href="/p/assets">Assets</a></li>
-                <li><a href="/#features">Features</a></li>
-                <li><a href="/#stats">Stats</a></li>
+                <li><a href="/#features">Popular</a></li>
                 <li><a href="/p/contact">Contact</a></li>
             </ul>
             <div class="nav-actions">

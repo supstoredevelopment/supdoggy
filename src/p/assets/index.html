@@ -383,6 +383,11 @@
             color: var(--accent);
         }
 
+        [data-theme="light"] footer {
+            background: rgba(255, 255, 255, 0.9);
+            border-top: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
         .filter-row {
             width: 100%;
             display: flex;
@@ -911,8 +916,7 @@
             <a href="/" class="logo">SupStore</a>
             <ul class="nav-links">
                 <li><a href="/p/assets">Assets</a></li>
-                <li><a href="/#features">Features</a></li>
-                <li><a href="/#stats">Stats</a></li>
+                <li><a href="/#features">Popular</a></li>
                 <li><a href="/p/contact">Contact</a></li>
             </ul>
             <div class="nav-actions">
@@ -920,18 +924,20 @@
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span id="cartCount">0</span>
                 </a>
-                <a href="/p/login" id="authBtn" class="btn-secondary" style="display:none;">
+                <a href="/p/login" id="authBtn" class="btn-secondary" style="display: none;">
                     <i class="fas fa-user"></i>
                     <span id="authBtnText">Login</span>
                 </a>
                 <div class="theme-toggle">
                     <input type="checkbox" id="themeSwitch" hidden>
                     <label for="themeSwitch" class="toggle-switch"></label>
-                    <span style="font-size:0.82rem;color:var(--subtext);">Light</span>
+                    <span>Light Mode</span>
                 </div>
             </div>
             <div class="hamburger" id="hamburger">
-                <span></span><span></span><span></span>
+                <span></span>
+                <span></span>
+                <span></span>
             </div>
         </div>
     </nav>
@@ -992,7 +998,7 @@
             <div class="footer-section">
                 <h4>Products</h4>
                 <ul class="footer-links">
- <li><a href="/p/assets?tag=3d">3D Models</a></li>
+                    <li><a href="/p/assets?tag=3d">3D Models</a></li>
                     <li><a href="/p/assets?tag=ui">UI Kits</a></li>
                     <li><a href="/p/assets?tag=game">Game Systems</a></li>
                     <li><a href="/p/assets?tag=bundle">Bundles</a></li>
