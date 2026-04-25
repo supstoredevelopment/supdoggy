@@ -35,8 +35,8 @@
             --bg-rgb-light: 255, 255, 255;
             --shadow-dark: rgba(0, 0, 0, 0.3);
             --shadow-light: rgba(0, 0, 0, 0.1);
-            --gradient-start-dark: rgba(0, 102, 255, 0.15);
-            --gradient-end-dark: rgba(0, 212, 255, 0.1);
+            --gradient-start-dark: rgba(0, 102, 255, 0.08);
+            --gradient-end-dark: rgba(0, 212, 255, 0.05);
             --gradient-start-light: #e0f2fe;
             --gradient-end-light: #f9fafb;
             --border-radius-small: 8px;
@@ -58,7 +58,6 @@
             --transition-slow: 0.7s ease;
             --animation-duration-short: 0.8s;
             --animation-duration-medium: 1s;
-            --animation-duration-long: 8s;
             --z-index-nav: 1000;
             --z-index-modal: 1001;
             --opacity-low: 0.4;
@@ -123,10 +122,7 @@
         }
 
         [data-theme="light"] .section-header h2 {
-            background: linear-gradient(135deg, var(--text-light) 0%, var(--primary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--primary);
         }
 
         [data-theme="light"] .faq-answer p,
@@ -158,14 +154,6 @@
             background: linear-gradient(to bottom, var(--gradient-end-light), var(--gradient-start-light));
         }
 
-        [data-theme="light"] .hero::before {
-            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.04) 0%, transparent 80%);
-        }
-
-        [data-theme="light"] .cta::before {
-            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.04) 0%, transparent 80%);
-        }
-
         [data-theme="light"] .asset-card-tag {
             background: rgba(0, 212, 255, 0.15);
             color: var(--primary);
@@ -174,11 +162,10 @@
         [data-theme="light"] .asset-card {
             background: var(--glass-bg-light);
             border-color: var(--glass-border-light);
-            box-shadow: 0 4px 20px var(--shadow-light);
         }
 
         [data-theme="light"] .asset-card:hover {
-            box-shadow: 0 8px 30px rgba(0, 102, 255, 0.15);
+            border-color: rgba(0, 102, 255, 0.3);
         }
 
         [data-theme="light"] .category-row-header h3 {
@@ -270,7 +257,7 @@
         nav.scrolled {
             background: rgba(var(--bg-rgb), var(--opacity-high));
             padding: 0.9rem 0;
-            box-shadow: 0 8px 32px var(--shadow);
+            box-shadow: 0 4px 12px var(--shadow);
         }
 
         .nav-container {
@@ -376,34 +363,6 @@
             padding: 140px var(--spacing-extra-large) 100px;
             position: relative;
             overflow: hidden;
-            background: radial-gradient(ellipse at top, var(--gradient-start-dark), transparent 50%),
-                radial-gradient(ellipse at bottom, var(--gradient-end-dark), transparent 50%);
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 1000px;
-            height: 1000px;
-            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.2) 0%, transparent 70%);
-            animation: pulse var(--animation-duration-long) ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 0.5;
-            }
-
-            50% {
-                transform: translate(-50%, -50%) scale(var(--scale-large));
-                opacity: var(--opacity-high);
-            }
         }
 
         .hero-content {
@@ -446,17 +405,12 @@
             line-height: 1;
             margin-bottom: 1.5rem;
             letter-spacing: -2px;
-            background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text);
             animation: fadeInUp var(--animation-duration-short) ease 0.2s both;
         }
 
         [data-theme="light"] .hero h1 {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--primary);
         }
 
         .hero p {
@@ -522,12 +476,11 @@
         .btn-primary {
             background: var(--primary);
             color: white;
-            box-shadow: 0 10px 40px rgba(0, 102, 255, 0.4);
         }
 
         .btn-primary:hover {
             transform: translateY(-3px);
-            box-shadow: 0 15px 50px rgba(0, 102, 255, 0.6);
+            background: #0052cc;
         }
 
         .btn-secondary {
@@ -557,7 +510,6 @@
             padding: 0 var(--spacing-extra-large);
         }
 
-        /* Category Row */
         .category-row {
             margin-bottom: 56px;
         }
@@ -597,7 +549,6 @@
             opacity: 1;
         }
 
-        /* Scroll container */
         .cards-scroll-wrapper {
             position: relative;
         }
@@ -621,7 +572,6 @@
             display: none;
         }
 
-        /* Scroll buttons */
         .scroll-btn {
             position: absolute;
             top: 50%;
@@ -663,7 +613,6 @@
             right: -16px;
         }
 
-        /* Asset Card */
         .asset-card {
             flex: 0 0 220px;
             background: var(--glass-bg-dark);
@@ -671,7 +620,7 @@
             border-radius: 14px;
             overflow: hidden;
             cursor: pointer;
-            transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+            transition: transform var(--transition-fast), border-color var(--transition-fast);
             position: relative;
             user-select: none;
         }
@@ -679,17 +628,15 @@
         [data-theme="light"] .asset-card {
             background: white;
             border-color: rgba(0, 0, 0, 0.08);
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
         }
 
         .asset-card:hover {
             transform: translateY(-4px);
             border-color: rgba(0, 212, 255, 0.3);
-            box-shadow: 0 12px 40px rgba(0, 102, 255, 0.25);
         }
 
         [data-theme="light"] .asset-card:hover {
-            box-shadow: 0 12px 40px rgba(0, 102, 255, 0.15);
+            border-color: rgba(0, 102, 255, 0.3);
         }
 
         .asset-card-img {
@@ -701,7 +648,6 @@
             position: relative;
         }
 
-        /* Placeholder shimmer for loading */
         .asset-card-img-placeholder {
             width: 100%;
             height: 140px;
@@ -771,7 +717,6 @@
             color: #22c55e;
         }
 
-        /* Skeleton cards for loading state */
         .skeleton-card {
             flex: 0 0 220px;
             background: var(--glass-bg-dark);
@@ -863,10 +808,7 @@
             font-weight: 800;
             margin-bottom: 1rem;
             letter-spacing: -1px;
-            background: linear-gradient(135deg, var(--text-dark) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text-dark);
         }
 
         .section-header p {
@@ -876,109 +818,164 @@
             margin: 0 auto;
         }
 
-        .faq-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+        /* ── FAQ ── */
+        .faq-section {
+            padding: 100px var(--spacing-extra-large);
+        }
+
+        .faq-inner {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .faq-header {
+            margin-bottom: 40px;
+        }
+
+        .faq-label {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .faq-header h2 {
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .faq-header p {
+            font-size: 1rem;
+            color: var(--subtext);
+        }
+
+        .faq-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: start;
+        }
+
+        @media (max-width: 600px) {
+            .faq-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .faq-item {
-            background: var(--glass-bg-dark);
-            backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid var(--glass-border-dark);
-            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
             overflow: hidden;
-            transition: all 0.3s ease;
-            max-width: 500px;
-            margin: 0 auto;
-            animation: fadeInUp 0.6s ease backwards;
-        }
-
-        .faq-item:nth-child(1) {
-            animation-delay: 0.1s;
-        }
-
-        .faq-item:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .faq-item:nth-child(3) {
-            animation-delay: 0.3s;
-        }
-
-        .faq-item:nth-child(4) {
-            animation-delay: 0.4s;
+            background: var(--glass-bg);
+            transition: border-color var(--transition-fast);
         }
 
         .faq-item:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
+            border-color: rgba(0, 102, 255, 0.3);
         }
 
         .faq-question {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 1.75rem 2rem;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 18px;
             cursor: pointer;
             user-select: none;
-            transition: all 0.3s ease;
         }
 
         .faq-question h3 {
-            font-size: 1.15rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            color: var(--text-dark);
+            color: var(--text);
+            line-height: 1.45;
+            margin: 0;
             flex: 1;
-            margin-right: 1rem;
-            line-height: 1.5;
         }
 
         .faq-icon {
-            width: 32px;
-            height: 32px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1px solid var(--glass-border);
             display: flex;
             align-items: center;
             justify-content: center;
-            background: black;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
             flex-shrink: 0;
+            background: transparent;
+            transition: border-color var(--transition-fast);
         }
 
-        .faq-item.active .faq-icon {
+        .faq-icon i {
+            font-size: 0.65rem;
+            color: var(--subtext);
+            transition: transform var(--transition-fast);
+        }
+
+        .faq-item.active .faq-icon i {
             transform: rotate(180deg);
         }
 
         .faq-answer {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
-            padding: 0 2rem;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), padding 0.35s ease;
+            padding: 0 18px;
         }
 
         .faq-item.active .faq-answer {
-            max-height: 500px;
-            padding: 0 2rem 1.75rem;
+            max-height: 300px;
+            padding: 0 18px 16px;
         }
 
         .faq-answer p {
-            color: var(--subtext-dark);
-            line-height: 1.8;
-            font-size: 1rem;
+            font-size: 0.875rem;
+            color: var(--subtext);
+            line-height: 1.75;
+            margin: 0;
         }
 
-        .faq-answer ul {
-            margin-top: 1rem;
-            padding-left: 1.5rem;
-            color: var(--subtext-dark);
+        /* Contact bar */
+        .faq-contact-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 20px 24px;
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            background: var(--glass-bg);
+            margin-top: 4px;
         }
 
-        .faq-answer li {
-            margin-bottom: 0.5rem;
-            line-height: 1.7;
+        .faq-contact-bar div p {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0 0 3px;
+        }
+
+        .faq-contact-bar div span {
+            font-size: 0.85rem;
+            color: var(--subtext);
+        }
+
+        @media (max-width: 500px) {
+            .faq-contact-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .faq-section {
+                padding: 60px 1.5rem;
+            }
         }
 
         .contact-cta {
@@ -1011,18 +1008,6 @@
             overflow: hidden;
         }
 
-        .cta::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 800px;
-            height: 800px;
-            background: radial-gradient(ellipse at center, rgba(0, 102, 255, 0.1), transparent 70%);
-            animation: pulse var(--animation-duration-long) ease-in-out infinite;
-        }
-
         .cta-content {
             max-width: 800px;
             margin: 0 auto;
@@ -1053,17 +1038,6 @@
             padding: 80px var(--spacing-extra-large) 40px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
             position: relative;
-        }
-
-        footer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(0, 102, 255, 0.05), transparent);
-            pointer-events: none;
         }
 
         .footer-content {
@@ -1184,35 +1158,7 @@
         }
 
         /* ── Responsive ── */
-        @media (max-width: 892px) {
-            .faq-section {
-                padding: 60px 20px;
-            }
 
-            #authBtn {
-                padding: 0.7rem;
-            }
-
-            #authBtnText {
-                display: none;
-            }
-
-            .faq-question {
-                padding: 1.5rem 1.25rem;
-            }
-
-            .faq-question h3 {
-                font-size: 1rem;
-            }
-
-            .faq-item.active .faq-answer {
-                padding: 0 1.25rem 1.5rem;
-            }
-
-            .contact-cta {
-                padding: 2rem 1.5rem;
-            }
-        }
 
         @media (max-width: 768px) {
             .hamburger {
@@ -1360,10 +1306,9 @@
 
     <section class="hero">
         <div class="hero-content">
-            <span class="hero-badge">Join 50,000+ game developers worldwide</span>
-            <h1>Assets That Actually Work</h1>
-            <p>Stop wasting time with broken models and low-quality systems. Get production-ready game assets that scale
-                with your vision.</p>
+
+            <h1>Make Your Dream Game Faster</h1>
+            <p>Make games as quick as saying 'sup!'</p>
             <div class="hero-buttons">
                 <button class="btn btn-primary" onclick="window.location.href='/p/assets'">Browse Assets</button>
                 <a href="#features" class="btn btn-secondary">Learn More</a>
@@ -1656,63 +1601,23 @@
         </div>
     </section>
 
-    <section class="faq-section">
-        <div class="section-header">
-            <span class="section-badge">FAQ</span>
-            <h2>Questions? We've Got Answers</h2>
-            <p>Everything you need to know about SupStore assets and licensing</p>
-        </div>
-        <div class="faq-container">
-            <div class="faq-item">
-                <div class="faq-question">
-                    <h3>Can I use these assets in multiple projects?</h3>
-                    <div class="faq-icon"><i class="fas fa-chevron-down"></i></div>
-                </div>
-                <div class="faq-answer">
-                    <p>Absolutely! Once you purchase an asset, you can use it in as many projects as you want, including
-                        commercial games, apps, and experiences. There are no per-project fees or additional licensing
-                        required.</p>
-                </div>
+    <section class="faq-section" id="faq">
+        <div class="faq-inner">
+            <div class="faq-header">
+                <span class="faq-label">FAQ</span>
+                <h2>Questions? We've got answers.</h2>
+                <p>Everything you need to know about SupStore assets and licensing.</p>
             </div>
-            <div class="faq-item">
-                <div class="faq-question">
-                    <h3>Are the assets optimized for mobile devices?</h3>
-                    <div class="faq-icon"><i class="fas fa-chevron-down"></i></div>
+            <div class="faq-grid" id="faqGrid"></div>
+            <div class="faq-contact-bar">
+                <div>
+                    <p>Still have questions?</p>
+                    <span>Our support team replies within 24 hours.</span>
                 </div>
-                <div class="faq-answer">
-                    <p>Yes! All our assets are performance-tested and optimized to run smoothly on mobile devices. We
-                        include multiple LOD (Level of Detail) versions and provide optimization guidelines to help you
-                        achieve 60 FPS on most modern mobile hardware.</p>
-                </div>
+                <a href="/p/contact" class="btn btn-primary">
+                    <i class="fas fa-envelope"></i> Contact Support
+                </a>
             </div>
-            <div class="faq-item">
-                <div class="faq-question">
-                    <h3>How do updates work?</h3>
-                    <div class="faq-icon"><i class="fas fa-chevron-down"></i></div>
-                </div>
-                <div class="faq-answer">
-                    <p>When you purchase an asset, you get lifetime access to all future updates and improvements for
-                        that asset at no additional cost. We regularly update our assets based on user feedback and
-                        studio updates.</p>
-                </div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question">
-                    <h3>Do you offer refunds?</h3>
-                    <div class="faq-icon"><i class="fas fa-chevron-down"></i></div>
-                </div>
-                <div class="faq-answer">
-                    <p>No, we do not offer refunds.</p>
-                </div>
-            </div>
-        </div>
-        <div class="contact-cta">
-            <h3>Still have questions?</h3>
-            <p>Our support team is here to help. Get in touch and we'll respond within 24 hours.</p>
-            <a href="/p/contact" class="btn btn-primary">
-                <i class="fas fa-envelope"></i>
-                Contact Support
-            </a>
         </div>
     </section>
 
@@ -1725,12 +1630,12 @@
             <div class="footer-section">
                 <h4>Products</h4>
                 <ul class="footer-links">
-                    <li><a href="#">3D Models</a></li>
-                    <li><a href="#">UI Kits</a></li>
-                    <li><a href="#">Game Systems</a></li>
-                    <li><a href="#">Bundles</a></li>
-                    <li><a href="#">Animations</a></li>
-                    <li><a href="#">Sound Packs</a></li>
+                    <li><a href="/p/assets?tag=3d">3D Models</a></li>
+                    <li><a href="/p/assets?tag=ui">UI Kits</a></li>
+                    <li><a href="/p/assets?tag=game">Game Systems</a></li>
+                    <li><a href="/p/assets?tag=bundle">Bundles</a></li>
+                    <li><a href="/p/assets?tag=animation">Animations</a></li>
+                    <li><a href="/p/assets?tag=sound">Sound Packs</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -1793,12 +1698,29 @@
         });
 
         // ── FAQ ──────────────────────────────────────────────────────────────
-        document.querySelectorAll('.faq-item').forEach(item => {
+        const faqData = [
+            { q: "Can I use these assets in multiple projects?", a: "Once you purchase an asset, you can use it in as many projects as you want." },
+            { q: "Are the assets optimized for mobile devices?", a: "Yes! All assets are performance-tested, so they should work with mobile devices too." },
+            { q: "How do updates work?", a: "When you purchase an asset, you get lifetime access to all future updates and improvements at no additional cost." },
+            { q: "Do you offer refunds?", a: "No, we do not offer refunds due to our products being digital, and they're files." },
+        ];
+
+        const faqGrid = document.getElementById('faqGrid');
+        faqData.forEach(({ q, a }) => {
+            const item = document.createElement('div');
+            item.className = 'faq-item';
+            item.innerHTML = `
+        <div class="faq-question">
+            <h3>${q}</h3>
+            <div class="faq-icon"><i class="fas fa-chevron-down"></i></div>
+        </div>
+        <div class="faq-answer"><p>${a}</p></div>`;
             item.querySelector('.faq-question').addEventListener('click', () => {
                 const isActive = item.classList.contains('active');
-                document.querySelectorAll('.faq-item').forEach(o => o.classList.remove('active'));
+                faqGrid.querySelectorAll('.faq-item').forEach(o => o.classList.remove('active'));
                 if (!isActive) item.classList.add('active');
             });
+            faqGrid.appendChild(item);
         });
 
         // ── Scroll row buttons ────────────────────────────────────────────────

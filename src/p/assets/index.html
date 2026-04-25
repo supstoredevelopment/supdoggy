@@ -351,7 +351,7 @@
             left: 1.1rem;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--subtext);
+            color: var(--text);
             pointer-events: none;
             transition: color 0.3s;
         }
@@ -941,7 +941,12 @@
 
         <div class="search-filter-section">
             <div class="search-wrapper">
-                <i class="fas fa-search"></i>
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                    style="position:absolute;left:1.1rem;top:50%;transform:translateY(-50%);color:var(--text);pointer-events:none;opacity:0.6;">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
                 <input id="search" type="text" placeholder="Search assets…">
             </div>
             <div class="filter-row" id="filterRow">
@@ -987,12 +992,12 @@
             <div class="footer-section">
                 <h4>Products</h4>
                 <ul class="footer-links">
-                    <li><a href="#">3D Models</a></li>
-                    <li><a href="#">UI Kits</a></li>
-                    <li><a href="#">Game Systems</a></li>
-                    <li><a href="#">Bundles</a></li>
-                    <li><a href="#">Animations</a></li>
-                    <li><a href="#">Sound Packs</a></li>
+ <li><a href="/p/assets?tag=3d">3D Models</a></li>
+                    <li><a href="/p/assets?tag=ui">UI Kits</a></li>
+                    <li><a href="/p/assets?tag=game">Game Systems</a></li>
+                    <li><a href="/p/assets?tag=bundle">Bundles</a></li>
+                    <li><a href="/p/assets?tag=animation">Animations</a></li>
+                    <li><a href="/p/assets?tag=sound">Sound Packs</a></li>
                 </ul>
             </div>
             <div class="footer-section">
