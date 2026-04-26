@@ -2131,24 +2131,28 @@ function openCloudHeaders() {
 }
 
 async function createRobloxGamepass(name, description, robuxPrice) {
+  const form = new FormData();
+  form.append('name', name);
+  form.append('description', description);
+  form.append('price', robuxPrice.toString());
+  form.append('isForSale', 'true');
+
   const res = await fetch(
     `https://apis.roblox.com/game-passes/v1/universes/${ROBLOX_UNIVERSE_ID}/game-passes`,
     {
       method: 'POST',
-      headers: openCloudHeaders(),
-      body: JSON.stringify({
-        name,
-        description,
-        price: robuxPrice,
-        isForSale: true,
-      }),
+      headers: {
+        'x-api-key': ROBLOX_API_KEY,
+        // NO Content-Type here — fetch sets it automatically with the correct boundary
+      },
+      body: form,
     }
   );
 
   const text = await res.text();
+  console.log('Roblox gamepass create response:', res.status, text);
 
   if (!res.ok) {
-    console.error('Gamepass creation failed:', res.status, text);
     throw new Error(`Failed to create Roblox gamepass: ${res.status} — ${text}`);
   }
 
@@ -2159,7 +2163,6 @@ async function createRobloxGamepass(name, description, robuxPrice) {
     throw new Error(`Roblox returned non-JSON: ${text}`);
   }
 
-  // Response returns { id, name, description, ... }
   const gamepassId = data.id;
   if (!gamepassId) throw new Error(`No gamepass ID in response: ${JSON.stringify(data)}`);
 
@@ -2171,17 +2174,23 @@ async function createRobloxGamepass(name, description, robuxPrice) {
 
 async function deactivateGamepass(gamepassId) {
   try {
+    const form = new FormData();
+    form.append('isForSale', 'false');
+
     const res = await fetch(
       `https://apis.roblox.com/game-passes/v1/universes/${ROBLOX_UNIVERSE_ID}/game-passes/${gamepassId}`,
       {
         method: 'PATCH',
-        headers: openCloudHeaders(),
-        body: JSON.stringify({ isForSale: false }),
+        headers: {
+          'x-api-key': ROBLOX_API_KEY,
+        },
+        body: form,
       }
     );
+
     if (!res.ok) {
       const text = await res.text();
-      console.warn('⚠️ Gamepass deactivation response:', text);
+      console.warn('⚠️ Gamepass deactivation failed:', text);
     } else {
       console.log('✅ Gamepass deactivated:', gamepassId);
     }
