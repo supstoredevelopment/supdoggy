@@ -2099,18 +2099,6 @@ async function syncAssetsWithStripe() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  ROBUX PAYMENT ROUTES
-//  Add these routes to server.js (before the static file catch-all)
-//
-//  Required env vars:
-//    ROBLOX_COOKIE        - your .ROBLOSECURITY cookie (for Open Cloud / legacy API)
-//    ROBLOX_UNIVERSE_ID   - the Universe ID of your game
-//    ROBLOX_PLACE_ID      - the Place ID of your game (for gamepass group)
-//    ROBLOX_GROUP_ID      - (optional) group ID if gamepasses are under a group
-//    ROBUX_PER_USD        - e.g. "80"  (how many Robux per 1 USD)
-// ═══════════════════════════════════════════════════════════════
-
 const ROBUX_PER_USD = parseFloat(process.env.ROBUX_PER_USD || '80');
 const ROBLOX_COOKIE = process.env.ROBLOX_COOKIE; // .ROBLOSECURITY value
 const ROBLOX_UNIVERSE_ID = process.env.ROBLOX_UNIVERSE_ID;
@@ -2133,45 +2121,41 @@ async function resolveRobloxUserId(username) {
   return { userId: data.data[0].id, displayName: data.data[0].displayName };
 }
 
+const ROBLOX_API_KEY = process.env.ROBLOX_API_KEY;
+const ROBLOX_UNIVERSE_ID = process.env.ROBLOX_UNIVERSE_ID;
+
+// Shared headers for all Open Cloud calls
+function openCloudHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'x-api-key': ROBLOX_API_KEY,
+  };
+}
+
 /**
- * Create a gamepass for your Roblox place via the legacy API.
- * Returns { gamepassId, gamepassUrl }
- *
- * NOTE: Roblox's Open Cloud API does not yet support gamepass creation.
- * This uses the legacy catalog/game endpoint which requires the
- * .ROBLOSECURITY cookie of the account that owns the place.
+ * Create a gamepass via the new Open Cloud API.
+ * Requires: game-passes write permission on your API key.
  */
 async function createRobloxGamepass(name, description, robuxPrice) {
-  // Step 1: Create the gamepass (as a product on the place)
-  const formData = new URLSearchParams({
-    name,
-    description,
-    paymentProviderType: 'Roblox',
-    price: robuxPrice.toString(),
-    isForSale: 'true',
-  });
-
   const res = await fetch(
-    `https://www.roblox.com/places/${ROBLOX_PLACE_ID}/gamepass/create`,
+    `https://apis.roblox.com/cloud/v2/universes/${ROBLOX_UNIVERSE_ID}/game-passes`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Cookie: `.ROBLOSECURITY=${ROBLOX_COOKIE}`,
-        'X-CSRF-TOKEN': await getRobloxCsrfToken(),
-      },
-      body: formData.toString(),
+      headers: openCloudHeaders(),
+      body: JSON.stringify({ displayName: name, description, price: robuxPrice }),
     }
   );
 
   if (!res.ok) {
     const text = await res.text();
     console.error('Gamepass creation failed:', text);
-    throw new Error('Failed to create Roblox gamepass');
+    throw new Error(`Failed to create Roblox gamepass: ${res.status}`);
   }
 
   const data = await res.json();
-  const gamepassId = data.id || data.gamePassId;
+  // Open Cloud v2 returns the resource path e.g. "universes/123/game-passes/456"
+  const gamepassId = data.id ?? data.path?.split('/').pop();
+
   if (!gamepassId) throw new Error('No gamepass ID returned from Roblox');
 
   return {
@@ -2181,49 +2165,53 @@ async function createRobloxGamepass(name, description, robuxPrice) {
 }
 
 /**
- * Fetch a CSRF token from Roblox (needed for mutating API calls).
- */
-async function getRobloxCsrfToken() {
-  const res = await fetch('https://auth.roblox.com/v2/logout', {
-    method: 'POST',
-    headers: { Cookie: `.ROBLOSECURITY=${ROBLOX_COOKIE}` },
-  });
-  return res.headers.get('x-csrf-token') || '';
-}
-
-/**
  * Check if a Roblox user owns a specific gamepass.
+ * Uses the game-passes ownership endpoint (no cookie needed).
  */
 async function checkGamepassOwnership(robloxUserId, gamepassId) {
-  const res = await fetch(
-    `https://inventory.roblox.com/v1/users/${robloxUserId}/items/GamePass/${gamepassId}`,
-    { headers: { Cookie: `.ROBLOSECURITY=${ROBLOX_COOKIE}` } }
-  );
-  if (!res.ok) return false;
-  const data = await res.json();
-  return Array.isArray(data.data) && data.data.length > 0;
+  try {
+    const res = await fetch(
+      `https://apis.roblox.com/game-passes/v1/users/${robloxUserId}/game-passes?count=100`,
+      { headers: openCloudHeaders() }
+    );
+    if (!res.ok) return false;
+    const data = await res.json();
+    const passes = data.gamePassItems ?? data.data ?? [];
+    return passes.some(
+      (p) => String(p.passId ?? p.id) === String(gamepassId)
+    );
+  } catch (err) {
+    console.warn('⚠️ Ownership check failed:', err.message);
+    return false;
+  }
 }
 
 /**
- * Delete / archive a gamepass after purchase so it can't be reused.
- * (Sets it off-sale)
+ * Take a gamepass off-sale using the new Open Cloud PATCH endpoint.
+ * Requires: game-passes write permission on your API key.
  */
 async function deactivateGamepass(gamepassId) {
   try {
-    await fetch(`https://www.roblox.com/game-pass/${gamepassId}/update`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Cookie: `.ROBLOSECURITY=${ROBLOX_COOKIE}`,
-        'X-CSRF-TOKEN': await getRobloxCsrfToken(),
-      },
-      body: new URLSearchParams({ isForSale: 'false' }).toString(),
-    });
-    console.log('✅ Gamepass deactivated:', gamepassId);
+    const res = await fetch(
+      `https://apis.roblox.com/cloud/v2/universes/${ROBLOX_UNIVERSE_ID}/game-passes/${gamepassId}`,
+      {
+        method: 'PATCH',
+        headers: openCloudHeaders(),
+        body: JSON.stringify({ isForSale: false }),
+      }
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn('⚠️ Gamepass deactivation response:', text);
+    } else {
+      console.log('✅ Gamepass deactivated:', gamepassId);
+    }
   } catch (err) {
     console.warn('⚠️ Could not deactivate gamepass:', err.message);
   }
 }
+
+// getRobloxCsrfToken — DELETE THIS, no longer needed anywhere.
 
 // ── Rate limiter for Robux endpoints ─────────────────────────────────────────
 
@@ -2233,11 +2221,6 @@ const robuxLimiter = rateLimit({
   message: 'Too many requests, please slow down.',
 });
 
-// ── POST /api/robux/create-gamepass ──────────────────────────────────────────
-//
-//  Body: { robloxUsername, cart, totalRobux }
-//  Creates a one-time gamepass priced at totalRobux, stores a pending Robux
-//  order in Supabase, and returns the gamepass URL.
 
 app.post('/api/robux/create-gamepass', robuxLimiter, authenticateToken, async (req, res) => {
   try {
