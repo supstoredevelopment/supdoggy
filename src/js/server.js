@@ -2268,13 +2268,13 @@ app.post('/api/robux/create-gamepass', robuxLimiter, authenticateToken, async (r
       return res.status(400).json({ error: 'Failed to fetch products' });
     }
 
-    // --- Re-calculate expected Robux server-side (never trust client) ---
-    let expectedRobux = 0;
+    let expectedRobuxBeforeDiscount = 0;
     for (const item of validatedCart) {
       const product = products.find(p => p.id === item.id);
       if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
-      expectedRobux += Math.ceil(product.price * ROBUX_PER_USD * 0.4) * item.quantity;
+      expectedRobuxBeforeDiscount += Math.ceil(product.price * ROBUX_PER_USD) * item.quantity;
     }
+    const expectedRobux = Math.ceil(expectedRobuxBeforeDiscount * 0.4);
 
     if (expectedRobux !== totalRobux) {
       console.warn(`⚠️ Robux mismatch — client: ${totalRobux} | server: ${expectedRobux}`);
