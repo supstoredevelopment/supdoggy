@@ -2273,7 +2273,7 @@ app.post('/api/robux/create-gamepass', robuxLimiter, authenticateToken, async (r
     for (const item of validatedCart) {
       const product = products.find(p => p.id === item.id);
       if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
-      expectedRobux += Math.ceil(product.price * ROBUX_PER_USD) * item.quantity;
+      expectedRobux += Math.ceil(product.price * ROBUX_PER_USD * 0.5) * item.quantity;
     }
 
     if (expectedRobux !== totalRobux) {

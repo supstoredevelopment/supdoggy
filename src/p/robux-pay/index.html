@@ -147,6 +147,42 @@
             margin-bottom: 0.5rem;
         }
 
+        .discount-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(232, 0, 61, 0.15);
+            border: 1px solid rgba(232, 0, 61, 0.35);
+            border-radius: 6px;
+            padding: 3px 10px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--robux-red);
+            letter-spacing: 0.02em;
+            margin-bottom: 0.6rem;
+        }
+
+        .price-original {
+            text-decoration: line-through;
+            opacity: 0.45;
+            font-weight: 400;
+            font-size: 0.85em;
+            margin-right: 4px;
+        }
+
+        .price-discounted {
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .cart-total-original {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            text-decoration: line-through;
+            margin-right: 6px;
+            font-weight: 400;
+        }
+
         input[type="text"] {
             width: 100%;
             background: rgba(255, 255, 255, 0.05);
@@ -451,9 +487,16 @@
                     <h3>Your Order</h3>
                     <div id="cartItems"></div>
                     <hr class="cart-divider">
+                    <div style="margin-bottom:0.4rem;">
+                        <span class="discount-badge">🏷 50% Release Discount</span>
+                    </div>
                     <div class="cart-total">
                         <span>Total</span>
-                        <span><span class="robux-symbol">R$</span> <span id="totalRobux">—</span></span>
+                        <span>
+                            <span class="cart-total-original"><span class="robux-symbol">R$</span> <span
+                                    id="totalRobuxOriginal">—</span></span>
+                            <span class="robux-symbol">R$</span> <span id="totalRobux">—</span>
+                        </span>
                     </div>
                 </div>
 
@@ -481,7 +524,12 @@
                     <div class="gamepass-link-box">
                         <p>A gamepass has been created for your order. Click below to open it in Roblox and complete the
                             purchase.</p>
+                        <div style="text-align:center; margin-bottom:0.75rem;">
+                            <span class="discount-badge">🏷 50% Release Discount</span>
+                        </div>
                         <div class="price-tag">
+                            <span class="price-original"><span class="robux-symbol">R$</span><span
+                                    id="gamepassPriceOriginal">—</span></span>
                             <span class="robux-symbol">R$</span><span id="gamepassPrice">—</span>
                         </div>
                         <a class="btn-roblox-open" id="gamepassLink" href="#" target="_blank">
@@ -545,7 +593,7 @@
 
     <script>
         // ── Config ──────────────────────────────────────────────
-        const ROBUX_PER_USD = 80;
+        const ROBUX_PER_USD = 263;
 
         let cart = [];
         let totalRobux = 0;
@@ -603,7 +651,10 @@
                     itemsEl.appendChild(row);
                 });
 
-                document.getElementById('totalRobux').textContent = totalRobux.toLocaleString();
+                const discountedTotal = Math.ceil(totalRobux * 0.5);
+                document.getElementById('totalRobuxOriginal').textContent = totalRobux.toLocaleString();
+                document.getElementById('totalRobux').textContent = discountedTotal.toLocaleString();
+                totalRobux = discountedTotal;
             } catch (err) {
                 console.error('Failed to load cart prices:', err);
             }
@@ -677,6 +728,8 @@
                 document.getElementById('gamepassLink').href = data.gamepassUrl;
 
                 goToStep(2);
+                document.getElementById('gamepassPriceOriginal').textContent = (totalRobux * 2).toLocaleString();
+                document.getElementById('gamepassPrice').textContent = totalRobux.toLocaleString();
                 startPolling();
 
             } catch (err) {
