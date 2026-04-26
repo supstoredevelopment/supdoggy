@@ -2100,9 +2100,7 @@ async function syncAssetsWithStripe() {
 }
 
 const ROBUX_PER_USD = parseFloat(process.env.ROBUX_PER_USD || '80');
-const ROBLOX_COOKIE = process.env.ROBLOX_COOKIE; // .ROBLOSECURITY value
-const ROBLOX_UNIVERSE_ID = process.env.ROBLOX_UNIVERSE_ID;
-const ROBLOX_PLACE_ID = process.env.ROBLOX_PLACE_ID;
+
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
