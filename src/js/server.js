@@ -2163,7 +2163,7 @@ async function createRobloxGamepass(name, description, robuxPrice) {
     throw new Error(`Roblox returned non-JSON: ${text}`);
   }
 
-  const gamepassId = data.id;
+  const gamepassId = data.gamePassId;
   if (!gamepassId) throw new Error(`No gamepass ID in response: ${JSON.stringify(data)}`);
 
   return {
