@@ -666,8 +666,12 @@
 
                 const data = await res.json();
 
+                const responseText = await res.text();
+                console.log('Roblox response status:', res.status);
+                console.log('Roblox response body:', responseText);
+
                 if (!res.ok) {
-                    throw new Error(data.error || 'Failed to create gamepass');
+                    throw new Error('Failed to create Roblox gamepass');
                 }
 
                 pendingOrderId = data.orderId;
