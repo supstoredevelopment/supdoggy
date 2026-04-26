@@ -2202,24 +2202,31 @@ async function deactivateGamepass(gamepassId) {
 async function checkGamepassOwnership(robloxUserId, gamepassId) {
   try {
     const res = await fetch(
-      `https://apis.roblox.com/game-passes/v1/game-passes/${gamepassId}/user-ownership/${robloxUserId}`,
-      { headers: openCloudHeaders() }
+      `https://inventory.roblox.com/v1/users/${robloxUserId}/items/GamePass/${gamepassId}`,
+      {
+        headers: {
+          // No auth needed — this is a public endpoint
+          'Accept': 'application/json',
+        }
+      }
     );
 
-    if (res.status === 404) return false; // user does not own it
     if (!res.ok) {
-      console.warn('⚠️ Ownership check non-OK status:', res.status);
+      console.warn('⚠️ Ownership check failed with status:', res.status);
       return false;
     }
 
     const data = await res.json();
-    return data.ownsGamePass === true || data.owned === true;
+    console.log('Ownership check response:', JSON.stringify(data));
+
+    // Returns { data: [] } if not owned, { data: [{...}] } if owned
+    return Array.isArray(data.data) && data.data.length > 0;
+
   } catch (err) {
     console.warn('⚠️ Ownership check failed:', err.message);
     return false;
   }
 }
-
 
 // getRobloxCsrfToken — DELETE THIS, no longer needed anywhere.
 
