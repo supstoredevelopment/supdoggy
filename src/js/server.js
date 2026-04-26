@@ -2278,7 +2278,7 @@ app.post('/api/robux/create-gamepass', robuxLimiter, authenticateToken, async (r
 
     if (expectedRobux !== totalRobux) {
       console.warn(`⚠️ Robux mismatch — client: ${totalRobux} | server: ${expectedRobux}`);
-      return res.status(400).json({ error: 'Price mismatch. Please refresh and try again.' });
+      return res.status(400).json({ error: 'Price mismatch. Please contact support to create a manual order.' });
     }
 
     // --- Resolve Roblox user ---
