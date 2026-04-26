@@ -2199,22 +2199,21 @@ async function deactivateGamepass(gamepassId) {
   }
 }
 
-/**
- * Check if a Roblox user owns a specific gamepass.
- * Uses the game-passes ownership endpoint (no cookie needed).
- */
 async function checkGamepassOwnership(robloxUserId, gamepassId) {
   try {
     const res = await fetch(
-      `https://apis.roblox.com/game-passes/v1/users/${robloxUserId}/game-passes?count=100`,
+      `https://apis.roblox.com/game-passes/v1/game-passes/${gamepassId}/user-ownership/${robloxUserId}`,
       { headers: openCloudHeaders() }
     );
-    if (!res.ok) return false;
+
+    if (res.status === 404) return false; // user does not own it
+    if (!res.ok) {
+      console.warn('⚠️ Ownership check non-OK status:', res.status);
+      return false;
+    }
+
     const data = await res.json();
-    const passes = data.gamePassItems ?? data.data ?? [];
-    return passes.some(
-      (p) => String(p.passId ?? p.id) === String(gamepassId)
-    );
+    return data.ownsGamePass === true || data.owned === true;
   } catch (err) {
     console.warn('⚠️ Ownership check failed:', err.message);
     return false;
