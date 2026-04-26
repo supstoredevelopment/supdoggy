@@ -66,6 +66,7 @@
             --cyan: #00cfff;
             --red: #ff3b30;
             --green: #00c97d;
+            --robux-red: #e8003d;
             --bg: #06060a;
             --surface: #0f0f16;
             --surface-2: #161620;
@@ -124,7 +125,7 @@
             transition: background .3s, color .3s;
         }
 
-        /* ── NAVBAR (copied from homepage) ── */
+        /* ── NAVBAR ── */
         nav {
             position: fixed;
             top: 0;
@@ -759,6 +760,7 @@
             display: none;
         }
 
+        /* ── PAY BUTTONS ── */
         .pay-btn {
             width: 100%;
             margin-top: 1rem;
@@ -815,6 +817,70 @@
             display: none;
         }
 
+        /* Robux button */
+        .pay-btn-robux {
+            width: 100%;
+            margin-top: .6rem;
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border-hi);
+            border-radius: var(--radius-sm);
+            padding: .85rem;
+            font-family: var(--sans);
+            font-weight: 700;
+            font-size: .9rem;
+            letter-spacing: -.02em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            transition: all .2s;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        .pay-btn-robux .robux-r {
+            font-weight: 900;
+            color: var(--robux-red);
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .pay-btn-robux:hover {
+            background: rgba(232, 0, 61, .08);
+            border-color: rgba(232, 0, 61, .4);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .pay-btn-robux:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .pay-divider {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            margin-top: .85rem;
+            font-size: .68rem;
+            color: var(--muted-2);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+
+        .pay-divider::before,
+        .pay-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* trust row */
         .trust-row {
             display: flex;
             align-items: center;
@@ -838,6 +904,10 @@
 
         .ic-blue {
             color: var(--cyan);
+        }
+
+        .ic-red {
+            color: var(--robux-red);
         }
 
         .no-refund-notice {
@@ -1186,13 +1256,23 @@
                         </div>
                     </div>
 
+                    <!-- Stripe button -->
                     <button class="pay-btn" id="payBtn" onclick="handlePay()">
                         <i class="fas fa-bolt"></i> Pay with Stripe
+                    </button>
+
+                    <!-- Divider -->
+                    <div class="pay-divider">or</div>
+
+                    <!-- Robux button -->
+                    <button class="pay-btn-robux" id="robuxBtn" onclick="handleRobuxPay()">
+                        <span class="robux-r">R$</span> Pay with Robux
                     </button>
 
                     <div class="trust-row">
                         <span class="trust-item"><i class="fas fa-lock ic-green"></i> SSL encrypted</span>
                         <span class="trust-item"><i class="fas fa-shield-halved ic-blue"></i> Powered by Stripe</span>
+                        <span class="trust-item"><i class="fas fa-cubes ic-red"></i> Robux accepted</span>
                     </div>
 
                     <div class="no-refund-notice">
@@ -1464,7 +1544,7 @@
             thumbStrip.style.display = 'block';
         }
 
-        /* ── PAY ── */
+        /* ── AUTH CHECK ── */
         async function checkAuth() {
             try {
                 const res = await fetch('/api/user/profile', { credentials: 'include' });
@@ -1483,6 +1563,7 @@
             }
         }
 
+        /* ── STRIPE PAY ── */
         async function handlePay() {
             if (!await checkAuth()) return;
 
@@ -1527,6 +1608,25 @@
                 payBtn.disabled = false;
                 payBtn.innerHTML = '<i class="fas fa-bolt"></i> Pay with Stripe';
             }
+        }
+
+        /* ── ROBUX PAY ── */
+        async function handleRobuxPay() {
+            if (!await checkAuth()) return;
+
+            const cart = getCart();
+            const errBox = document.getElementById('errorBanner');
+            const errText = document.getElementById('errorText');
+
+            errBox.style.display = 'none';
+
+            if (cart.length === 0) {
+                errText.textContent = 'Your cart is empty.';
+                errBox.style.display = 'flex';
+                return;
+            }
+
+            window.location.href = '/p/robux-pay/';
         }
 
         /* ── INIT ── */

@@ -2256,7 +2256,7 @@ app.post('/api/robux/create-gamepass', robuxLimiter, authenticateToken, async (r
     }
 
     const userId = req.userId;
-    const validatedCart = cart.map(validateCartItem);
+    const validatedCart = cart.map(item => validateCartItem({ ...item, quantity: item.quantity || 1 }));
 
     // --- Fetch & verify products ---
     const { data: products, error: prodErr } = await supabase

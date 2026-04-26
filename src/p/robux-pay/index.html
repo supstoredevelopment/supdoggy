@@ -467,7 +467,7 @@
                 <button class="btn btn-robux" id="continueBtn" onclick="handleContinue()">
                     <i class="fas fa-arrow-right"></i> Continue to Payment
                 </button>
-                <a href="/p/store" class="btn btn-outline">
+                <a href="/p/assets" class="btn btn-outline">
                     <i class="fas fa-arrow-left"></i> Back to Store
                 </a>
             </div>
@@ -531,7 +531,7 @@
                     <a href="/p/dashboard" class="btn btn-robux" style="margin-top:0.5rem;">
                         <i class="fas fa-th-large"></i> Go to My Dashboard
                     </a>
-                    <a href="/p/store" class="btn btn-outline">
+                    <a href="/p/assets" class="btn btn-outline">
                         <i class="fas fa-store"></i> Back to Store
                     </a>
                 </div>
@@ -539,7 +539,7 @@
         </div>
 
         <div class="back-link">
-            <a href="/p/store">← Return to store without paying</a>
+            <a href="/p/assets">← Return to store without paying</a>
         </div>
     </div>
 
@@ -659,7 +659,7 @@
                     credentials: 'include',
                     body: JSON.stringify({
                         robloxUsername,
-                        cart,
+                        cart: cart.map(i => ({ ...i, quantity: i.quantity || 1 })),
                         totalRobux,
                     }),
                 });
