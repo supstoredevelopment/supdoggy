@@ -1286,61 +1286,87 @@
 </head>
 
 <body data-theme="dark">
-    <!-- Robux Announcement Bar -->
-    <div id="robuxBar" style="
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      background: rgba(96, 149, 255, 0.8);
-      padding: 9px 40px 9px 16px;
-      font-size: 13.5px;
-      font-weight: 500;
-      color: #fff;
-      text-align: center;
-      flex-wrap: wrap;
-      position: relative;
-      z-index: 1001;
-    ">
-        <span style="
-        background: rgba(255,255,255,0.22);
-        border: 1px solid rgba(255,255,255,0.35);
-        border-radius: 20px;
-        padding: 2px 10px;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.3px;
-        white-space: nowrap;
-      ">NEW</span>
-        <span>Robux payments are now supported! &nbsp;&#127381;</span>
-        <span style="
-        background: rgba(255,255,255,0.22);
-        border: 1px solid rgba(255,255,255,0.35);
-        border-radius: 20px;
-        padding: 2px 10px;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.3px;
-        white-space: nowrap;
-      ">60% OFF with Robux</span>
-        <span style="opacity: 0.85;">Pay with Robux at checkout →</span>
-        <button
-            onclick="document.getElementById('robuxBar').style.display='none'; document.getElementById('nav').style.top='0';"
-            style="
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: transparent;
-        border: none;
-        color: rgba(255,255,255,0.65);
-        font-size: 18px;
-        cursor: pointer;
-        line-height: 1;
-        padding: 0 4px;
-        font-family: inherit;
-      ">&times;</button>
+    <div id="robuxNotif" style="
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  background: linear-gradient(135deg, #0044cc, #0066ff);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 16px;
+  padding: 16px 20px;
+  max-width: 300px;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  box-shadow: 0 8px 32px rgba(0,102,255,0.4);
+  animation: slideInNotif 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+">
+        <style>
+            @keyframes slideInNotif {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px) scale(0.95);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+        </style>
+        <button onclick="dismissNotif()" style="
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.6);
+    font-size: 16px;
+    cursor: pointer;
+    line-height: 1;
+    font-family: inherit;
+  ">&times;</button>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="
+      background: rgba(255,255,255,0.2);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    ">New</span>
+            <span style="font-size:14px;font-weight:700;">Robux payments live!</span>
+        </div>
+        <p style="margin:0 0 12px;font-size:13px;opacity:0.85;line-height:1.5;">
+            Pay with Robux at checkout and get <strong>60% off</strong> your entire order.
+        </p>
+        <a href="/p/assets" style="
+    display: inline-block;
+    background: #fff;
+    color: #0044cc;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+  ">Shop now →</a>
     </div>
+
+    <script>
+        function dismissNotif() {
+            document.getElementById('robuxNotif').style.display = 'none';
+            document.cookie = 'robux_notif_dismissed=1; max-age=' + (60 * 60 * 24 * 30) + '; path=/';
+        }
+
+        function getCookie(name) {
+            return document.cookie.split('; ').some(c => c.startsWith(name + '='));
+        }
+
+        if (getCookie('robux_notif_dismissed')) {
+            document.getElementById('robuxNotif').style.display = 'none';
+        }
+    </script>
     <nav id="nav">
         <div class="nav-container">
             <a href="/" class="logo">SupStore</a>
