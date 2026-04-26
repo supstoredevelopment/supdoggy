@@ -1450,7 +1450,6 @@
             saveCart([]); updateCartCount(); renderCart();
         }
 
-        /* ── RENDER ── */
         function renderCart() {
             const cart = getCart();
             const list = document.getElementById('cartList');
@@ -1477,14 +1476,15 @@
             metaRow.style.display = 'flex';
 
             let totalUSD = 0;
+
             list.innerHTML = '';
 
             cart.forEach((item) => {
-                const price = Number(item.price);
+                const price = Number(item.price) || 0;
+                totalUSD += price;
+
                 const discountedPrice = price * 0.5;
                 const discountedFormatted = discountedPrice.toFixed(2);
-
-                totalUSD += price;   // Use original for subtotal, discount applied in display
 
                 const priceHTML = converting
                     ? `<span class="price-val">${fmtCur(discountedPrice)}</span><span class="price-usd">$${discountedFormatted} USD</span>`
@@ -1515,27 +1515,28 @@
                 list.appendChild(card);
             });
 
-            // Summary section
-            const discountedTotal = (totalUSD * 0.5).toFixed(2);
+            const discountedTotalUSD = totalUSD * 0.5;           // keep as number
+            const discountedTotalStr = discountedTotalUSD.toFixed(2);
 
-            totalUSD = discountedTotal
-
-            document.getElementById('summarySubtotal').textContent = `$${totalUSD.toFixed(2)}`;
+            // Subtotal (always shows the discounted price in USD)
+            document.getElementById('summarySubtotal').textContent = `$${discountedTotalStr}`;
 
             const totalEl = document.getElementById('summaryTotal');
             const totalUSDEl = document.getElementById('summaryTotalUSD');
             const totalNote = document.getElementById('summaryTotalNote');
 
             if (converting) {
-                totalEl.textContent = fmtCur(totalUSD * 0.5);
-                totalUSDEl.textContent = `$${totalUSD.toFixed(2)} USD`;
+                // Show converted price + USD equivalent
+                totalEl.textContent = fmtCur(discountedTotalUSD);
+                totalUSDEl.textContent = `$${discountedTotalStr} USD`;
                 totalUSDEl.style.display = 'block';
                 totalNote.textContent = `Converted at Stripe's live rate`;
                 totalNote.style.display = 'block';
             } else {
+                // USD only - show strikethrough original + discounted
                 totalEl.innerHTML = `
             <span style="text-decoration:line-through; color:#888; font-size:1.1rem;">$${totalUSD.toFixed(2)}</span><br>
-            <span style="color:#00d4ff; font-weight:700;">$${discountedTotal}</span>
+            <span style="color:#00d4ff; font-weight:700;">$${discountedTotalStr}</span>
         `;
                 totalUSDEl.style.display = 'none';
                 totalNote.style.display = 'none';
@@ -1560,6 +1561,7 @@
             }
             thumbStrip.style.display = 'block';
         }
+
         /* ── AUTH CHECK ── */
         async function checkAuth() {
             try {
