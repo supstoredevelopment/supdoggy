@@ -488,7 +488,7 @@
                     <div id="cartItems"></div>
                     <hr class="cart-divider">
                     <div style="margin-bottom:0.4rem;">
-                        <span class="discount-badge">60% Release Discount</span>
+                        <span class="discount-badge">50% Release Discount</span>
                     </div>
                     <div class="cart-total">
                         <span>Total</span>
@@ -525,7 +525,7 @@
                         <p>A gamepass has been created for your order. Click below to open it in Roblox and complete the
                             purchase.</p>
                         <div style="text-align:center; margin-bottom:0.75rem;">
-                            <span class="discount-badge">60% Release Discount</span>
+                            <span class="discount-badge">50% Release Discount</span>
                         </div>
                         <div class="price-tag">
                             <span class="price-original"><span class="robux-symbol">R$</span><span
@@ -651,7 +651,7 @@
                     itemsEl.appendChild(row);
                 });
 
-                const discountedTotal = Math.ceil(totalRobux * 0.4);
+                const discountedTotal = Math.ceil(totalRobux * 0.5);
                 document.getElementById('totalRobuxOriginal').textContent = totalRobux.toLocaleString();
                 document.getElementById('totalRobux').textContent = discountedTotal.toLocaleString();
                 totalRobux = discountedTotal;
@@ -728,7 +728,7 @@
                 document.getElementById('gamepassLink').href = data.gamepassUrl;
 
                 goToStep(2);
-                document.getElementById('gamepassPriceOriginal').textContent = (totalRobux / 0.4).toLocaleString();
+                document.getElementById('gamepassPriceOriginal').textContent = (totalRobux / 0.5).toLocaleString();
                 document.getElementById('gamepassPrice').textContent = totalRobux.toLocaleString();
                 startPolling();
 
