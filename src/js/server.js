@@ -2132,15 +2132,19 @@ function openCloudHeaders() {
 
 async function createRobloxGamepass(name, description, robuxPrice) {
   const res = await fetch(
-    `https://apis.roblox.com/cloud/v2/universes/${ROBLOX_UNIVERSE_ID}/game-passes`,
+    `https://apis.roblox.com/game-passes/v1/universes/${ROBLOX_UNIVERSE_ID}/game-passes`,
     {
       method: 'POST',
       headers: openCloudHeaders(),
-      body: JSON.stringify({ displayName: name, description, price: robuxPrice }),
+      body: JSON.stringify({
+        name,
+        description,
+        price: robuxPrice,
+        isForSale: true,
+      }),
     }
   );
 
-  // Read body ONCE regardless of success/failure
   const text = await res.text();
 
   if (!res.ok) {
@@ -2152,16 +2156,38 @@ async function createRobloxGamepass(name, description, robuxPrice) {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error(`Roblox returned non-JSON response: ${text}`);
+    throw new Error(`Roblox returned non-JSON: ${text}`);
   }
 
-  const gamepassId = data.id ?? data.path?.split('/').pop();
+  // Response returns { id, name, description, ... }
+  const gamepassId = data.id;
   if (!gamepassId) throw new Error(`No gamepass ID in response: ${JSON.stringify(data)}`);
 
   return {
     gamepassId,
     gamepassUrl: `https://www.roblox.com/game-pass/${gamepassId}`,
   };
+}
+
+async function deactivateGamepass(gamepassId) {
+  try {
+    const res = await fetch(
+      `https://apis.roblox.com/game-passes/v1/universes/${ROBLOX_UNIVERSE_ID}/game-passes/${gamepassId}`,
+      {
+        method: 'PATCH',
+        headers: openCloudHeaders(),
+        body: JSON.stringify({ isForSale: false }),
+      }
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn('⚠️ Gamepass deactivation response:', text);
+    } else {
+      console.log('✅ Gamepass deactivated:', gamepassId);
+    }
+  } catch (err) {
+    console.warn('⚠️ Could not deactivate gamepass:', err.message);
+  }
 }
 
 /**
@@ -2186,30 +2212,6 @@ async function checkGamepassOwnership(robloxUserId, gamepassId) {
   }
 }
 
-/**
- * Take agamepass off-sale using the new Open Cloud PATCH endpoint.
- * Requires: game-passes write permission on your API key.
- */
-async function deactivateGamepass(gamepassId) {
-  try {
-    const res = await fetch(
-      `https://apis.roblox.com/cloud/v2/universes/${ROBLOX_UNIVERSE_ID}/game-passes/${gamepassId}`,
-      {
-        method: 'PATCH',
-        headers: openCloudHeaders(),
-        body: JSON.stringify({ isForSale: false }),
-      }
-    );
-    if (!res.ok) {
-      const text = await res.text();
-      console.warn('⚠️ Gamepass deactivation response:', text);
-    } else {
-      console.log('✅ Gamepass deactivated:', gamepassId);
-    }
-  } catch (err) {
-    console.warn('⚠️ Could not deactivate gamepass:', err.message);
-  }
-}
 
 // getRobloxCsrfToken — DELETE THIS, no longer needed anywhere.
 
