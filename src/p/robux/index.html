@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SupStore - Pay with Robux</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --robux-red: #e8003d;
+            --robux-red-dim: rgba(232, 0, 61, 0.15);
+            --robux-red-border: rgba(232, 0, 61, 0.3);
+            --bg: #000;
+            --card: #0d0d0d;
+            --border: rgba(255, 255, 255, 0.08);
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --text-dim: rgba(255, 255, 255, 0.75);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 520px;
+            width: 100%;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo .robux-icon {
+            font-size: 3rem;
+            color: var(--robux-red);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .logo h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .logo p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.3rem;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        /* Cart summary */
+        .cart-summary {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .cart-summary h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            padding: 0.3rem 0;
+            color: var(--text-dim);
+        }
+
+        .cart-item span:last-child {
+            color: #fff;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .robux-symbol {
+            color: var(--robux-red);
+            font-weight: 700;
+        }
+
+        .cart-divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 0.6rem 0;
+        }
+
+        .cart-total {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .cart-total span:last-child {
+            color: var(--robux-red);
+            font-size: 1.1rem;
+        }
+
+        /* Form */
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            padding: 0.75rem 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--robux-red);
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-hint {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.85rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            text-decoration: none;
+            margin-top: 1.5rem;
+        }
+
+        .btn-robux {
+            background: var(--robux-red);
+            color: #fff;
+        }
+
+        .btn-robux:hover {
+            background: #c4003a;
+            transform: translateY(-1px);
+        }
+
+        .btn-robux:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            margin-top: 0.75rem;
+        }
+
+        .btn-outline:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        /* Step 2 - waiting */
+        .waiting-box {
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        .waiting-box .roblox-username {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--robux-red);
+            margin: 0.5rem 0 1.5rem;
+        }
+
+        .gamepass-link-box {
+            background: var(--robux-red-dim);
+            border: 1px solid var(--robux-red-border);
+            border-radius: 10px;
+            padding: 1.2rem;
+            margin: 1.5rem 0;
+            text-align: center;
+        }
+
+        .gamepass-link-box p {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+        }
+
+        .gamepass-link-box .price-tag {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .gamepass-link-box .price-tag .robux-symbol {
+            font-size: 1.1rem;
+            margin-right: 4px;
+        }
+
+        .btn-roblox-open {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #00a2ff;
+            color: #fff;
+            padding: 0.7rem 1.4rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: background 0.2s;
+        }
+
+        .btn-roblox-open:hover {
+            background: #0088d4;
+        }
+
+        /* Polling status */
+        .poll-status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-top-color: var(--robux-red);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .poll-status.success {
+            border-color: rgba(0, 255, 120, 0.3);
+            background: rgba(0, 255, 120, 0.07);
+            color: #00ff78;
+        }
+
+        .poll-status.success .spinner {
+            display: none;
+        }
+
+        .steps-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .step-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--border);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .step-dot.active {
+            background: var(--robux-red);
+            border-color: var(--robux-red);
+            color: #fff;
+        }
+
+        .step-dot.done {
+            background: #00ff78;
+            border-color: #00ff78;
+            color: #000;
+        }
+
+        .step-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .error-msg {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            color: #ff7070;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .back-link a {
+            color: var(--text-muted);
+            text-decoration: underline;
+        }
+
+        .back-link a:hover {
+            color: #fff;
+        }
+
+        /* Step 3 - complete */
+        .complete-box {
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        .complete-icon {
+            font-size: 4rem;
+            color: var(--robux-red);
+            margin-bottom: 1rem;
+        }
+
+        .complete-box h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .complete-box p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .info-row span:last-child {
+            color: #fff;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">
+            <i class="fas fa-cubes robux-icon"></i>
+            <h1>Pay with Robux</h1>
+            <p>Complete your purchase using your Roblox account</p>
+        </div>
+
+        <!-- Steps indicator -->
+        <div class="steps-indicator">
+            <div class="step-dot active" id="dot1">1</div>
+            <div class="step-line"></div>
+            <div class="step-dot" id="dot2">2</div>
+            <div class="step-line"></div>
+            <div class="step-dot" id="dot3">3</div>
+        </div>
+
+        <div class="card">
+            <!-- STEP 1: Enter username -->
+            <div class="step active" id="step1">
+                <div class="cart-summary" id="cartSummary">
+                    <h3>Your Order</h3>
+                    <div id="cartItems"></div>
+                    <hr class="cart-divider">
+                    <div class="cart-total">
+                        <span>Total</span>
+                        <span><span class="robux-symbol">R$</span> <span id="totalRobux">—</span></span>
+                    </div>
+                </div>
+
+                <label for="robloxUsername">Your Roblox Username</label>
+                <input type="text" id="robloxUsername" placeholder="e.g. Builderman" autocomplete="off"
+                    spellcheck="false">
+                <p class="input-hint">Enter your exact Roblox username. This is used to verify your payment.</p>
+
+                <div class="error-msg" id="step1Error"></div>
+
+                <button class="btn btn-robux" id="continueBtn" onclick="handleContinue()">
+                    <i class="fas fa-arrow-right"></i> Continue to Payment
+                </button>
+                <a href="/p/store" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i> Back to Store
+                </a>
+            </div>
+
+            <!-- STEP 2: Buy gamepass -->
+            <div class="step" id="step2">
+                <div class="waiting-box">
+                    <p style="color: var(--text-muted); font-size:0.9rem;">Paying as</p>
+                    <div class="roblox-username" id="displayUsername">—</div>
+
+                    <div class="gamepass-link-box">
+                        <p>A gamepass has been created for your order. Click below to open it in Roblox and complete the
+                            purchase.</p>
+                        <div class="price-tag">
+                            <span class="robux-symbol">R$</span><span id="gamepassPrice">—</span>
+                        </div>
+                        <a class="btn-roblox-open" id="gamepassLink" href="#" target="_blank">
+                            <i class="fas fa-external-link-alt"></i> Open Gamepass on Roblox
+                        </a>
+                    </div>
+
+                    <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">
+                        After purchasing, come back here — we'll detect it automatically.
+                    </div>
+
+                    <div class="poll-status" id="pollStatus">
+                        <div class="spinner"></div>
+                        <span id="pollStatusText">Waiting for your Roblox purchase...</span>
+                    </div>
+
+                    <div class="error-msg" id="step2Error"></div>
+
+                    <button class="btn btn-outline" style="margin-top:1.5rem;" onclick="goToStep(1)">
+                        <i class="fas fa-arrow-left"></i> Change Username
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 3: Done -->
+            <div class="step" id="step3">
+                <div class="complete-box">
+                    <div class="complete-icon"><i class="fas fa-check-circle"></i></div>
+                    <h2>Purchase Confirmed!</h2>
+                    <p>Your Robux payment was received and your assets are now available.</p>
+
+                    <div style="margin: 1.5rem 0; text-align:left;">
+                        <div class="info-row">
+                            <span>Roblox Username</span>
+                            <span id="confirmedUsername">—</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Amount Paid</span>
+                            <span><span class="robux-symbol">R$</span> <span id="confirmedAmount">—</span></span>
+                        </div>
+                        <div class="info-row">
+                            <span>Status</span>
+                            <span style="color:#00ff78;">Completed</span>
+                        </div>
+                    </div>
+
+                    <a href="/p/dashboard" class="btn btn-robux" style="margin-top:0.5rem;">
+                        <i class="fas fa-th-large"></i> Go to My Dashboard
+                    </a>
+                    <a href="/p/store" class="btn btn-outline">
+                        <i class="fas fa-store"></i> Back to Store
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="back-link">
+            <a href="/p/store">← Return to store without paying</a>
+        </div>
+    </div>
+
+    <script>
+        // ── Config ──────────────────────────────────────────────
+        const ROBUX_PER_USD = 80; // approximate conversion rate
+
+        // ── State ───────────────────────────────────────────────
+        let cart = [];
+        let totalRobux = 0;
+        let robloxUsername = '';
+        let pendingOrderId = null;
+        let gamepassId = null;
+        let pollInterval = null;
+
+        // ── Init ────────────────────────────────────────────────
+        window.addEventListener('load', () => {
+            loadCart();
+        });
+
+        function loadCart() {
+            try {
+                cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            } catch { cart = []; }
+
+            if (!cart.length) {
+                document.getElementById('cartItems').innerHTML =
+                    '<p style="color:var(--text-muted);font-size:0.85rem;">No items in cart.</p>';
+                document.getElementById('totalRobux').textContent = '0';
+                document.getElementById('continueBtn').disabled = true;
+                return;
+            }
+
+            // We need to fetch prices from the API
+            const ids = cart.map(i => i.id);
+            fetchCartPrices(ids);
+        }
+
+        async function fetchCartPrices(ids) {
+            try {
+                // Fetch each asset; in real usage you'd have a batch endpoint
+                const assets = await Promise.all(
+                    ids.map(id => fetch(`/api/assets/${id}`, { credentials: 'include' }).then(r => r.json()))
+                );
+
+                const itemsEl = document.getElementById('cartItems');
+                itemsEl.innerHTML = '';
+                totalRobux = 0;
+
+                assets.forEach((asset, i) => {
+                    const qty = cart[i]?.quantity || 1;
+                    const usdPrice = asset.price || 0;
+                    const robux = Math.ceil(usdPrice * ROBUX_PER_USD) * qty;
+                    totalRobux += robux;
+
+                    const row = document.createElement('div');
+                    row.className = 'cart-item';
+                    row.innerHTML = `
+                    <span>${asset.title}${qty > 1 ? ` ×${qty}` : ''}</span>
+                    <span><span class="robux-symbol">R$</span> ${robux.toLocaleString()}</span>
+                `;
+                    itemsEl.appendChild(row);
+                });
+
+                document.getElementById('totalRobux').textContent = totalRobux.toLocaleString();
+            } catch (err) {
+                console.error('Failed to load cart prices:', err);
+            }
+        }
+
+        // ── Step navigation ──────────────────────────────────────
+        function goToStep(n) {
+            document.querySelectorAll('.step').forEach((el, i) => {
+                el.classList.toggle('active', i + 1 === n);
+            });
+
+            // Update dots
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                dot.classList.remove('active', 'done');
+                if (i < n) dot.classList.add('done'), dot.innerHTML = '<i class="fas fa-check" style="font-size:0.6rem"></i>';
+                else if (i === n) dot.classList.add('active'), dot.textContent = i;
+                else dot.textContent = i;
+            }
+        }
+
+        function showError(elId, msg) {
+            const el = document.getElementById(elId);
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+        function hideError(elId) {
+            document.getElementById(elId).style.display = 'none';
+        }
+
+        // ── Step 1: Submit username ──────────────────────────────
+        async function handleContinue() {
+            hideError('step1Error');
+            const input = document.getElementById('robloxUsername');
+            robloxUsername = input.value.trim();
+
+            if (!robloxUsername || robloxUsername.length < 3 || robloxUsername.length > 20) {
+                return showError('step1Error', 'Please enter a valid Roblox username (3–20 characters).');
+            }
+            if (!/^[a-zA-Z0-9_]+$/.test(robloxUsername)) {
+                return showError('step1Error', 'Roblox usernames can only contain letters, numbers, and underscores.');
+            }
+
+            const btn = document.getElementById('continueBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner" style="border-top-color:#fff;width:16px;height:16px;border-width:2px"></span> Creating gamepass...';
+
+            try {
+                const res = await fetch('/api/robux/create-gamepass', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        robloxUsername,
+                        cart,
+                        totalRobux,
+                    }),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to create gamepass');
+                }
+
+                pendingOrderId = data.orderId;
+                gamepassId = data.gamepassId;
+
+                document.getElementById('displayUsername').textContent = robloxUsername;
+                document.getElementById('gamepassPrice').textContent = totalRobux.toLocaleString();
+                document.getElementById('gamepassLink').href = data.gamepassUrl;
+
+                goToStep(2);
+                startPolling();
+
+            } catch (err) {
+                showError('step1Error', err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-arrow-right"></i> Continue to Payment';
+            }
+        }
+
+        // ── Step 2: Poll for payment ─────────────────────────────
+        function startPolling() {
+            let attempts = 0;
+            const maxAttempts = 60; // 5 mins at 5s interval
+
+            pollInterval = setInterval(async () => {
+                attempts++;
+                document.getElementById('pollStatusText').textContent =
+                    `Checking for payment... (${attempts}/${maxAttempts})`;
+
+                try {
+                    const res = await fetch(`/api/robux/check-payment/${pendingOrderId}`, {
+                        credentials: 'include',
+                    });
+                    const data = await res.json();
+
+                    if (data.paid) {
+                        clearInterval(pollInterval);
+                        onPaymentConfirmed(data);
+                    } else if (data.cancelled) {
+                        clearInterval(pollInterval);
+                        showError('step2Error', 'Your order was cancelled.');
+                    }
+                } catch (err) {
+                    console.warn('Poll error:', err);
+                }
+
+                if (attempts >= maxAttempts) {
+                    clearInterval(pollInterval);
+                    showError('step2Error', 'Payment not detected after 5 minutes. If you paid, please contact support with your order ID: ' + pendingOrderId);
+                    document.getElementById('pollStatusText').textContent = 'Timed out.';
+                }
+            }, 5000);
+        }
+
+        function onPaymentConfirmed(data) {
+            const ps = document.getElementById('pollStatus');
+            ps.classList.add('success');
+            document.getElementById('pollStatusText').textContent = 'Payment confirmed! Granting assets...';
+
+            setTimeout(() => {
+                document.getElementById('confirmedUsername').textContent = robloxUsername;
+                document.getElementById('confirmedAmount').textContent = totalRobux.toLocaleString();
+
+                // Clear cart
+                try { localStorage.removeItem('cart'); } catch { }
+
+                goToStep(3);
+            }, 1200);
+        }
+    </script>
+    <script src="/js/testing-mode.js"></script>
+</body>
+
+</html>

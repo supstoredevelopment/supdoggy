@@ -2099,6 +2099,458 @@ async function syncAssetsWithStripe() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  ROBUX PAYMENT ROUTES
+//  Add these routes to server.js (before the static file catch-all)
+//
+//  Required env vars:
+//    ROBLOX_COOKIE        - your .ROBLOSECURITY cookie (for Open Cloud / legacy API)
+//    ROBLOX_UNIVERSE_ID   - the Universe ID of your game
+//    ROBLOX_PLACE_ID      - the Place ID of your game (for gamepass group)
+//    ROBLOX_GROUP_ID      - (optional) group ID if gamepasses are under a group
+//    ROBUX_PER_USD        - e.g. "80"  (how many Robux per 1 USD)
+// ═══════════════════════════════════════════════════════════════
+
+const ROBUX_PER_USD = parseFloat(process.env.ROBUX_PER_USD || '80');
+const ROBLOX_COOKIE = process.env.ROBLOX_COOKIE; // .ROBLOSECURITY value
+const ROBLOX_UNIVERSE_ID = process.env.ROBLOX_UNIVERSE_ID;
+const ROBLOX_PLACE_ID = process.env.ROBLOX_PLACE_ID;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Resolve a Roblox username → userId via Roblox API.
+ */
+async function resolveRobloxUserId(username) {
+  const res = await fetch('https://users.roblox.com/v1/usernames/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usernames: [username], excludeBannedUsers: true }),
+  });
+  if (!res.ok) throw new Error('Roblox user lookup failed');
+  const data = await res.json();
+  if (!data.data || data.data.length === 0) throw new Error('Roblox user not found');
+  return { userId: data.data[0].id, displayName: data.data[0].displayName };
+}
+
+/**
+ * Create a gamepass for your Roblox place via the legacy API.
+ * Returns { gamepassId, gamepassUrl }
+ *
+ * NOTE: Roblox's Open Cloud API does not yet support gamepass creation.
+ * This uses the legacy catalog/game endpoint which requires the
+ * .ROBLOSECURITY cookie of the account that owns the place.
+ */
+async function createRobloxGamepass(name, description, robuxPrice) {
+  // Step 1: Create the gamepass (as a product on the place)
+  const formData = new URLSearchParams({
+    name,
+    description,
+    paymentProviderType: 'Roblox',
+    price: robuxPrice.toString(),
+    isForSale: 'true',
+  });
+
+  const res = await fetch(
+    `https://www.roblox.com/places/${ROBLOX_PLACE_ID}/gamepass/create`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Cookie: `.ROBLOSECURITY=${ROBLOX_COOKIE}`,
+        'X-CSRF-TOKEN': await getRobloxCsrfToken(),
+      },
+      body: formData.toString(),
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error('Gamepass creation failed:', text);
+    throw new Error('Failed to create Roblox gamepass');
+  }
+
+  const data = await res.json();
+  const gamepassId = data.id || data.gamePassId;
+  if (!gamepassId) throw new Error('No gamepass ID returned from Roblox');
+
+  return {
+    gamepassId,
+    gamepassUrl: `https://www.roblox.com/game-pass/${gamepassId}`,
+  };
+}
+
+/**
+ * Fetch a CSRF token from Roblox (needed for mutating API calls).
+ */
+async function getRobloxCsrfToken() {
+  const res = await fetch('https://auth.roblox.com/v2/logout', {
+    method: 'POST',
+    headers: { Cookie: `.ROBLOSECURITY=${ROBLOX_COOKIE}` },
+  });
+  return res.headers.get('x-csrf-token') || '';
+}
+
+/**
+ * Check if a Roblox user owns a specific gamepass.
+ */
+async function checkGamepassOwnership(robloxUserId, gamepassId) {
+  const res = await fetch(
+    `https://inventory.roblox.com/v1/users/${robloxUserId}/items/GamePass/${gamepassId}`,
+    { headers: { Cookie: `.ROBLOSECURITY=${ROBLOX_COOKIE}` } }
+  );
+  if (!res.ok) return false;
+  const data = await res.json();
+  return Array.isArray(data.data) && data.data.length > 0;
+}
+
+/**
+ * Delete / archive a gamepass after purchase so it can't be reused.
+ * (Sets it off-sale)
+ */
+async function deactivateGamepass(gamepassId) {
+  try {
+    await fetch(`https://www.roblox.com/game-pass/${gamepassId}/update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Cookie: `.ROBLOSECURITY=${ROBLOX_COOKIE}`,
+        'X-CSRF-TOKEN': await getRobloxCsrfToken(),
+      },
+      body: new URLSearchParams({ isForSale: 'false' }).toString(),
+    });
+    console.log('✅ Gamepass deactivated:', gamepassId);
+  } catch (err) {
+    console.warn('⚠️ Could not deactivate gamepass:', err.message);
+  }
+}
+
+// ── Rate limiter for Robux endpoints ─────────────────────────────────────────
+
+const robuxLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: 'Too many requests, please slow down.',
+});
+
+// ── POST /api/robux/create-gamepass ──────────────────────────────────────────
+//
+//  Body: { robloxUsername, cart, totalRobux }
+//  Creates a one-time gamepass priced at totalRobux, stores a pending Robux
+//  order in Supabase, and returns the gamepass URL.
+
+app.post('/api/robux/create-gamepass', robuxLimiter, authenticateToken, async (req, res) => {
+  try {
+    const { robloxUsername, cart, totalRobux } = req.body;
+
+    // --- Validation ---
+    if (!robloxUsername || typeof robloxUsername !== 'string' ||
+      !/^[a-zA-Z0-9_]{3,20}$/.test(robloxUsername)) {
+      return res.status(400).json({ error: 'Invalid Roblox username' });
+    }
+    if (!Array.isArray(cart) || cart.length === 0) {
+      return res.status(400).json({ error: 'Cart is empty' });
+    }
+    if (!Number.isInteger(totalRobux) || totalRobux < 1 || totalRobux > 100000) {
+      return res.status(400).json({ error: 'Invalid Robux amount' });
+    }
+
+    const userId = req.userId;
+    const validatedCart = cart.map(validateCartItem);
+
+    // --- Fetch & verify products ---
+    const { data: products, error: prodErr } = await supabase
+      .from('assets')
+      .select('id, title, price')
+      .in('id', validatedCart.map(i => i.id));
+
+    if (prodErr || !products) {
+      return res.status(400).json({ error: 'Failed to fetch products' });
+    }
+
+    // --- Re-calculate expected Robux server-side (never trust client) ---
+    let expectedRobux = 0;
+    for (const item of validatedCart) {
+      const product = products.find(p => p.id === item.id);
+      if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
+      expectedRobux += Math.ceil(product.price * ROBUX_PER_USD) * item.quantity;
+    }
+
+    if (expectedRobux !== totalRobux) {
+      console.warn(`⚠️ Robux mismatch — client: ${totalRobux} | server: ${expectedRobux}`);
+      return res.status(400).json({ error: 'Price mismatch. Please refresh and try again.' });
+    }
+
+    // --- Resolve Roblox user ---
+    let robloxUserId, robloxDisplayName;
+    try {
+      ({ userId: robloxUserId, displayName: robloxDisplayName } = await resolveRobloxUserId(robloxUsername));
+    } catch (err) {
+      return res.status(400).json({ error: `Roblox user "${robloxUsername}" not found.` });
+    }
+
+    console.log(`🎮 Robux checkout | user: ${userId} | roblox: ${robloxUsername} (${robloxUserId}) | R$${expectedRobux}`);
+
+    // --- Create Roblox gamepass ---
+    const gpName = `SupStore Order - ${robloxUsername} - ${Date.now()}`;
+    const gpDesc = `One-time purchase pass for SupStore order by ${robloxUsername}. Do not buy if you did not initiate this purchase.`;
+
+    let gamepassId, gamepassUrl;
+    try {
+      ({ gamepassId, gamepassUrl } = await createRobloxGamepass(gpName, gpDesc, expectedRobux));
+    } catch (err) {
+      console.error('❌ Gamepass creation error:', err.message);
+      return res.status(500).json({ error: 'Failed to create Roblox gamepass. Please try again.' });
+    }
+
+    console.log(`✅ Gamepass created: ${gamepassId} | URL: ${gamepassUrl}`);
+
+    // --- Create pending order in DB ---
+    const { data: order, error: orderErr } = await supabaseAdmin
+      .from('orders')
+      .insert({
+        user_id: userId,
+        session_id: `robux_${gamepassId}`,
+        total_amount: expectedRobux / ROBUX_PER_USD, // store in USD equivalent
+        status: 'pending',
+        currency: 'RBX',
+      })
+      .select('id')
+      .single();
+
+    if (orderErr || !order) {
+      console.error('❌ Robux order insert error:', orderErr?.message);
+      return res.status(500).json({ error: 'Failed to create order' });
+    }
+
+    // --- Store Robux-specific metadata ---
+    const { error: metaErr } = await supabaseAdmin
+      .from('robux_orders')
+      .insert({
+        order_id: order.id,
+        user_id: userId,
+        roblox_username: robloxUsername,
+        roblox_user_id: robloxUserId.toString(),
+        gamepass_id: gamepassId.toString(),
+        robux_amount: expectedRobux,
+        asset_ids: validatedCart.map(i => i.id),
+        status: 'pending',
+      });
+
+    if (metaErr) {
+      console.error('❌ robux_orders insert error:', metaErr.message);
+      // Non-fatal — order still exists
+    }
+
+    await auditLog({
+      user_id: userId,
+      action: 'robux_checkout_initiated',
+      resource: 'order',
+      resource_id: order.id,
+      status: 'pending',
+      details: {
+        roblox_username: robloxUsername,
+        roblox_user_id: robloxUserId,
+        gamepass_id: gamepassId,
+        robux_amount: expectedRobux,
+        asset_ids: validatedCart.map(i => i.id),
+      },
+    });
+
+    res.json({
+      orderId: order.id,
+      gamepassId,
+      gamepassUrl,
+      robuxAmount: expectedRobux,
+    });
+
+  } catch (err) {
+    console.error('❌ /api/robux/create-gamepass error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ── GET /api/robux/check-payment/:orderId ─────────────────────────────────────
+//
+//  Polled by the frontend every 5s.
+//  Checks if the Roblox user now owns the gamepass.
+//  If yes: marks order complete, grants assets, deactivates gamepass.
+
+app.get('/api/robux/check-payment/:orderId', authenticateToken, async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    if (!orderId || typeof orderId !== 'string') {
+      return res.status(400).json({ error: 'Invalid order ID' });
+    }
+
+    // Fetch the robux_orders row
+    const { data: robuxOrder, error: robuxErr } = await supabaseAdmin
+      .from('robux_orders')
+      .select('*')
+      .eq('order_id', orderId)
+      .eq('user_id', req.userId)
+      .maybeSingle();
+
+    if (robuxErr || !robuxOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (robuxOrder.status === 'completed') {
+      return res.json({ paid: true });
+    }
+    if (robuxOrder.status === 'cancelled') {
+      return res.json({ paid: false, cancelled: true });
+    }
+
+    // Check Roblox ownership
+    const owns = await checkGamepassOwnership(
+      robuxOrder.roblox_user_id,
+      robuxOrder.gamepass_id
+    );
+
+    if (!owns) {
+      return res.json({ paid: false });
+    }
+
+    // ── Payment confirmed! ──────────────────────────────────
+
+    console.log(`✅ Robux payment confirmed | order: ${orderId} | gamepass: ${robuxOrder.gamepass_id}`);
+
+    // Mark robux_orders as completed
+    await supabaseAdmin
+      .from('robux_orders')
+      .update({ status: 'completed', paid_at: new Date().toISOString() })
+      .eq('order_id', orderId);
+
+    // Mark main order as completed
+    await supabaseAdmin
+      .from('orders')
+      .update({ status: 'completed', payment_date: new Date().toISOString() })
+      .eq('id', orderId);
+
+    // Grant assets
+    const assetIds = robuxOrder.asset_ids;
+    let grantedCount = 0;
+
+    for (const assetId of assetIds) {
+      const { error: upsertErr } = await supabaseAdmin
+        .from('user_assets')
+        .upsert(
+          {
+            user_id: req.userId,
+            asset_id: assetId,
+            purchased_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,asset_id', ignoreDuplicates: true }
+        );
+
+      if (upsertErr) {
+        console.error(`❌ Failed to grant asset ${assetId}:`, upsertErr.message);
+      } else {
+        grantedCount++;
+      }
+    }
+
+    console.log(`🎁 Assets granted: ${grantedCount}/${assetIds.length}`);
+
+    // Deactivate gamepass so it can't be resold
+    await deactivateGamepass(robuxOrder.gamepass_id);
+
+    await auditLog({
+      user_id: req.userId,
+      action: 'robux_payment',
+      resource: 'order',
+      resource_id: orderId,
+      status: 'completed',
+      details: {
+        roblox_username: robuxOrder.roblox_username,
+        gamepass_id: robuxOrder.gamepass_id,
+        robux_amount: robuxOrder.robux_amount,
+        assets_granted: grantedCount,
+      },
+    });
+
+    res.json({ paid: true, assetsGranted: grantedCount });
+
+  } catch (err) {
+    console.error('❌ /api/robux/check-payment error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/robux/webhook', express.json(), async (req, res) => {
+  try {
+    const { secret, robloxUserId, gamepassId } = req.body;
+
+    if (!secret || secret !== process.env.ROBLOX_WEBHOOK_SECRET) {
+      console.warn('⚠️ Invalid Roblox webhook secret');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!robloxUserId || !gamepassId) {
+      return res.status(400).json({ error: 'Missing fields' });
+    }
+
+    console.log(`\n🎮 Roblox webhook | userId: ${robloxUserId} | gamepassId: ${gamepassId}`);
+
+    // Find the pending robux order for this gamepass
+    const { data: robuxOrder, error } = await supabaseAdmin
+      .from('robux_orders')
+      .select('*')
+      .eq('gamepass_id', gamepassId.toString())
+      .eq('roblox_user_id', robloxUserId.toString())
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (error || !robuxOrder) {
+      console.warn('⚠️ No matching pending robux order for gamepass:', gamepassId);
+      return res.json({ received: true, matched: false });
+    }
+
+    // Mark as completed
+    await supabaseAdmin
+      .from('robux_orders')
+      .update({ status: 'completed', paid_at: new Date().toISOString() })
+      .eq('order_id', robuxOrder.order_id);
+
+    await supabaseAdmin
+      .from('orders')
+      .update({ status: 'completed', payment_date: new Date().toISOString() })
+      .eq('id', robuxOrder.order_id);
+
+    // Grant assets
+    for (const assetId of robuxOrder.asset_ids) {
+      await supabaseAdmin
+        .from('user_assets')
+        .upsert(
+          {
+            user_id: robuxOrder.user_id,
+            asset_id: assetId,
+            purchased_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,asset_id', ignoreDuplicates: true }
+        );
+    }
+
+    await deactivateGamepass(gamepassId);
+
+    await auditLog({
+      user_id: robuxOrder.user_id,
+      action: 'robux_payment',
+      resource: 'order',
+      resource_id: robuxOrder.order_id,
+      status: 'completed',
+      details: { source: 'roblox_webhook', gamepass_id: gamepassId, roblox_user_id: robloxUserId },
+    });
+
+    console.log('✅ Robux webhook processed successfully');
+    res.json({ received: true, matched: true });
+
+  } catch (err) {
+    console.error('❌ /api/robux/webhook error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
