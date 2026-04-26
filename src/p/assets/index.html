@@ -148,6 +148,95 @@
             transition: transform 0.3s;
         }
 
+
+        .discount-banner {
+            max-width: 800px;
+            margin: 100px auto 20px;
+            /* This pushes it down below the fixed nav */
+            padding: 1.2rem 2.3rem;
+            background: #0a84ff;
+            /* Clean light blue */
+            color: white;
+            border-radius: 14px;
+            box-shadow: 0 10px 32px rgba(10, 132, 255, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .discount-content {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .discount-text {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .discount-text i {
+            font-size: 1.35rem;
+        }
+
+        .countdown {
+            display: flex;
+            gap: 0.65rem;
+            font-size: 1.05rem;
+        }
+
+        .countdown span {
+            background: rgba(255, 255, 255, 0.28);
+            padding: 7px 14px;
+            border-radius: 9px;
+            font-weight: 700;
+            min-width: 42px;
+            text-align: center;
+        }
+
+        .close-discount {
+            background: rgba(255, 255, 255, 0.25);
+            border: none;
+            color: white;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .close-discount:hover {
+            background: rgba(255, 255, 255, 0.45);
+            transform: scale(1.1);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 900px) {
+            .discount-banner {
+                margin: 80px 1.5rem 25px;
+                padding: 1rem 1.6rem;
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .discount-banner {
+                margin: 75px 1rem 20px;
+                padding: 0.95rem 1.3rem;
+            }
+        }
+
         input[type="checkbox"]:checked+.toggle-switch {
             background: var(--primary);
         }
@@ -327,7 +416,7 @@
 
         /* PAGE */
         .all-assets {
-            padding: 100px 3rem 80px;
+            padding: 10px 3rem 80px;
             min-height: 100vh;
         }
 
@@ -918,7 +1007,6 @@
 </head>
 
 <body data-theme="dark">
-
     <nav id="nav">
         <div class="nav-container">
             <a href="/" class="logo">SupStore</a>
@@ -949,6 +1037,16 @@
             </div>
         </div>
     </nav>
+
+    <div id="discount-bar" class="discount-banner">
+        <div class="discount-content">
+            <span class="discount-text">
+                <i class="fas fa-bolt"></i>
+                <strong>50% OFF ALL ASSETS</strong> until May 4th
+            </span>
+            <div id="countdown" class="countdown"></div>
+        </div>
+    </div>
 
     <section class="all-assets">
         <h2>All Assets</h2>
@@ -1239,11 +1337,50 @@
             pagination.appendChild(next);
         }
 
+
+        function startCountdown() {
+            const discountBar = document.getElementById('discount-bar');
+            const countdownEl = document.getElementById('countdown');
+            const closeBtn = document.getElementById('close-discount');
+
+            // Target: May 4th 2026, 23:59:59
+            const targetDate = new Date('2026-05-03T23:59:59').getTime();
+
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = targetDate - now;
+
+                if (distance < 0) {
+                    discountBar.style.display = 'none';
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                countdownEl.innerHTML = `
+            <span>${days}d</span>
+            <span>${hours.toString().padStart(2, '0')}h</span>
+            <span>${minutes.toString().padStart(2, '0')}m</span>
+            <span>${seconds.toString().padStart(2, '0')}s</span>
+        `;
+            }
+
+            const timer = setInterval(updateCountdown, 1000);
+            updateCountdown(); // initial
+
+            closeBtn.addEventListener('click', () => {
+                discountBar.style.display = 'none';
+                clearInterval(timer);
+            });
+        }
+
         async function init() {
             grid.innerHTML = '<div class="loader"></div>';
             try {
-                // Fetch assets, review aggregates, and user purchases in parallel
-                // cache: 'no-store' on purchases ensures fresh ownership data after free checkouts
+
                 const [fetchedAssets, aggregates, purchasedIds] = await Promise.all([
                     fetchAssets(),
                     fetch('/api/assets/review-aggregates').then(r => r.json()),
@@ -1277,6 +1414,8 @@
             }
         }
 
+
+
         // Theme
         const themeSwitch = document.getElementById('themeSwitch');
         const currentTheme = localStorage.getItem('theme') || 'dark';
@@ -1301,7 +1440,7 @@
             authBtn.style.display = 'inline-flex';
         }
 
-        window.addEventListener('load', () => { init(); updateCartCount(); updateAuthButton(); });
+        window.addEventListener('load', () => { init(); updateCartCount(); startCountdown(); updateAuthButton(); });
     </script>
     <script src="/js/testing-mode.js"></script>
 </body>
