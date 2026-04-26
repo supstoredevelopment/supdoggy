@@ -48,8 +48,6 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://supdoggy.onrend
 
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 
-// Safely parse stripe_prices_multi regardless of whether Supabase returns
-// it as a parsed object or a raw JSON string (behaviour varies by client version).
 const getPriceMultiValues = (field) => {
   if (!field) return [];
   try {
@@ -110,11 +108,6 @@ app.post(
   async (req, res) => {
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('🎯 Webhook POST received at', new Date().toISOString());
-    console.log('   Headers:', JSON.stringify({
-      'stripe-signature': req.headers['stripe-signature'] ? '[present]' : '[MISSING]',
-      'content-type': req.headers['content-type'],
-      'content-length': req.headers['content-length'],
-    }));
 
     const sig = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -131,50 +124,32 @@ app.post(
     let event;
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-      console.log('✅ Webhook signature verified');
-      console.log('   Event type :', event.type);
-      console.log('   Event id   :', event.id);
+      console.log('✅ Webhook signature verified | type:', event.type, '| id:', event.id);
     } catch (err) {
       console.error('❌ Webhook signature verification failed:', err.message);
       return res.status(400).json({ error: 'Invalid signature' });
     }
 
     try {
-      // ════════════════════════════════════════════════════════════════
-      // CHECKOUT COMPLETED
-      // ════════════════════════════════════════════════════════════════
       if (event.type === 'checkout.session.completed') {
         let session;
         try {
           session = await stripe.checkout.sessions.retrieve(event.data.object.id, {
             expand: ['line_items'],
           });
-          console.log('\n🔄 Re-verified session from Stripe API (with line_items expanded)');
         } catch (err) {
           console.error('❌ Could not re-verify session from Stripe:', err.message);
           return res.status(500).json({ error: 'Session verification failed' });
         }
 
-        console.log('\n💳 checkout.session.completed');
-        console.log('   Session id      :', session.id);
-        console.log('   Payment status  :', session.payment_status);
-        console.log('   Stripe status   :', session.status);
-        console.log('   Amount total    :', session.amount_total);
-        console.log('   Currency        :', session.currency);
-        console.log('   Customer email  :', session.customer_email);
-        console.log('   Raw metadata    :', JSON.stringify(session.metadata));
+        console.log('\n💳 checkout.session.completed | session:', session.id, '| payment_status:', session.payment_status);
 
         const isPaid = session.payment_status === 'paid';
         const isFree = session.payment_status === 'no_payment_required';
         const isUnpaid = session.payment_status === 'unpaid';
 
-        console.log('\n💰 Payment check (re-verified):');
-        console.log('   isPaid  :', isPaid);
-        console.log('   isFree  :', isFree);
-        console.log('   isUnpaid:', isUnpaid);
-
         if (isUnpaid) {
-          console.warn('⚠️  Re-verified payment_status is UNPAID — cancelling order and NOT granting assets');
+          console.warn('⚠️ Payment is UNPAID — cancelling order');
 
           const orderId = session.metadata?.orderId;
           if (orderId) {
@@ -183,16 +158,14 @@ app.post(
               .update({ status: 'cancelled' })
               .eq('id', orderId)
               .eq('status', 'pending');
-            if (error) console.error('   ❌ Failed to cancel unpaid order:', error.message);
-            else console.log('   ✅ Order cancelled (unpaid):', orderId);
+            if (error) console.error('❌ Failed to cancel unpaid order:', error.message);
           } else {
             const { error } = await supabaseAdmin
               .from('orders')
               .update({ status: 'cancelled' })
               .eq('session_id', session.id)
               .eq('status', 'pending');
-            if (error) console.error('   ❌ Fallback cancel failed:', error.message);
-            else console.log('   ✅ Order cancelled via session_id fallback (unpaid)');
+            if (error) console.error('❌ Fallback cancel failed:', error.message);
           }
 
           await auditLog({
@@ -206,21 +179,16 @@ app.post(
         }
 
         if (!isPaid && !isFree) {
-          console.warn('⚠️  Re-verified payment_status is neither "paid" nor "no_payment_required" (got:', session.payment_status, ') — aborting');
-          return res.json({ received: true, note: 'Payment not confirmed on re-verification — skipped' });
+          console.warn('⚠️ Unexpected payment_status:', session.payment_status, '— skipping');
+          return res.json({ received: true, note: 'Payment not confirmed — skipped' });
         }
 
         let userId = session.metadata?.userId || null;
         let orderId = session.metadata?.orderId || null;
 
-        console.log('\n🔍 Metadata resolution:');
-        console.log('   userId from metadata  :', userId || '[MISSING]');
-        console.log('   orderId from metadata :', orderId || '[MISSING]');
+        console.log('🔍 metadata — userId:', userId || '[MISSING]', '| orderId:', orderId || '[MISSING]');
 
-        // ── Fallback 1: lookup by session_id ──────────────────────────
         if (!userId || !orderId) {
-          console.log('\n⚠️  Metadata incomplete — trying fallback 1: lookup by session_id...');
-
           const { data: fallbackOrder, error: fallbackErr } = await supabaseAdmin
             .from('orders')
             .select('id, user_id, status')
@@ -228,25 +196,19 @@ app.post(
             .maybeSingle();
 
           if (fallbackErr) {
-            console.error('   ❌ Fallback 1 DB error:', fallbackErr.message);
-          } else if (!fallbackOrder) {
-            console.warn('   ⚠️  Fallback 1: no order row found with session_id:', session.id);
-          } else {
-            console.log('   ✅ Fallback 1 resolved — order:', fallbackOrder.id, '| user:', fallbackOrder.user_id);
+            console.error('❌ Fallback 1 DB error:', fallbackErr.message);
+          } else if (fallbackOrder) {
+            console.log('✅ Fallback 1 resolved — order:', fallbackOrder.id, '| user:', fallbackOrder.user_id);
             userId = userId || fallbackOrder.user_id;
             orderId = orderId || fallbackOrder.id;
+          } else {
+            console.warn('⚠️ Fallback 1: no order found for session_id:', session.id);
           }
         }
 
-        // ── Fallback 2: lookup by customer email in audit_logs ────────
-        // Handles the race window where session_id hasn't been written yet
-        // or where metadata was missing from the Stripe session entirely.
         if (!userId || !orderId) {
-          console.log('\n⚠️  Fallback 1 failed — trying fallback 2: audit log lookup by customer email...');
-
           const customerEmail = session.customer_email || session.customer_details?.email;
           if (customerEmail) {
-            // Find the most recent pending checkout audit entry for this email
             const { data: auditRows, error: auditErr } = await supabaseAdmin
               .from('audit_logs')
               .select('user_id, resource_id, details, created_at')
@@ -256,9 +218,8 @@ app.post(
               .limit(20);
 
             if (auditErr) {
-              console.error('   ❌ Fallback 2 audit log query error:', auditErr.message);
+              console.error('❌ Fallback 2 audit log query error:', auditErr.message);
             } else if (auditRows?.length) {
-              // Find a row whose details.amount and currency match this session
               const amountDollars = session.amount_total / 100;
               const match = auditRows.find(r => {
                 const d = r.details || {};
@@ -269,24 +230,19 @@ app.post(
               });
 
               if (match) {
-                console.log('   ✅ Fallback 2 matched via audit log — user_id:', match.user_id, '| order resource_id:', match.resource_id);
+                console.log('✅ Fallback 2 matched via audit log — user_id:', match.user_id);
                 userId = userId || match.user_id;
                 orderId = orderId || match.resource_id;
               } else {
-                console.warn('   ⚠️  Fallback 2: no matching audit log entry found for email/amount/currency');
+                console.warn('⚠️ Fallback 2: no matching audit log entry');
               }
             }
           } else {
-            console.warn('   ⚠️  Fallback 2: no customer email on session — cannot query audit logs');
+            console.warn('⚠️ Fallback 2: no customer email on session');
           }
         }
 
-        // ── Fallback 3: upsert order from Stripe session directly ─────
-        // If we have a userId from metadata but no orderId, or if neither
-        // fallback above found an existing row, create the order now so
-        // assets can still be granted and nothing is lost.
         if (userId && !orderId) {
-          console.log('\n⚠️  Have userId but no orderId — fallback 3: creating order from webhook...');
           const { data: newOrder, error: newOrderErr } = await supabaseAdmin
             .from('orders')
             .insert({
@@ -301,7 +257,6 @@ app.post(
             .single();
 
           if (newOrderErr) {
-            // Could be a duplicate — try fetching by session_id again
             if (newOrderErr.code === '23505') {
               const { data: dup } = await supabaseAdmin
                 .from('orders')
@@ -310,22 +265,19 @@ app.post(
                 .maybeSingle();
               if (dup) {
                 orderId = dup.id;
-                console.log('   ✅ Fallback 3: duplicate resolved — existing order id:', orderId);
+                console.log('✅ Fallback 3: duplicate resolved — existing order id:', orderId);
               }
             } else {
-              console.error('   ❌ Fallback 3: failed to create order:', newOrderErr.message);
+              console.error('❌ Fallback 3: failed to create order:', newOrderErr.message);
             }
           } else {
             orderId = newOrder.id;
-            console.log('   ✅ Fallback 3: order created from webhook:', orderId);
+            console.log('✅ Fallback 3: order created from webhook:', orderId);
           }
         }
 
         if (!userId || !orderId) {
-          console.error('\n❌ UNRESOLVABLE — could not determine userId or orderId after all fallbacks');
-          console.error('   userId    :', userId);
-          console.error('   orderId   :', orderId);
-          console.error('   session_id:', session.id);
+          console.error('❌ UNRESOLVABLE — could not determine userId or orderId after all fallbacks');
 
           await auditLog({
             action: 'webhook_unresolvable',
@@ -341,7 +293,7 @@ app.post(
           return res.json({ received: true, warning: 'Order not found — logged for manual review' });
         }
 
-        console.log('\n✅ Resolution complete — userId:', userId, '| orderId:', orderId);
+        console.log('✅ Resolution complete — userId:', userId, '| orderId:', orderId);
 
         const { data: existingOrder, error: existingErr } = await supabaseAdmin
           .from('orders')
@@ -358,19 +310,11 @@ app.post(
           return res.status(400).json({ error: 'Order not found' });
         }
 
-        console.log('📋 Existing order status:', existingOrder.status);
-
         if (existingOrder.status === 'completed') {
-          console.log('ℹ️  Order already completed — skipping (idempotent):', orderId);
+          console.log('ℹ️ Order already completed — skipping (idempotent):', orderId);
           return res.json({ received: true, note: 'Already completed' });
         }
 
-        if (existingOrder.status === 'cancelled') {
-          console.warn('⚠️  Order is already cancelled — but Stripe says payment is confirmed.');
-          console.warn('   Re-opening order as completed since payment is verified by Stripe.');
-        }
-
-        console.log('\n📝 Marking order as completed...');
         const { error: updateError } = await supabaseAdmin
           .from('orders')
           .update({
@@ -386,20 +330,14 @@ app.post(
         }
         console.log('✅ Order marked as completed:', orderId);
 
-        console.log('\n🛒 Resolving line items...');
-
         let lineItems = [];
         try {
           const lineItemsPage = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
           lineItems = lineItemsPage.data;
-          console.log('   Line items fetched via listLineItems, count:', lineItems.length);
+          console.log('📦 Line items fetched, count:', lineItems.length);
         } catch (err) {
-          console.error('   ❌ Failed to fetch line items:', err.message);
+          console.error('❌ Failed to fetch line items:', err.message);
           return res.status(500).json({ error: 'Failed to fetch line items' });
-        }
-
-        if (lineItems.length === 0) {
-          console.warn('   ⚠️  No line items returned — cannot grant assets');
         }
 
         const { data: allAssets, error: assetsErr } = await supabaseAdmin
@@ -411,17 +349,15 @@ app.post(
           return res.status(500).json({ error: 'Failed to fetch assets' });
         }
 
-        console.log('   Total assets in DB for matching:', allAssets.length);
-
         let grantedCount = 0;
         let skippedCount = 0;
 
         for (const lineItem of lineItems) {
           const priceId = lineItem.price?.id;
-          console.log('\n   📦 Processing line item — price_id:', priceId, '| qty:', lineItem.quantity);
+          console.log('\n   📦 Line item — price_id:', priceId, '| qty:', lineItem.quantity);
 
           if (!priceId) {
-            console.warn('   ⚠️  Line item has no price id, skipping');
+            console.warn('   ⚠️ Line item has no price id, skipping');
             skippedCount++;
             continue;
           }
@@ -432,61 +368,33 @@ app.post(
           }
 
           if (!asset) {
-            console.warn('   ⚠️  No asset matched price_id:', priceId);
-            console.warn('   Known stripe_price_ids:', allAssets.map(a => a.stripe_price_id));
-            console.warn('   Known multi price values:', allAssets.map(a => getPriceMultiValues(a.stripe_prices_multi)));
+            console.warn('   ⚠️ No asset matched price_id:', priceId);
             skippedCount++;
             continue;
           }
 
           console.log('   🎯 Matched asset:', asset.id, '|', asset.title);
 
-          const { error: insertError } = await supabaseAdmin
+          const { error: upsertError } = await supabaseAdmin
             .from('user_assets')
-            .insert({
-              user_id: userId,
-              asset_id: asset.id,
-              purchased_at: new Date().toISOString(),
-            });
-
-          if (insertError && insertError.code !== '23505') {
-            console.error('   ❌ Failed to insert user_asset:', insertError.message, '| code:', insertError.code);
-          } else if (insertError?.code === '23505') {
-            // Row exists — verify it's actually accessible, then upsert to be safe
-            console.log('   ⚠️  unique_violation on user_assets — row already exists for asset:', asset.id);
-            const { data: existingRow, error: checkErr } = await supabaseAdmin
-              .from('user_assets')
-              .select('user_id, asset_id, purchased_at')
-              .eq('user_id', userId)
-              .eq('asset_id', asset.id)
-              .maybeSingle();
-            if (checkErr) {
-              console.error('   ❌ Could not verify existing user_asset row:', checkErr.message);
-            } else if (!existingRow) {
-              // Constraint fired but row isn't visible — race or RLS issue, force upsert
-              console.error('   ❌ unique_violation but row not found — forcing upsert');
-              await supabaseAdmin.from('user_assets').upsert({
+            .upsert(
+              {
                 user_id: userId,
                 asset_id: asset.id,
                 purchased_at: new Date().toISOString(),
-              }, { onConflict: 'user_id,asset_id' });
-              grantedCount++;
-            } else {
-              console.log('   ✅ Row confirmed present — user_id:', existingRow.user_id, '| asset_id:', existingRow.asset_id, '| purchased_at:', existingRow.purchased_at);
-            }
+              },
+              { onConflict: 'user_id,asset_id', ignoreDuplicates: true }
+            );
+
+          if (upsertError) {
+            console.error('   ❌ Failed to upsert user_asset:', upsertError.message, '| code:', upsertError.code);
           } else {
-            console.log('   ✅ user_assets row created — user_id:', userId, '| asset_id:', asset.id);
+            console.log('   ✅ user_assets upserted — user_id:', userId, '| asset_id:', asset.id);
             grantedCount++;
           }
         }
 
-        // ── Fallback 4: audit log asset grant recovery ────────────────
-        // If we still have 0 assets granted (e.g. line items were empty or
-        // unmatched) but we can find a prior checkout_initiated audit log
-        // that recorded which asset IDs were in the cart, grant those now.
         if (grantedCount === 0 && lineItems.length === 0) {
-          console.log('\n⚠️  No assets granted and no line items — trying fallback 4: audit log asset recovery...');
-
           const { data: checkoutAudit, error: auditQueryErr } = await supabaseAdmin
             .from('audit_logs')
             .select('details')
@@ -497,38 +405,38 @@ app.post(
             .limit(5);
 
           if (!auditQueryErr && checkoutAudit?.length) {
-            // Find a log whose recorded session_id or orderId matches
             const matchingLog = checkoutAudit.find(r => {
               const d = r.details || {};
               return d.session_id === session.id || d.order_id === orderId;
-            }) || checkoutAudit[0]; // last resort: most recent
+            }) || checkoutAudit[0];
 
             const assetIds = matchingLog?.details?.asset_ids;
             if (Array.isArray(assetIds) && assetIds.length > 0) {
-              console.log('   🔍 Found asset_ids in audit log:', assetIds);
+              console.log('🔍 Fallback 4: found asset_ids in audit log:', assetIds);
               for (const assetId of assetIds) {
-                const { error: insertError } = await supabaseAdmin
+                const { error: upsertError } = await supabaseAdmin
                   .from('user_assets')
-                  .insert({
-                    user_id: userId,
-                    asset_id: assetId,
-                    purchased_at: new Date().toISOString(),
-                  });
+                  .upsert(
+                    {
+                      user_id: userId,
+                      asset_id: assetId,
+                      purchased_at: new Date().toISOString(),
+                    },
+                    { onConflict: 'user_id,asset_id', ignoreDuplicates: true }
+                  );
 
-                if (insertError && insertError.code !== '23505') {
-                  console.error('   ❌ Fallback 4: failed to grant asset:', assetId, insertError.message);
-                } else if (insertError?.code === '23505') {
-                  console.log('   ℹ️  Fallback 4: asset already owned:', assetId);
+                if (upsertError) {
+                  console.error('   ❌ Fallback 4: failed to grant asset:', assetId, upsertError.message);
                 } else {
-                  console.log('   ✅ Fallback 4: asset granted from audit log recovery:', assetId);
+                  console.log('   ✅ Fallback 4: asset granted:', assetId);
                   grantedCount++;
                 }
               }
             } else {
-              console.warn('   ⚠️  Fallback 4: audit log found but no asset_ids recorded');
+              console.warn('⚠️ Fallback 4: audit log found but no asset_ids recorded');
             }
           } else {
-            console.warn('   ⚠️  Fallback 4: no matching checkout_initiated audit log found');
+            console.warn('⚠️ Fallback 4: no matching checkout_initiated audit log found');
           }
         }
 
@@ -553,16 +461,11 @@ app.post(
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
       }
 
-      // ════════════════════════════════════════════════════════════════
-      // SESSION EXPIRED
-      // ════════════════════════════════════════════════════════════════
       if (event.type === 'checkout.session.expired') {
         const session = event.data.object;
         const orderId = session.metadata?.orderId;
 
-        console.log('\n🚫 checkout.session.expired');
-        console.log('   Session id:', session.id);
-        console.log('   orderId from metadata:', orderId || '[MISSING]');
+        console.log('\n🚫 checkout.session.expired | session:', session.id, '| orderId:', orderId || '[MISSING]');
 
         if (orderId) {
           const { error } = await supabaseAdmin
@@ -570,43 +473,34 @@ app.post(
             .update({ status: 'cancelled' })
             .eq('id', orderId)
             .eq('status', 'pending');
-          if (error) console.error('   ❌ Failed to cancel order by orderId:', error.message);
-          else console.log('   ✅ Order cancelled (session expired):', orderId);
+          if (error) console.error('❌ Failed to cancel order:', error.message);
+          else console.log('✅ Order cancelled:', orderId);
         } else {
-          console.log('   ⚠️  No orderId — attempting cancel via session_id fallback...');
           const { error } = await supabaseAdmin
             .from('orders')
             .update({ status: 'cancelled' })
             .eq('session_id', session.id)
             .eq('status', 'pending');
-          if (error) console.warn('   ⚠️  Fallback cancel failed:', error.message);
-          else console.log('   ✅ Order cancelled via session_id fallback');
+          if (error) console.warn('⚠️ Fallback cancel failed:', error.message);
+          else console.log('✅ Order cancelled via session_id fallback');
         }
       }
 
-      // ════════════════════════════════════════════════════════════════
-      // REFUND
-      // ════════════════════════════════════════════════════════════════
       if (event.type === 'charge.refunded') {
         const charge = event.data.object;
         const orderId = charge.metadata?.orderId;
 
-        console.log('\n💸 charge.refunded');
-        console.log('   Charge id  :', charge.id);
-        console.log('   Amount     :', charge.amount_refunded);
-        console.log('   orderId from metadata:', orderId || '[MISSING]');
-        console.log('   payment_intent:', charge.payment_intent || '[MISSING]');
+        console.log('\n💸 charge.refunded | charge:', charge.id, '| orderId:', orderId || '[MISSING]');
 
         if (orderId) {
           const { error } = await supabaseAdmin
             .from('orders')
             .update({ status: 'refunded' })
             .eq('id', orderId);
-          if (error) console.error('   ❌ Failed to mark order refunded:', error.message);
-          else console.log('   ✅ Order marked as refunded:', orderId);
+          if (error) console.error('❌ Failed to mark order refunded:', error.message);
+          else console.log('✅ Order marked as refunded:', orderId);
         } else {
           const paymentIntentId = charge.payment_intent;
-          console.warn('   ⚠️  orderId missing — attempting payment_intent lookup...');
 
           if (paymentIntentId) {
             const sessions = await stripe.checkout.sessions.list({
@@ -616,8 +510,6 @@ app.post(
             const relatedSession = sessions.data?.[0];
 
             if (relatedSession) {
-              console.log('   🔍 Found related session:', relatedSession.id);
-
               const { data: matchedOrder, error: matchErr } = await supabaseAdmin
                 .from('orders')
                 .select('id')
@@ -625,16 +517,15 @@ app.post(
                 .maybeSingle();
 
               if (matchErr) {
-                console.error('   ❌ DB error looking up order by session_id:', matchErr.message);
+                console.error('❌ DB error looking up order by session_id:', matchErr.message);
               } else if (matchedOrder) {
                 const { error: refundErr } = await supabaseAdmin
                   .from('orders')
                   .update({ status: 'refunded' })
                   .eq('id', matchedOrder.id);
-                if (refundErr) console.error('   ❌ Failed to mark matched order refunded:', refundErr.message);
-                else console.log('   ✅ Order refunded via payment_intent lookup:', matchedOrder.id);
+                if (refundErr) console.error('❌ Failed to mark matched order refunded:', refundErr.message);
+                else console.log('✅ Order refunded via payment_intent lookup:', matchedOrder.id);
               } else {
-                console.warn('   ⚠️  No order found for session_id:', relatedSession.id);
                 await auditLog({
                   action: 'refund_unmatched',
                   resource: 'charge',
@@ -643,7 +534,6 @@ app.post(
                 });
               }
             } else {
-              console.warn('   ⚠️  No Stripe session found for payment_intent:', paymentIntentId);
               await auditLog({
                 action: 'refund_unmatched',
                 resource: 'charge',
@@ -657,8 +547,7 @@ app.post(
 
       res.json({ received: true });
     } catch (err) {
-      console.error('❌ Webhook processing error:', err.message);
-      console.error('   Stack:', err.stack);
+      console.error('❌ Webhook processing error:', err.message, err.stack);
       res.status(500).json({ error: 'Webhook processing failed' });
     }
   }
@@ -720,7 +609,6 @@ const csrfProtection = csrf({
   }
 });
 
-
 const validateEmail = (email) => {
   if (!validator.isEmail(email)) throw new Error('Invalid email');
   return validator.trim(email).toLowerCase();
@@ -741,7 +629,6 @@ const validateCartItem = (item) => {
   }
   return { id, quantity: item.quantity };
 };
-
 
 const authenticateToken = async (req, res, next) => {
   try {
@@ -778,23 +665,17 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid session ID' });
     }
 
-    console.log('\n🚫 /api/cancel-order called');
-    console.log('   userId   :', req.userId);
-    console.log('   sessionId:', sessionId);
+    console.log('\n🚫 /api/cancel-order | userId:', req.userId, '| sessionId:', sessionId);
 
     let stripeSession;
     try {
       stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
     } catch (err) {
-      console.error('   ❌ Could not retrieve Stripe session:', err.message);
+      console.error('❌ Could not retrieve Stripe session:', err.message);
       return res.status(400).json({ error: 'Invalid session' });
     }
 
-    console.log('   Stripe payment_status:', stripeSession.payment_status);
-    console.log('   Stripe status        :', stripeSession.status);
-
     if (stripeSession.payment_status === 'paid') {
-      console.warn('   ⚠️  Session is PAID — refusing to cancel. Webhook should handle this.');
       return res.status(400).json({ error: 'Session is already paid — order will not be cancelled' });
     }
 
@@ -808,12 +689,12 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
       .maybeSingle();
 
     if (sessionErr) {
-      console.error('   ❌ DB error cancelling by session_id:', sessionErr.message);
+      console.error('❌ DB error cancelling by session_id:', sessionErr.message);
       return res.status(500).json({ error: 'DB error' });
     }
 
     if (updatedBySession) {
-      console.log('   ✅ Order cancelled by session_id:', updatedBySession.id);
+      console.log('✅ Order cancelled by session_id:', updatedBySession.id);
       await auditLog({
         user_id: req.userId,
         action: 'order_cancelled',
@@ -827,8 +708,6 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
 
     const orderId = stripeSession.metadata?.orderId;
     if (orderId) {
-      console.log('   ⚠️  session_id lookup found nothing — trying orderId from Stripe metadata:', orderId);
-
       const { data: updatedByOrder, error: orderErr } = await supabaseAdmin
         .from('orders')
         .update({ status: 'cancelled' })
@@ -839,12 +718,12 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
         .maybeSingle();
 
       if (orderErr) {
-        console.error('   ❌ DB error cancelling by orderId:', orderErr.message);
+        console.error('❌ DB error cancelling by orderId:', orderErr.message);
         return res.status(500).json({ error: 'DB error' });
       }
 
       if (updatedByOrder) {
-        console.log('   ✅ Order cancelled by Stripe metadata orderId:', updatedByOrder.id);
+        console.log('✅ Order cancelled by Stripe metadata orderId:', updatedByOrder.id);
         await auditLog({
           user_id: req.userId,
           action: 'order_cancelled',
@@ -857,7 +736,6 @@ app.post('/api/cancel-order', authenticateToken, async (req, res) => {
       }
     }
 
-    console.log('   ℹ️  No pending order found to cancel for this session/user');
     res.json({ cancelled: false, note: 'No pending order found' });
 
   } catch (err) {
@@ -884,7 +762,7 @@ app.post('/api/resolve-session', authenticateToken, async (req, res) => {
     const paymentStatus = stripeSession.payment_status;
     const orderId = stripeSession.metadata?.orderId;
 
-    console.log(`\n🔄 /api/resolve-session — session: ${sessionId} | payment_status: ${paymentStatus} | orderId: ${orderId}`);
+    console.log(`\n🔄 /api/resolve-session | session: ${sessionId} | payment_status: ${paymentStatus} | orderId: ${orderId}`);
 
     if (!orderId) {
       const { data: order } = await supabaseAdmin
@@ -1021,7 +899,6 @@ app.get('/api/session-assets/:sessionId', authenticateToken, async (req, res) =>
     res.status(500).json({ error: 'Server error' });
   }
 });
-
 
 app.post('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
@@ -1267,16 +1144,19 @@ app.post('/api/create-test-checkout', checkoutLimiter, authenticateToken, async 
       if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
       totalAmount += (product.price || 0) * item.quantity;
 
-      const { error: insertError } = await supabaseAdmin
+      const { error: upsertError } = await supabaseAdmin
         .from('user_assets')
-        .insert({
-          user_id: userId,
-          asset_id: product.id,
-          purchased_at: new Date().toISOString(),
-        });
+        .upsert(
+          {
+            user_id: userId,
+            asset_id: product.id,
+            purchased_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,asset_id', ignoreDuplicates: true }
+        );
 
-      if (insertError && insertError.code !== '23505') {
-        console.error('❌ [TEST] Failed to grant asset:', product.id, insertError.message);
+      if (upsertError) {
+        console.error('❌ [TEST] Failed to grant asset:', product.id, upsertError.message);
         return res.status(500).json({ error: 'Failed to grant test asset' });
       }
 
@@ -1321,11 +1201,7 @@ app.post('/api/create-test-checkout', checkoutLimiter, authenticateToken, async 
 
 app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, async (req, res) => {
   try {
-    console.log('\n🛒 Checkout request received');
-    console.log('   userId    :', req.userId);
-    console.log('   userEmail :', req.user.email);
-    console.log('   cart      :', JSON.stringify(req.body.cart));
-    console.log('   currency  :', req.body.currency);
+    console.log('\n🛒 Checkout | userId:', req.userId, '| email:', req.user.email, '| cart:', JSON.stringify(req.body.cart), '| currency:', req.body.currency);
 
     if (await isTestingModeEnabled()) {
       console.log('🧪 Testing mode ON — routing to mock checkout');
@@ -1347,12 +1223,15 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         const product = testProductMap.get(item.id);
         if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
         testTotal += (product.price || 0) * item.quantity;
-        const { error: insertError } = await supabaseAdmin.from('user_assets').insert({
-          user_id: req.userId,
-          asset_id: product.id,
-          purchased_at: new Date().toISOString(),
-        });
-        if (insertError && insertError.code !== '23505') {
+        const { error: upsertError } = await supabaseAdmin.from('user_assets').upsert(
+          {
+            user_id: req.userId,
+            asset_id: product.id,
+            purchased_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,asset_id', ignoreDuplicates: true }
+        );
+        if (upsertError) {
           return res.status(500).json({ error: 'Failed to grant test asset' });
         }
       }
@@ -1396,8 +1275,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       return res.status(400).json({ error: 'Failed to fetch products' });
     }
 
-    console.log('   Products fetched:', products.map(p => ({ id: p.id, title: p.title, price: p.price })));
-
     const productMap = new Map(products.map(p => [p.id, p]));
 
     const { data: alreadyOwned, error: ownershipErr } = await supabaseAdmin
@@ -1412,7 +1289,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     }
 
     const ownedSet = new Set((alreadyOwned || []).map(r => String(r.asset_id)));
-    console.log('   Already owned asset IDs:', [...ownedSet]);
 
     const freeItems = [];
     const paidItems = [];
@@ -1422,7 +1298,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
 
       if (ownedSet.has(String(product.id))) {
-        console.log(`ℹ️  Skipping already-owned asset ${product.id} (${product.title}) for user ${userId}`);
+        console.log(`ℹ️ Skipping already-owned asset ${product.id} (${product.title})`);
         continue;
       }
 
@@ -1434,45 +1310,33 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
     }
 
     if (freeItems.length === 0 && paidItems.length === 0) {
-      console.log('ℹ️  All cart items are already owned — returning success');
-      return res.json({
-        free: true,
-        url: `${process.env.FRONTEND_URL}/p/success/?free=true&already_owned=true`
-      });
+      return res.json({ free: true, url: `${process.env.FRONTEND_URL}/p/success/?free=true&already_owned=true` });
     }
-
-    console.log('   Free items:', freeItems.length, '| Paid items:', paidItems.length);
 
     const grantedFreeAssets = [];
     for (const { product } of freeItems) {
-      console.log(`   🆓 Granting free asset — user_id: ${userId} | asset_id: ${product.id} (${product.title})`);
-
-      const { data: inserted, error: insertError } = await supabaseAdmin
+      const { error: upsertError } = await supabaseAdmin
         .from('user_assets')
-        .insert({
-          user_id: userId,
-          asset_id: product.id,
-          purchased_at: new Date().toISOString(),
-        })
-        .select();
+        .upsert(
+          {
+            user_id: userId,
+            asset_id: product.id,
+            purchased_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,asset_id', ignoreDuplicates: true }
+        );
 
-      if (insertError && insertError.code !== '23505') {
-        console.error('❌ Failed to grant free asset:', product.id, '|', insertError.message, '| code:', insertError.code);
+      if (upsertError) {
+        console.error('❌ Failed to upsert free asset:', product.id, '|', upsertError.message);
         return res.status(500).json({ error: 'Failed to grant free asset' });
       }
 
-      if (insertError?.code === '23505') {
-        console.log(`   ℹ️  Free asset already owned: ${product.id}`);
-      } else {
-        console.log(`   ✅ Free asset granted — row id: ${inserted?.[0]?.id ?? 'unknown'}`);
-        grantedFreeAssets.push(product.id);
-      }
+      console.log(`✅ Free asset upserted — user_id: ${userId} | asset_id: ${product.id}`);
+      grantedFreeAssets.push(product.id);
     }
 
     if (paidItems.length === 0) {
       const freeSessionId = `free_${crypto.randomUUID()}`;
-
-      console.log(`\n🆓 All items free — granted ${grantedFreeAssets.length} new asset(s).`);
 
       const { error: orderErr } = await supabaseAdmin.from('orders').insert({
         user_id: userId,
@@ -1498,29 +1362,9 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         },
       });
 
-      const { data: verifyRows, error: verifyErr } = await supabaseAdmin
-        .from('user_assets')
-        .select('asset_id')
-        .eq('user_id', userId)
-        .in('asset_id', freeItems.map(({ product }) => product.id));
-
-      if (verifyErr) {
-        console.error('⚠️ Could not verify free asset grants:', verifyErr.message);
-      } else {
-        const missing = freeItems
-          .map(({ product }) => product.id)
-          .filter(id => !verifyRows.find(r => String(r.asset_id) === String(id)));
-        if (missing.length > 0) {
-          console.error('   ❌ MISSING from user_assets after grant:', missing);
-        } else {
-          console.log(`   ✅ Verified — all ${verifyRows.length} free assets confirmed in user_assets`);
-        }
-      }
-
       return res.json({ free: true, url: `${process.env.FRONTEND_URL}/p/success/?free=true` });
     }
 
-    // ── Build Stripe line items ────────────────────────────────────────
     const lineItems = [];
     let totalAmount = 0;
     const checkoutCurrency = (currency || 'usd').toLowerCase();
@@ -1536,8 +1380,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         stripePriceId = multi[checkoutCurrency] || multi['usd'];
       }
 
-      console.log(`   Product ${product.id} — currency: ${checkoutCurrency} → price_id: ${stripePriceId || '[NOT FOUND]'}`);
-
       if (!stripePriceId) {
         return res.status(400).json({ error: `Product ${item.id} has no Stripe price configured` });
       }
@@ -1547,12 +1389,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       paidAssetIds.push(product.id);
     }
 
-    // ── FIX: Create order AFTER we know Stripe session creation will likely
-    //    succeed, and link session_id atomically using upsert. This eliminates
-    //    the race window where the webhook arrives before session_id is written.
-    // ─────────────────────────────────────────────────────────────────────────
-
-    // Step 1: Create the Stripe session first so we have the session ID
     let stripeSession;
     try {
       stripeSession = await stripe.checkout.sessions.create({
@@ -1562,24 +1398,19 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         success_url: `${process.env.FRONTEND_URL}/p/success/?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.FRONTEND_URL}/p/cancel/?session_id={CHECKOUT_SESSION_ID}`,
         allow_promotion_codes: true,
-        // NOTE: metadata.orderId is intentionally set AFTER we insert the order below.
-        // We pass userId now and orderId in the next step via session update.
-        metadata: {
-          userId,
-        },
+        metadata: { userId },
       });
-      console.log('✅ Stripe session created (pre-order):', stripeSession.id);
+      console.log('✅ Stripe session created:', stripeSession.id);
     } catch (stripeErr) {
       console.error('❌ Stripe session creation failed:', stripeErr.message);
       return res.status(500).json({ error: 'Failed to create payment session', message: stripeErr.message });
     }
 
-    // Step 2: Insert order with session_id already present — no update needed
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
         user_id: userId,
-        session_id: stripeSession.id,          // ← written atomically with the row
+        session_id: stripeSession.id,
         total_amount: Math.round(totalAmount * 100) / 100,
         status: 'pending',
         currency: checkoutCurrency.toUpperCase(),
@@ -1589,7 +1420,6 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
 
     if (orderError || !order) {
       console.error('❌ Order insert error:', orderError?.message);
-      // Session was already created in Stripe — log it so we can recover manually
       await auditLog({
         user_id: userId,
         action: 'checkout_initiated',
@@ -1604,24 +1434,20 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
           note: 'Order row insert failed — Stripe session still active',
         },
       });
-      // Still return the URL so the user can pay; webhook fallbacks will handle recovery
       return res.json({ url: stripeSession.url });
     }
 
-    console.log('✅ Order created with session_id:', order.id, '|', stripeSession.id);
+    console.log('✅ Order created:', order.id, '| session:', stripeSession.id);
 
-    // Step 3: Patch Stripe session metadata to include orderId now that we have it
     try {
       await stripe.checkout.sessions.update(stripeSession.id, {
         metadata: { userId, orderId: order.id },
       });
       console.log('🔗 Stripe metadata updated with orderId:', order.id);
     } catch (metaErr) {
-      // Non-fatal — webhook fallback 1 (session_id lookup) will still work
-      console.warn('⚠️  Could not patch Stripe metadata with orderId:', metaErr.message);
+      console.warn('⚠️ Could not patch Stripe metadata with orderId:', metaErr.message);
     }
 
-    // Step 4: Write a checkout_initiated audit log with asset_ids for fallback 4
     await auditLog({
       user_id: userId,
       action: 'checkout_initiated',
@@ -1680,8 +1506,6 @@ app.get('/api/user-location', async (req, res) => {
       || req.headers['x-real-ip']
       || req.connection.remoteAddress;
 
-    console.log('Client IP:', clientIp);
-
     const response = await fetch(`https://ipwhois.app/json/${clientIp}`);
     const data = await response.json();
 
@@ -1734,8 +1558,7 @@ app.get('/api/user/assets', authenticateToken, async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch assets' });
     }
 
-    const assets = data.map(d => d.assets);
-    res.json(assets);
+    res.json(data.map(d => d.assets));
   } catch (err) {
     console.error('Server error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -1827,12 +1650,9 @@ app.get('/api/assets/:id/reviews', async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         userAlreadyReviewed = reviews.some(r => r.user_id === decoded.userId);
       }
-    } catch (_) {
-      // Not logged in — fine
-    }
+    } catch (_) { }
 
     const safeReviews = reviews.map(({ user_id, ...rest }) => rest);
-
     res.json({ reviews: safeReviews, user_already_reviewed: userAlreadyReviewed });
   } catch (err) {
     console.error('GET reviews error:', err);
@@ -2081,28 +1901,18 @@ app.get('/api/assets/:id', async (req, res) => {
 app.get('/api/debug/session/:sessionId', authenticateToken, async (req, res) => {
   const { sessionId } = req.params;
 
-  console.log('\n🔍 Debug session lookup:', sessionId);
-
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
     .select('*')
     .eq('session_id', sessionId)
     .maybeSingle();
 
-  console.log('   DB order:', order || 'NOT FOUND', orderErr?.message || '');
-
   let stripeSession = null;
   let lineItems = null;
   try {
-    stripeSession = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ['line_items']
-    });
+    stripeSession = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['line_items'] });
     lineItems = stripeSession.line_items?.data?.map(i => i.price?.id);
-    console.log('   Stripe session status:', stripeSession.status, '| payment_status:', stripeSession.payment_status);
-    console.log('   Stripe metadata:', JSON.stringify(stripeSession.metadata));
-    console.log('   Line item price IDs:', lineItems);
   } catch (e) {
-    console.error('   Stripe retrieve error:', e.message);
     stripeSession = { error: e.message };
   }
 
@@ -2112,17 +1922,11 @@ app.get('/api/debug/session/:sessionId', authenticateToken, async (req, res) => 
       .from('assets')
       .select('id, title, stripe_price_id, stripe_prices_multi');
 
-    matchedAssets = lineItems.map(priceId => {
-      const byDefault = allAssets?.find(a => a.stripe_price_id === priceId);
-      const byMulti = allAssets?.find(a =>
-        a.stripe_prices_multi && Object.values(a.stripe_prices_multi).includes(priceId)
-      );
-      return {
-        price_id: priceId,
-        matched_by_stripe_price_id: byDefault ?? null,
-        matched_by_stripe_prices_multi: allAssets?.find(a => getPriceMultiValues(a.stripe_prices_multi).includes(priceId)) ?? null,
-      };
-    });
+    matchedAssets = lineItems.map(priceId => ({
+      price_id: priceId,
+      matched_by_stripe_price_id: allAssets?.find(a => a.stripe_price_id === priceId) ?? null,
+      matched_by_stripe_prices_multi: allAssets?.find(a => getPriceMultiValues(a.stripe_prices_multi).includes(priceId)) ?? null,
+    }));
   }
 
   res.json({
@@ -2152,7 +1956,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-
 async function syncAssetsWithStripe() {
   console.log('🔄 Starting Stripe synchronization...');
 
@@ -2177,7 +1980,7 @@ async function syncAssetsWithStripe() {
     for (const [fromCurrency, info] of Object.entries(fxData?.rates || {})) {
       exchangeRates[fromCurrency] = 1 / info.exchange_rate;
     }
-    console.log('✅ Live FX rates fetched from Stripe FX Quotes API');
+    console.log('✅ Live FX rates fetched from Stripe');
   } catch (fxErr) {
     console.error('⚠️ FX Quotes fetch failed, falling back to hardcoded rates:', fxErr.message);
     Object.assign(exchangeRates, { eur: 0.92, gbp: 0.79, jpy: 149.50, cad: 1.36, aud: 1.53, chf: 0.88, sek: 10.50, nok: 10.70, dkk: 6.86 });
@@ -2206,7 +2009,6 @@ async function syncAssetsWithStripe() {
             await stripe.products.retrieve(productId);
           } catch (err) {
             if (err.code === 'resource_missing') {
-              console.log(`⚠️ Product ${productId} not found in Stripe, creating new one...`);
               productId = null;
             } else {
               throw err;
@@ -2223,7 +2025,7 @@ async function syncAssetsWithStripe() {
           productId = product.id;
           needsUpdate = true;
           createdCount++;
-          console.log(`✨ Created new product for asset ${asset.id}: ${productId}`);
+          console.log(`✨ Created product for asset ${asset.id}: ${productId}`);
         }
 
         const priceIds = {};
@@ -2253,7 +2055,7 @@ async function syncAssetsWithStripe() {
             });
             priceIds[currency] = price.id;
             updatedCount++;
-            console.log(`✨ Created new price for asset ${asset.id} in ${currency.toUpperCase()}: ${price.id}`);
+            console.log(`✨ Created price for asset ${asset.id} in ${currency.toUpperCase()}: ${price.id}`);
           } catch (err) {
             console.error(`❌ Error creating price for ${currency}:`, err.message);
             errorCount++;
@@ -2290,12 +2092,7 @@ async function syncAssetsWithStripe() {
       }
     }
 
-    console.log('\n📊 Synchronization Complete:');
-    console.log(`   Total assets  : ${assets.length}`);
-    console.log(`   Synced        : ${syncedCount}`);
-    console.log(`   New products  : ${createdCount}`);
-    console.log(`   Prices updated: ${updatedCount}`);
-    console.log(`   Errors        : ${errorCount}\n`);
+    console.log(`\n📊 Sync complete — total: ${assets.length} | synced: ${syncedCount} | new products: ${createdCount} | prices updated: ${updatedCount} | errors: ${errorCount}\n`);
 
   } catch (err) {
     console.error('❌ Stripe sync failed:', err);
