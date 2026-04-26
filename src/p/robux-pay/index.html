@@ -471,7 +471,6 @@
             <p>Complete your purchase using your Roblox account</p>
         </div>
 
-        <!-- Steps indicator -->
         <div class="steps-indicator">
             <div class="step-dot active" id="dot1">1</div>
             <div class="step-line"></div>
@@ -481,7 +480,6 @@
         </div>
 
         <div class="card">
-            <!-- STEP 1: Enter username -->
             <div class="step active" id="step1">
                 <div class="cart-summary" id="cartSummary">
                     <h3>Your Order</h3>
@@ -515,7 +513,6 @@
                 </a>
             </div>
 
-            <!-- STEP 2: Buy gamepass -->
             <div class="step" id="step2">
                 <div class="waiting-box">
                     <p style="color: var(--text-muted); font-size:0.9rem;">Paying as</p>
@@ -554,7 +551,6 @@
                 </div>
             </div>
 
-            <!-- STEP 3: Done -->
             <div class="step" id="step3">
                 <div class="complete-box">
                     <div class="complete-icon"><i class="fas fa-check-circle"></i></div>
@@ -592,7 +588,6 @@
     </div>
 
     <script>
-        // ── Config ──────────────────────────────────────────────
         const ROBUX_PER_USD = 263;
 
         let cart = [];
@@ -602,7 +597,6 @@
         let gamepassId = null;
         let pollInterval = null;
 
-        // ── Init ────────────────────────────────────────────────
         window.addEventListener('load', () => {
             loadCart();
         });
@@ -620,14 +614,12 @@
                 return;
             }
 
-            // We need to fetch prices from the API
             const ids = cart.map(i => i.id);
             fetchCartPrices(ids);
         }
 
         async function fetchCartPrices(ids) {
             try {
-                // Fetch each asset; in real usage you'd have a batch endpoint
                 const assets = await Promise.all(
                     ids.map(id => fetch(`/api/assets/${id}`, { credentials: 'include' }).then(r => r.json()))
                 );
@@ -660,13 +652,11 @@
             }
         }
 
-        // ── Step navigation ──────────────────────────────────────
         function goToStep(n) {
             document.querySelectorAll('.step').forEach((el, i) => {
                 el.classList.toggle('active', i + 1 === n);
             });
 
-            // Update dots
             for (let i = 1; i <= 3; i++) {
                 const dot = document.getElementById(`dot${i}`);
                 dot.classList.remove('active', 'done');
@@ -685,7 +675,6 @@
             document.getElementById(elId).style.display = 'none';
         }
 
-        // ── Step 1: Submit username ──────────────────────────────
         async function handleContinue() {
             hideError('step1Error');
             const input = document.getElementById('robloxUsername');
@@ -740,10 +729,9 @@
             }
         }
 
-        // ── Step 2: Poll for payment ─────────────────────────────
         function startPolling() {
             let attempts = 0;
-            const maxAttempts = 60; // 5 mins at 5s interval
+            const maxAttempts = 60; 
 
             pollInterval = setInterval(async () => {
                 attempts++;
@@ -784,7 +772,6 @@
                 document.getElementById('confirmedUsername').textContent = robloxUsername;
                 document.getElementById('confirmedAmount').textContent = totalRobux.toLocaleString();
 
-                // Clear cart
                 try { localStorage.removeItem('cart'); } catch { }
 
                 goToStep(3);
