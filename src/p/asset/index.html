@@ -348,6 +348,22 @@
             position: relative;
         }
 
+        .sidebar-price-block {
+            margin: 1.2rem 0;
+        }
+
+        .sidebar-price-block .price-label {
+            font-size: 0.78rem;
+            color: var(--subtext);
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+        }
+
+        .price-note {
+            font-size: 0.8rem;
+            color: var(--subtext);
+        }
+
         .gallery-main img,
         .gallery-main video {
             width: 100%;
@@ -1767,7 +1783,7 @@
             }
 
             try {
-               
+
                 const [assetRes, purchasesRes, profileRes] = await Promise.all([
                     fetch(`/api/assets/${id}`),
                     fetch('/api/user/purchases', { credentials: 'include', cache: 'no-store' }).catch(() => null),
@@ -1825,7 +1841,7 @@
                     { k: 'Category', v: displayTags.join(', ') },
                     { k: 'License', v: 'Standard License' },
                 ];
-               
+
                 const sidebarActionsHTML = isPurchased ? `
                     <div class="sidebar-actions">
                         <div class="owned-banner">
@@ -1879,11 +1895,22 @@
         <span class="review-link" onclick="document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'})">(${count} ratings)</span>
     </div>` : ''}
 </div>
-                            <div class="sidebar-price-block">
-                                <div class="price-label">Price</div>
-                                <div class="sidebar-price">${isFree ? '<span style="color:var(--accent)">FREE</span>' : '$' + asset.price.toLocaleString()}</div>
-                                <div class="price-note">${isFree ? 'No payment required' : 'Taxes not included'}</div>
-                            </div>
+                           <div class="sidebar-price-block">
+    <div class="price-label">Price</div>
+    ${isFree
+                        ? `<div class="sidebar-price" style="color:var(--accent)">FREE</div>`
+                        : `
+            <div class="sidebar-price" style="font-size:1.4rem; line-height:1.2;">
+                <span style="text-decoration:line-through; color:#888; font-size:0.95rem;">$${asset.price.toLocaleString()}</span><br>
+                <span style="color:#00d4ff; font-weight:700;">$${(asset.price * 0.5).toLocaleString()}</span>
+                <span style="margin-left:10px; font-size:0.9rem; color:#aaa;">(${Math.ceil(asset.price * 0.5 * 80)} R$)</span>
+            </div>
+        `
+                    }
+    <div class="price-note" style="margin-top:4px;">
+        ${isFree ? 'No payment required' : '50% Release Discount • Taxes not included'}
+    </div>
+</div>
                             ${sidebarActionsHTML}
                             <div class="sidebar-details">
                                 <h4>Details</h4>

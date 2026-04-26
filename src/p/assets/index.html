@@ -289,6 +289,14 @@
             transform: translateY(-2px);
         }
 
+        .asset-card-price {
+            margin-top: 0.1rem;
+        }
+
+        .asset-card-price div {
+            font-size: 0.9rem;
+        }
+
         .hamburger {
             display: none;
             flex-direction: column;
@@ -1176,14 +1184,20 @@
                             ${renderStars(score, count)}
                             ${count > 0 ? `<span class="rating-count">(${count})</span>` : ''}
                         </div>` : ''}
-                        <div class="asset-card-price">
-                            ${isOwned
+                      <div class="asset-card-price">
+    ${isOwned
                         ? '<span style="color:var(--accent);font-weight:700;font-size:0.82rem;"><i class="fas fa-check-circle"></i> In your library</span>'
                         : isFree
                             ? '<span style="color:var(--accent);font-weight:800;">FREE</span>'
-                            : '<span class="from-label">From</span>$' + asset.price.toLocaleString()
+                            : `
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; line-height: 1.1;">
+                    <span style="text-decoration: line-through; color: #888; font-size: 0.78rem;">$${asset.price.toLocaleString()}</span>
+                    <span style="color: #00d4ff; font-weight: 700; font-size: 0.98rem;">$${(asset.price * 0.5).toLocaleString()}</span>
+                    <span style="font-size: 0.76rem; color: #aaa; margin-left: 4px;">(${Math.ceil(asset.price * 0.5 * 80)} R$)</span>
+                </div>
+            `
                     }
-                        </div>
+</div>
                     </div>`;
 
                 grid.appendChild(el);

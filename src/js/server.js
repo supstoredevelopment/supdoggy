@@ -16,6 +16,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const RELEASE_DISCOUNT = 0.5;
+
 dotenv.config();
 
 const app = express();
@@ -1957,7 +1959,7 @@ app.use((err, req, res, next) => {
 });
 
 async function syncAssetsWithStripe() {
-  console.log('🔄 Starting Stripe synchronization...');
+  console.log('🔄 Starting Stripe synchronization with 50% release discount...');
 
   const currencies = ['usd', 'eur', 'gbp', 'jpy', 'cad', 'aud', 'chf', 'sek', 'nok', 'dkk'];
   const exchangeRates = { 'usd': 1 };
@@ -2032,7 +2034,9 @@ async function syncAssetsWithStripe() {
 
         for (const currency of currencies) {
           const rate = exchangeRates[currency];
-          const amount = Math.round(asset.price * rate * 100);
+          // Apply 50% release discount to the original price
+          const discountedPrice = asset.price * RELEASE_DISCOUNT;
+          const amount = Math.round(discountedPrice * rate * 100);
 
           try {
             const existingPrices = await stripe.prices.list({ product: productId, currency, limit: 1 });
@@ -2055,7 +2059,7 @@ async function syncAssetsWithStripe() {
             });
             priceIds[currency] = price.id;
             updatedCount++;
-            console.log(`✨ Created price for asset ${asset.id} in ${currency.toUpperCase()}: ${price.id}`);
+            console.log(`✨ Created discounted price for asset ${asset.id} in ${currency.toUpperCase()}: ${price.id}`);
           } catch (err) {
             console.error(`❌ Error creating price for ${currency}:`, err.message);
             errorCount++;
@@ -2081,7 +2085,7 @@ async function syncAssetsWithStripe() {
             console.error(`❌ Failed to update asset ${asset.id}:`, updateError);
             errorCount++;
           } else {
-            console.log(`✅ Updated asset ${asset.id} with Stripe IDs`);
+            console.log(`✅ Updated asset ${asset.id} with Stripe IDs (50% discount applied)`);
           }
         }
 
