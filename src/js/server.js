@@ -2187,7 +2187,7 @@ async function checkGamepassOwnership(robloxUserId, gamepassId) {
 }
 
 /**
- * Take a gamepass off-sale using the new Open Cloud PATCH endpoint.
+ * Take agamepass off-sale using the new Open Cloud PATCH endpoint.
  * Requires: game-passes write permission on your API key.
  */
 async function deactivateGamepass(gamepassId) {
