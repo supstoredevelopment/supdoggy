@@ -1518,6 +1518,8 @@
             // Summary section
             const discountedTotal = (totalUSD * 0.5).toFixed(2);
 
+            totalUSD = discountedTotal
+
             document.getElementById('summarySubtotal').textContent = `$${totalUSD.toFixed(2)}`;
 
             const totalEl = document.getElementById('summaryTotal');
