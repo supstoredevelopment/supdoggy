@@ -2461,7 +2461,7 @@ app.get('/api/robux/check-payment/:orderId', authenticateToken, async (req, res)
   }
 });
 
-app.post('/api/robux/webhook', express.json(), async (req, res) => {
+app.post('/api/robux/webhook', async (req, res) => {
   try {
     const { secret, robloxUserId, gamepassId } = req.body;
 
