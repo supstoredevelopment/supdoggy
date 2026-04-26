@@ -2130,10 +2130,6 @@ function openCloudHeaders() {
   };
 }
 
-/**
- * Create a gamepass via the new Open Cloud API.
- * Requires: game-passes write permission on your API key.
- */
 async function createRobloxGamepass(name, description, robuxPrice) {
   const res = await fetch(
     `https://apis.roblox.com/cloud/v2/universes/${ROBLOX_UNIVERSE_ID}/game-passes`,
@@ -2144,17 +2140,23 @@ async function createRobloxGamepass(name, description, robuxPrice) {
     }
   );
 
+  // Read body ONCE regardless of success/failure
+  const text = await res.text();
+
   if (!res.ok) {
-    const text = await res.text();
-    console.error('Gamepass creation failed:', text);
-    throw new Error(`Failed to create Roblox gamepass: ${res.status}`);
+    console.error('Gamepass creation failed:', res.status, text);
+    throw new Error(`Failed to create Roblox gamepass: ${res.status} — ${text}`);
   }
 
-  const data = await res.json();
-  // Open Cloud v2 returns the resource path e.g. "universes/123/game-passes/456"
-  const gamepassId = data.id ?? data.path?.split('/').pop();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Roblox returned non-JSON response: ${text}`);
+  }
 
-  if (!gamepassId) throw new Error('No gamepass ID returned from Roblox');
+  const gamepassId = data.id ?? data.path?.split('/').pop();
+  if (!gamepassId) throw new Error(`No gamepass ID in response: ${JSON.stringify(data)}`);
 
   return {
     gamepassId,
