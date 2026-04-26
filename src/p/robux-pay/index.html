@@ -664,15 +664,11 @@
                     }),
                 });
 
-                const data = await res.json();
-
-                const responseText = await res.text();
-                console.log('Roblox response status:', res.status);
-                console.log('Roblox response body:', responseText);
-
                 if (!res.ok) {
-                    throw new Error('Failed to create Roblox gamepass');
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || 'Failed to create Roblox gamepass');
                 }
+                const data = await res.json();
 
                 pendingOrderId = data.orderId;
                 gamepassId = data.gamepassId;
