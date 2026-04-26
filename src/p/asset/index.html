@@ -1895,20 +1895,25 @@
         <span class="review-link" onclick="document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'})">(${count} ratings)</span>
     </div>` : ''}
 </div>
-                           <div class="sidebar-price-block">
+<div class="sidebar-price-block">
     <div class="price-label">Price</div>
-    ${isFree
-                        ? `<div class="sidebar-price" style="color:var(--accent)">FREE</div>`
-                        : `
-            <div class="sidebar-price" style="font-size:1.4rem; line-height:1.2;">
-                <span style="text-decoration:line-through; color:#888; font-size:0.95rem;">$${asset.price.toLocaleString()}</span><br>
-                <span style="color:#00d4ff; font-weight:700;">$${(asset.price * 0.5).toLocaleString()}</span>
-                <span style="margin-left:10px; font-size:0.9rem; color:#aaa;">(${Math.ceil(asset.price * 0.5 * 80)} R$)</span>
+    ${isFree 
+        ? `<div class="sidebar-price" style="color:var(--accent);font-size:1.5rem;">FREE</div>`
+        : `
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <span style="text-decoration:line-through; color:#888; font-size:1.05rem; font-weight:500;">$${(asset.price).toFixed(2)}</span>
+                <span style="color:#00d4ff; font-weight:800; font-size:1.65rem; line-height:1;">$${(asset.price * 0.5).toFixed(2)}</span>
+                <span style="font-size:0.95rem; color:#aaa; background:rgba(0,212,255,0.1); padding:2px 8px; border-radius:6px;">
+                    ${Math.ceil(asset.price * 0.5 * 80)} R$
+                </span>
+            </div>
+            <div style="margin-top:6px; font-size:0.82rem; color:#00d4ff; font-weight:600;">
+                50% Release Discount
             </div>
         `
-                    }
-    <div class="price-note" style="margin-top:4px;">
-        ${isFree ? 'No payment required' : '50% Release Discount • Taxes not included'}
+    }
+    <div class="price-note" style="margin-top:8px;">
+        ${isFree ? 'No payment required' : 'Taxes not included • Instant access after purchase'}
     </div>
 </div>
                             ${sidebarActionsHTML}

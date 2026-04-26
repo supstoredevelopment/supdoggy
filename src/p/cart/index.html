@@ -530,7 +530,7 @@
             font-family: var(--mono);
             font-size: 1.05rem;
             font-weight: 500;
-            color: var(--cyan);
+            color: #00d4ff;
         }
 
         .price-usd {
@@ -1481,51 +1481,65 @@
 
             cart.forEach((item) => {
                 const price = Number(item.price);
-                totalUSD += price;
+                const discountedPrice = price * 0.5;
+                const discountedFormatted = discountedPrice.toFixed(2);
+
+                totalUSD += price;   // Use original for subtotal, discount applied in display
 
                 const priceHTML = converting
-                    ? `<span class="price-val">${fmtCur(price)}</span><span class="price-usd">${fmtUSD(price)}</span>`
-                    : `<span class="price-val">${fmtUSD(price)}</span>`;
+                    ? `<span class="price-val">${fmtCur(discountedPrice)}</span><span class="price-usd">$${discountedFormatted} USD</span>`
+                    : `
+                <span style="text-decoration:line-through; color:#888; font-size:0.85rem;">$${price.toFixed(2)}</span>
+                <span class="price-val" style="color:#00d4ff;">$${discountedFormatted}</span>
+              `;
 
                 const card = document.createElement('div');
                 card.className = 'cart-item';
                 card.innerHTML = `
-                    <div class="item-thumb">
-                        <img src="${item.image_url}" alt="${item.title}" loading="lazy">
-                    </div>
-                    <div class="item-info">
-                        <div class="item-tag">${item.tag || 'Asset'}</div>
-                        <div class="item-title">${item.title}</div>
-                        <div class="item-sub">Full commercial license · Lifetime updates</div>
-                        <div class="item-price">${priceHTML}</div>
-                    </div>
-                    <div class="item-right">
-                        <button class="remove-btn" aria-label="Remove ${item.title}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>`;
+            <div class="item-thumb">
+                <img src="${item.image_url}" alt="${item.title}" loading="lazy">
+            </div>
+            <div class="item-info">
+                <div class="item-tag">${item.tag || 'Asset'}</div>
+                <div class="item-title">${item.title}</div>
+                <div class="item-sub">Full commercial license · Lifetime updates</div>
+                <div class="item-price">${priceHTML}</div>
+            </div>
+            <div class="item-right">
+                <button class="remove-btn" aria-label="Remove ${item.title}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>`;
+
                 card.querySelector('.remove-btn').addEventListener('click', () => removeItem(item.id, card));
                 list.appendChild(card);
             });
 
-            document.getElementById('summarySubtotal').textContent = fmtUSD(totalUSD);
+            // Summary section
+            const discountedTotal = (totalUSD * 0.5).toFixed(2);
+
+            document.getElementById('summarySubtotal').textContent = `$${totalUSD.toFixed(2)}`;
 
             const totalEl = document.getElementById('summaryTotal');
             const totalUSDEl = document.getElementById('summaryTotalUSD');
             const totalNote = document.getElementById('summaryTotalNote');
 
             if (converting) {
-                totalEl.textContent = fmtCur(totalUSD);
-                totalUSDEl.textContent = `${fmtUSD(totalUSD)} USD`;
+                totalEl.textContent = fmtCur(totalUSD * 0.5);
+                totalUSDEl.textContent = `$${totalUSD.toFixed(2)} USD`;
                 totalUSDEl.style.display = 'block';
                 totalNote.textContent = `Converted at Stripe's live rate`;
                 totalNote.style.display = 'block';
             } else {
-                totalEl.textContent = fmtUSD(totalUSD);
+                totalEl.innerHTML = `
+            <span style="text-decoration:line-through; color:#888; font-size:1.1rem;">$${totalUSD.toFixed(2)}</span><br>
+            <span style="color:#00d4ff; font-weight:700;">$${discountedTotal}</span>
+        `;
                 totalUSDEl.style.display = 'none';
                 totalNote.style.display = 'none';
             }
 
+            // Thumbnails
             thumbRow.innerHTML = '';
             const MAX = 5;
             cart.slice(0, MAX).forEach(item => {
@@ -1534,6 +1548,7 @@
                 t.innerHTML = `<img src="${item.image_url}" alt="${item.title}" loading="lazy">`;
                 thumbRow.appendChild(t);
             });
+
             const extra = cart.length - MAX;
             if (extra > 0) {
                 const m = document.createElement('div');
@@ -1543,7 +1558,6 @@
             }
             thumbStrip.style.display = 'block';
         }
-
         /* ── AUTH CHECK ── */
         async function checkAuth() {
             try {

@@ -1184,15 +1184,15 @@
                             ${renderStars(score, count)}
                             ${count > 0 ? `<span class="rating-count">(${count})</span>` : ''}
                         </div>` : ''}
-                      <div class="asset-card-price">
+                     <div class="asset-card-price">
     ${isOwned
                         ? '<span style="color:var(--accent);font-weight:700;font-size:0.82rem;"><i class="fas fa-check-circle"></i> In your library</span>'
                         : isFree
                             ? '<span style="color:var(--accent);font-weight:800;">FREE</span>'
                             : `
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; line-height: 1.1;">
-                    <span style="text-decoration: line-through; color: #888; font-size: 0.78rem;">$${asset.price.toLocaleString()}</span>
-                    <span style="color: #00d4ff; font-weight: 700; font-size: 0.98rem;">$${(asset.price * 0.5).toLocaleString()}</span>
+                    <span style="text-decoration: line-through; color: #888; font-size: 0.78rem;">$${(asset.price).toFixed(2)}</span>
+                    <span style="color: #00d4ff; font-weight: 700; font-size: 0.98rem;">$${(asset.price * 0.5).toFixed(2)}</span>
                     <span style="font-size: 0.76rem; color: #aaa; margin-left: 4px;">(${Math.ceil(asset.price * 0.5 * 80)} R$)</span>
                 </div>
             `
