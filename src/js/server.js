@@ -87,6 +87,17 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(express.json({
+  limit: '10kb',
+  verify: (req, res, buf) => {
+    if (req.path === '/api/stripe-webhook') {
+      req.rawBody = buf;
+    }
+  }
+}));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+
 app.options('/api/stripe-webhook', (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
@@ -588,15 +599,6 @@ app.use(
 
 app.use(cookieParser(SESSION_SECRET));
 app.use(cors(corsOptions));
-app.use(express.json({
-  limit: '10kb',
-  verify: (req, res, buf) => {
-    if (req.path === '/api/stripe-webhook') {
-      req.rawBody = buf;
-    }
-  }
-}));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
