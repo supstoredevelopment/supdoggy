@@ -189,6 +189,15 @@
             font-size: 1rem;
         }
 
+        .cart-total-original {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            text-decoration: line-through;
+            margin-right: 8px;
+            font-weight: 400;
+            opacity: 0.7;
+        }
+
         .cart-total span:last-child {
             color: var(--robux-red);
             font-size: 1.1rem;
@@ -749,20 +758,22 @@
             fetchCartPrices(ids);
         }
 
+
         async function fetchCartPrices(ids) {
             try {
                 const assets = await Promise.all(
                     ids.map(id => fetch(`/api/assets/${id}`, { credentials: 'include' }).then(r => r.json()))
                 );
+
                 const itemsEl = document.getElementById('cartItems');
                 itemsEl.innerHTML = '';
-                totalRobux = 0;
+                let fullTotal = 0;   // Original full price
 
                 assets.forEach((asset, i) => {
                     const qty = cart[i]?.quantity || 1;
                     const usdPrice = asset.price || 0;
                     const robux = Math.ceil(usdPrice * ROBUX_PER_USD) * qty;
-                    totalRobux += robux;
+                    fullTotal += robux;
 
                     const row = document.createElement('div');
                     row.className = 'cart-item';
@@ -773,10 +784,14 @@
                     itemsEl.appendChild(row);
                 });
 
-                const discountedTotal = Math.ceil(totalRobux * 0.5);
-                document.getElementById('totalRobuxOriginal').textContent = totalRobux.toLocaleString();
+                const discountedTotal = Math.ceil(fullTotal * 0.5);
+
+                document.getElementById('totalRobuxOriginal').textContent = fullTotal.toLocaleString();
                 document.getElementById('totalRobux').textContent = discountedTotal.toLocaleString();
+
+                // Store discounted for payment
                 totalRobux = discountedTotal;
+
             } catch (err) {
                 console.error('Failed to load cart prices:', err);
             }
