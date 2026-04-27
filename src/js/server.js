@@ -30,6 +30,17 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(express.json({
+  limit: '10kb',
+  verify: (req, res, buf) => {
+    if (req.path === '/api/stripe-webhook') {
+      req.rawBody = buf;
+    }
+  }
+}));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const supabase = createClient(
@@ -87,15 +98,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({
-  limit: '10kb',
-  verify: (req, res, buf) => {
-    if (req.path === '/api/stripe-webhook') {
-      req.rawBody = buf;
-    }
-  }
-}));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 
 app.options('/api/stripe-webhook', (req, res) => {
