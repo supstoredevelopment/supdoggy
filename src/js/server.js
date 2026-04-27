@@ -2796,9 +2796,22 @@ async function checkRobloxOpenCloud() {
   return { status: 'ok', detail: 'Open Cloud API key valid', latency_ms: Date.now() - t };
 }
 
-app.get('/api/health', async (req, res) => {
-  const start = Date.now();
+app.get('/api/health', handleHealthCheck);
+app.post('/api/health', handleHealthCheck);
 
+async function handleHealthCheck(req, res) {
+  const start = Date.now();
+  const isPostRequest = req.method === 'POST';
+
+  // Allow forcing status via POST body or query (for testing)
+  let forcedStatus = null;
+  if (isPostRequest && req.body?.status) {
+    forcedStatus = req.body.status.toLowerCase(); // "degraded" or "error"
+  } else if (req.query.force) {
+    forcedStatus = req.query.force.toLowerCase();
+  }
+
+  // === Run real health checks ===
   const [
     stripeApi,
     stripePrices,
@@ -2836,65 +2849,89 @@ app.get('/api/health', async (req, res) => {
     },
   };
 
-  // Flatten all leaf statuses
-  const allStatuses = [
-    services.stripe.api,
-    services.stripe.prices,
-    services.stripe.fx_rates,
-    services.supabase.database,
-    services.supabase.storage,
-    services.supabase.auth,
-    services.roblox.public_api,
-    services.roblox.open_cloud,
-  ].map((s) => s.status);
+  // Determine overall status
+  let overallStatus = 'ok';
+  let hasError = false;
+  let hasDegraded = false;
 
-  const hasError = allStatuses.includes('error');
-  const hasDegraded = allStatuses.includes('degraded');
-  const overallStatus = hasError ? 'error' : hasDegraded ? 'degraded' : 'ok';
+  if (forcedStatus === 'error') {
+    overallStatus = 'error';
+    hasError = true;
+  } else if (forcedStatus === 'degraded') {
+    overallStatus = 'degraded';
+    hasDegraded = true;
+  } else {
+    const allStatuses = Object.values(services).flatMap(s => Object.values(s).map(v => v.status));
+    hasError = allStatuses.includes('error');
+    hasDegraded = allStatuses.includes('degraded');
+    overallStatus = hasError ? 'error' : hasDegraded ? 'degraded' : 'ok';
+  }
 
-  // Auto-remediation logic
+  // ── Auto-remediation + Smart BetterStack Reporting ──
   if (hasDegraded || hasError) {
-    console.warn('⚠️ Health check detected degraded/error state. Attempting auto-remediation...');
+    console.warn(`⚠️ Health check detected ${overallStatus.toUpperCase()} state at ${new Date().toISOString()}`);
 
     let remediationAttempted = false;
     let remediationSuccess = true;
 
-    // Example: Re-sync Stripe prices if prices check failed
+    // Auto-remediate Stripe prices if affected
     if (services.stripe.prices.status === 'degraded' || services.stripe.prices.status === 'error') {
       remediationAttempted = true;
       try {
-        console.log('🔄 Auto-remediating: Running Stripe asset sync...');
+        console.log('🔄 Auto-remediating Stripe prices...');
         await syncAssetsWithStripe();
         console.log('✅ Stripe sync remediation completed');
-      } catch (syncErr) {
-        console.error('❌ Stripe sync remediation failed:', syncErr.message);
+      } catch (err) {
+        console.error('❌ Stripe remediation failed:', err.message);
         remediationSuccess = false;
       }
     }
 
-    // You can extend with more targeted fixes here (e.g., re-init clients, clear cache, etc.)
+    // Build affected_resources — only include the ones that are actually degraded/error
+    const affectedResources = [];
 
-    // If remediation failed or critical error remains, report to BetterStack
-    if (!remediationSuccess || hasError) {
+    const statusForReport = overallStatus === 'error' ? 'downtime' : 'degraded';
+
+    // Stripe group
+    if (services.stripe.api.status === 'error' || services.stripe.api.status === 'degraded' ||
+      services.stripe.prices.status === 'error' || services.stripe.prices.status === 'degraded' ||
+      services.stripe.fx_rates.status === 'error' || services.stripe.fx_rates.status === 'degraded') {
+      affectedResources.push({ status_page_resource_id: "8753682", status: statusForReport }); // Payment Gateway
+      affectedResources.push({ status_page_resource_id: "8753683", status: statusForReport }); // Checkout Service
+    }
+
+    // Supabase / Database group
+    if (services.supabase.database.status === 'error' || services.supabase.database.status === 'degraded' ||
+      services.supabase.storage.status === 'error' || services.supabase.storage.status === 'degraded' ||
+      services.supabase.auth.status === 'error' || services.supabase.auth.status === 'degraded') {
+      affectedResources.push({ status_page_resource_id: "8753673", status: statusForReport }); // API
+      affectedResources.push({ status_page_resource_id: "8753674", status: statusForReport }); // Database
+      affectedResources.push({ status_page_resource_id: "8753675", status: statusForReport }); // Authentication
+    }
+
+    // Robux / Roblox group
+    if (services.roblox.public_api.status === 'error' || services.roblox.public_api.status === 'degraded' ||
+      services.roblox.open_cloud.status === 'error' || services.roblox.open_cloud.status === 'degraded') {
+      affectedResources.push({ status_page_resource_id: "8831641", status: statusForReport }); // Robux Payment Gateway
+    }
+
+    // Frontend (if overall error is very broad)
+    if (hasError) {
+      affectedResources.push({ status_page_resource_id: "8753671", status: statusForReport }); // Frontend Website
+    }
+
+    // Send report to BetterStack only if we have affected resources
+    if (affectedResources.length > 0) {
       try {
-        const reportTitle = hasError
-          ? 'Critical Service Degradation Detected'
-          : 'Degraded Performance - Auto-Remediation Attempted';
-
-        const reportMessage = `Health check detected issues at ${new Date().toISOString()}. ` +
-          `Overall status: ${overallStatus}. ` +
-          `Auto-remediation ${remediationAttempted ? (remediationSuccess ? 'succeeded' : 'failed') : 'not attempted'}. ` +
-          `Details: ${JSON.stringify(services, null, 2)}`;
-
         const payload = {
-          title: reportTitle,
-          message: reportMessage,
+          title: `${overallStatus.toUpperCase()} Detected in SupStore Backend`,
+          message: `Health check performed at ${new Date().toISOString()}.\n` +
+            `Status: ${overallStatus}\n` +
+            `Forced: ${forcedStatus || 'no'}\n` +
+            `Auto-remediation: ${remediationAttempted ? (remediationSuccess ? 'succeeded' : 'failed') : 'not needed'}`,
           report_type: 'manual',
           notify_subscribers: false,
-          affected_resources: [
-            // Add your actual resource IDs from BetterStack dashboard if needed
-            // Example: { status_page_resource_id: "your-monitor-id", status: "downtime" }
-          ],
+          affected_resources: affectedResources,
           published_at: new Date().toISOString(),
           starts_at: new Date().toISOString(),
         };
@@ -2912,27 +2949,27 @@ app.get('/api/health', async (req, res) => {
         );
 
         if (response.ok) {
-          console.log('✅ Status report sent to BetterStack');
+          console.log(`✅ BetterStack report sent successfully (${affectedResources.length} resources affected)`);
         } else {
-          const errText = await response.text();
-          console.error(`❌ Failed to send BetterStack report: ${response.status} ${errText}`);
+          console.error(`❌ Failed to send BetterStack report: ${response.status}`);
         }
-      } catch (reportErr) {
-        console.error('❌ Error sending BetterStack status report:', reportErr.message);
+      } catch (err) {
+        console.error('❌ Error sending BetterStack report:', err.message);
       }
-    } else {
-      console.log('✅ Auto-remediation successful — no external report sent');
     }
   }
 
+  // Final response
   res.status(200).json({
     status: overallStatus,
     timestamp: new Date().toISOString(),
     response_ms: Date.now() - start,
     services,
     remediation_attempted: hasDegraded || hasError,
+    forced: !!forcedStatus,
+    method: req.method,
   });
-});
+}
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
