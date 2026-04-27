@@ -16,8 +16,6 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const RELEASE_DISCOUNT = 0.5;
-
 dotenv.config();
 
 const app = express();
@@ -1112,6 +1110,70 @@ app.get('/api/testing-mode', async (req, res) => {
   res.json(config);
 });
 
+async function getValidStripePriceId(asset, currency, productId) {
+  const multi = typeof asset.stripe_prices_multi === 'string'
+    ? JSON.parse(asset.stripe_prices_multi)
+    : (asset.stripe_prices_multi || {});
+
+  const priceId = multi[currency] || multi['usd'];
+
+  if (priceId) {
+    try {
+      const price = await stripe.prices.retrieve(priceId);
+      if (price.active) return priceId;
+      console.warn(`⚠️ Price ${priceId} is inactive — will recreate`);
+    } catch (err) {
+      console.warn(`⚠️ Price ${priceId} not found in Stripe — will recreate`);
+    }
+  }
+
+  // Price is missing or stale — recreate it
+  const rate = await getExchangeRate(currency); // see below
+  const amount = Math.round(asset.price * rate * 100);
+
+  const newPrice = await stripe.prices.create({
+    product: productId,
+    unit_amount: amount,
+    currency,
+    metadata: { asset_id: asset.id.toString() },
+  });
+
+  // Persist the new price ID back to DB
+  const updatedMulti = { ...multi, [currency]: newPrice.id };
+  await supabaseAdmin.from('assets').update({
+    stripe_prices_multi: updatedMulti,
+    ...(currency === 'usd' ? { stripe_price_id: newPrice.id } : {}),
+  }).eq('id', asset.id);
+
+  console.log(`✅ Recreated price for asset ${asset.id} in ${currency}: ${newPrice.id}`);
+  return newPrice.id;
+}
+
+async function getExchangeRate(currency) {
+  if (currency === 'usd') return 1;
+  try {
+    const res = await fetch('https://api.stripe.com/v1/fx_quotes', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+        'Stripe-Version': '2025-04-30.preview',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        'to_currency': currency,
+        'from_currencies[]': 'usd',
+        'lock_duration': 'none',
+        'usage[type]': 'payment',
+      }),
+    });
+    const data = await res.json();
+    return data?.rates?.usd?.exchange_rate || 1;
+  } catch {
+    const fallback = { eur: 0.92, gbp: 0.79, jpy: 149.50, cad: 1.36, aud: 1.53, chf: 0.88, sek: 10.50, nok: 10.70, dkk: 6.86 };
+    return fallback[currency] || 1;
+  }
+}
+
 app.post('/api/create-test-checkout', checkoutLimiter, authenticateToken, async (req, res) => {
   try {
     const testingEnabled = await isTestingModeEnabled();
@@ -1379,7 +1441,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
         const multi = typeof product.stripe_prices_multi === 'string'
           ? JSON.parse(product.stripe_prices_multi)
           : product.stripe_prices_multi;
-        stripePriceId = multi[checkoutCurrency] || multi['usd'];
+        stripePriceId = await getValidStripePriceId(product, checkoutCurrency, product.stripe_product_id);
       }
 
       if (!stripePriceId) {
@@ -1959,7 +2021,7 @@ app.use((err, req, res, next) => {
 });
 
 async function syncAssetsWithStripe() {
-  console.log('🔄 Starting Stripe synchronization with 50% release discount...');
+  console.log('🔄 Starting Stripe synchronization...');
 
   const currencies = ['usd', 'eur', 'gbp', 'jpy', 'cad', 'aud', 'chf', 'sek', 'nok', 'dkk'];
   const exchangeRates = { 'usd': 1 };
@@ -2034,9 +2096,7 @@ async function syncAssetsWithStripe() {
 
         for (const currency of currencies) {
           const rate = exchangeRates[currency];
-          // Apply 50% release discount to the original price
-          const discountedPrice = asset.price * RELEASE_DISCOUNT;
-          const amount = Math.round(discountedPrice * rate * 100);
+          const amount = Math.round(asset.price * rate * 100);
 
           try {
             const existingPrices = await stripe.prices.list({ product: productId, currency, limit: 1 });
@@ -2059,34 +2119,27 @@ async function syncAssetsWithStripe() {
             });
             priceIds[currency] = price.id;
             updatedCount++;
-            console.log(`✨ Created discounted price for asset ${asset.id} in ${currency.toUpperCase()}: ${price.id}`);
+            console.log(`✨ Created price for asset ${asset.id} in ${currency.toUpperCase()}: ${price.id}`);
           } catch (err) {
             console.error(`❌ Error creating price for ${currency}:`, err.message);
             errorCount++;
           }
         }
 
-        if (priceIds['usd']) {
-          priceId = priceIds['usd'];
-          needsUpdate = true;
-        }
+        const hasNewPrices = Object.keys(priceIds).length > 0;
+        if (priceIds['usd']) priceId = priceIds['usd'];
 
-        if (needsUpdate) {
-          const { error: updateError } = await supabaseAdmin
-            .from('assets')
-            .update({
-              stripe_product_id: productId,
-              stripe_price_id: priceId,
-              stripe_prices_multi: priceIds
-            })
-            .eq('id', asset.id);
+        const { error: updateError } = await supabaseAdmin.from('assets').update({
+          stripe_product_id: productId,
+          stripe_price_id: priceId,
+          stripe_prices_multi: priceIds
+        }).eq('id', asset.id);
 
-          if (updateError) {
-            console.error(`❌ Failed to update asset ${asset.id}:`, updateError);
-            errorCount++;
-          } else {
-            console.log(`✅ Updated asset ${asset.id} with Stripe IDs (50% discount applied)`);
-          }
+        if (updateError) {
+          console.error(`❌ Failed to update asset ${asset.id}:`, updateError);
+          errorCount++;
+        } else {
+          console.log(`✅ Updrated asset ${asset.id} with Stripe IDs`);
         }
 
         syncedCount++;
