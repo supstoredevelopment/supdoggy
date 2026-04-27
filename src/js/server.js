@@ -2127,7 +2127,7 @@ async function syncAssetsWithStripe() {
         if (!productId) {
           const product = await stripe.products.create({
             name: asset.title,
-            description: asset.description || '',
+            ...(asset.description ? { description: asset.description } : {}),
             metadata: { asset_id: asset.id.toString() },
           });
           productId = product.id;
