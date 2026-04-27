@@ -1110,6 +1110,7 @@ app.get('/api/testing-mode', async (req, res) => {
   res.json(config);
 });
 
+
 async function getValidStripePriceId(asset, currency, productId) {
   const multi = typeof asset.stripe_prices_multi === 'string'
     ? JSON.parse(asset.stripe_prices_multi)
@@ -1125,10 +1126,12 @@ async function getValidStripePriceId(asset, currency, productId) {
     } catch (err) {
       console.warn(`⚠️ Price ${priceId} not found in Stripe — will recreate`);
     }
+  } else {
+    console.warn(`⚠️ No price ID found for asset ${asset.id} in ${currency} — will create`);
   }
 
-  // Price is missing or stale — recreate it
-  const rate = await getExchangeRate(currency); // see below
+  // Price is missing, stale, or never existed — create it
+  const rate = await getExchangeRate(currency);
   const amount = Math.round((asset.price / 2) * rate * 100);
 
   const newPrice = await stripe.prices.create({
@@ -1138,14 +1141,13 @@ async function getValidStripePriceId(asset, currency, productId) {
     metadata: { asset_id: asset.id.toString() },
   });
 
-  // Persist the new price ID back to DB
   const updatedMulti = { ...multi, [currency]: newPrice.id };
   await supabaseAdmin.from('assets').update({
     stripe_prices_multi: updatedMulti,
     ...(currency === 'usd' ? { stripe_price_id: newPrice.id } : {}),
   }).eq('id', asset.id);
 
-  console.log(`✅ Recreated price for asset ${asset.id} in ${currency}: ${newPrice.id}`);
+  console.log(`✅ Created price for asset ${asset.id} in ${currency}: ${newPrice.id} (amount: ${amount})`);
   return newPrice.id;
 }
 
@@ -1449,7 +1451,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       }
 
       lineItems.push({ price: stripePriceId, quantity: item.quantity });
-      totalAmount += product.price * item.quantity;
+      totalAmount += (product.price / 2) * item.quantity;  // was product.price * item.quantity
       paidAssetIds.push(product.id);
     }
 
