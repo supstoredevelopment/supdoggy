@@ -2654,6 +2654,78 @@ app.post('/api/robux/webhook', async (req, res) => {
   }
 });
 
+const HEALTH_CHECK_TIMEOUT = 5000; // 5s per service
+
+async function withTimeout(promise, ms) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('timeout')), ms);
+  });
+  try {
+    const result = await Promise.race([promise, timeout]);
+    clearTimeout(timer);
+    return result;
+  } catch (err) {
+    clearTimeout(timer);
+    throw err;
+  }
+}
+
+async function checkStripe() {
+  const start = Date.now();
+  await stripe.balance.retrieve();
+  return { status: 'ok', latency_ms: Date.now() - start };
+}
+
+async function checkSupabase() {
+  const start = Date.now();
+  const { error } = await supabaseAdmin
+    .from('assets')
+    .select('id', { count: 'exact', head: true })
+    .limit(1);
+  if (error) throw new Error(error.message);
+  return { status: 'ok', latency_ms: Date.now() - start };
+}
+
+async function checkRoblox() {
+  const start = Date.now();
+  const res = await fetch('https://users.roblox.com/v1/users/1', {
+    signal: AbortSignal.timeout(HEALTH_CHECK_TIMEOUT),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return { status: 'ok', latency_ms: Date.now() - start };
+}
+
+app.get('/api/health', async (req, res) => {
+  const [stripe_result, supabase_result, roblox_result] = await Promise.allSettled([
+    withTimeout(checkStripe(), HEALTH_CHECK_TIMEOUT),
+    withTimeout(checkSupabase(), HEALTH_CHECK_TIMEOUT),
+    withTimeout(checkRoblox(), HEALTH_CHECK_TIMEOUT),
+  ]);
+
+  const fmt = (r) =>
+    r.status === 'fulfilled'
+      ? r.value
+      : { status: 'error', error: r.reason?.message || 'unknown' };
+
+  const services = {
+    stripe: fmt(stripe_result),
+    supabase: fmt(supabase_result),
+    roblox: fmt(roblox_result),
+  };
+
+  const allOk = Object.values(services).every((s) => s.status === 'ok');
+
+  const payload = {
+    status: allOk ? 'ok' : 'degraded',
+    timestamp: new Date().toISOString(),
+    services,
+  };
+
+  // Return 200 always — let Better Uptime detect issues via keyword matching
+  res.status(200).json(payload);
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
