@@ -81,7 +81,63 @@
             display: block;
         }
 
-        /* Cart summary */
+        /* Blocked Screen */
+        .blocked-box {
+            text-align: center;
+            padding: 2rem 1rem;
+        }
+
+        .blocked-icon {
+            font-size: 5rem;
+            color: #ff4444;
+            margin-bottom: 1.5rem;
+        }
+
+        .blocked-box h2 {
+            font-size: 1.6rem;
+            margin-bottom: 0.8rem;
+            color: #ff7070;
+        }
+
+        .blocked-box p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
+        .countdown {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #ff7070;
+            margin: 1.2rem 0;
+            letter-spacing: 4px;
+            background: rgba(255, 68, 68, 0.1);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .blocked-info {
+            margin: 2rem 0;
+            text-align: left;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .info-row span:last-child {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Original styles */
         .cart-summary {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--border);
@@ -138,7 +194,6 @@
             font-size: 1.1rem;
         }
 
-        /* Form */
         label {
             display: block;
             font-size: 0.85rem;
@@ -170,19 +225,6 @@
             margin-right: 4px;
         }
 
-        .price-discounted {
-            color: #fff;
-            font-weight: 700;
-        }
-
-        .cart-total-original {
-            font-size: 0.82rem;
-            color: var(--text-muted);
-            text-decoration: line-through;
-            margin-right: 6px;
-            font-weight: 400;
-        }
-
         input[type="text"] {
             width: 100%;
             background: rgba(255, 255, 255, 0.05);
@@ -198,10 +240,6 @@
 
         input[type="text"]:focus {
             border-color: var(--robux-red);
-        }
-
-        input[type="text"]::placeholder {
-            color: var(--text-muted);
         }
 
         .input-hint {
@@ -241,7 +279,6 @@
         .btn-robux:disabled {
             background: #555;
             cursor: not-allowed;
-            transform: none;
         }
 
         .btn-outline {
@@ -256,13 +293,13 @@
             color: #fff;
         }
 
-        /* Step 2 - waiting */
-        .waiting-box {
+        .waiting-box,
+        .complete-box {
             text-align: center;
             padding: 1rem 0;
         }
 
-        .waiting-box .roblox-username {
+        .roblox-username {
             font-size: 1.3rem;
             font-weight: 700;
             color: var(--robux-red);
@@ -278,45 +315,6 @@
             text-align: center;
         }
 
-        .gamepass-link-box p {
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            margin-bottom: 0.75rem;
-        }
-
-        .gamepass-link-box .price-tag {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-        }
-
-        .gamepass-link-box .price-tag .robux-symbol {
-            font-size: 1.1rem;
-            margin-right: 4px;
-        }
-
-        .btn-roblox-open {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: #00a2ff;
-            color: #fff;
-            padding: 0.7rem 1.4rem;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 0.95rem;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-            transition: background 0.2s;
-        }
-
-        .btn-roblox-open:hover {
-            background: #0088d4;
-        }
-
-        /* Polling status */
         .poll-status {
             margin-top: 1.5rem;
             padding: 1rem;
@@ -350,10 +348,6 @@
             border-color: rgba(0, 255, 120, 0.3);
             background: rgba(0, 255, 120, 0.07);
             color: #00ff78;
-        }
-
-        .poll-status.success .spinner {
-            display: none;
         }
 
         .steps-indicator {
@@ -424,41 +418,10 @@
             color: #fff;
         }
 
-        /* Step 3 - complete */
-        .complete-box {
-            text-align: center;
-            padding: 1rem 0;
-        }
-
         .complete-icon {
             font-size: 4rem;
             color: var(--robux-red);
             margin-bottom: 1rem;
-        }
-
-        .complete-box h2 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .complete-box p {
-            color: var(--text-dim);
-            font-size: 0.95rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            padding: 0.4rem 0;
-            border-bottom: 1px solid var(--border);
-            color: var(--text-muted);
-        }
-
-        .info-row span:last-child {
-            color: #fff;
-            font-weight: 600;
         }
     </style>
 </head>
@@ -470,6 +433,7 @@
             <h1>Pay with Robux</h1>
             <p>Complete your purchase using your Roblox account</p>
         </div>
+
         <div class="steps-indicator">
             <div class="step-dot active" id="dot1">1</div>
             <div class="step-line"></div>
@@ -477,7 +441,10 @@
             <div class="step-line"></div>
             <div class="step-dot" id="dot3">3</div>
         </div>
+
         <div class="card">
+
+            <!-- Step 1: Username -->
             <div class="step active" id="step1">
                 <div class="cart-summary" id="cartSummary">
                     <h3>Your Order</h3>
@@ -508,6 +475,7 @@
                 </a>
             </div>
 
+            <!-- Step 2: Waiting -->
             <div class="step" id="step2">
                 <div class="waiting-box">
                     <p style="color: var(--text-muted); font-size:0.9rem;">Paying as</p>
@@ -541,6 +509,7 @@
                 </div>
             </div>
 
+            <!-- Step 3: Success -->
             <div class="step" id="step3">
                 <div class="complete-box">
                     <div class="complete-icon"><i class="fas fa-check-circle"></i></div>
@@ -568,7 +537,43 @@
                     </a>
                 </div>
             </div>
+
+            <!-- NEW Blocked Screen -->
+            <div class="step" id="stepBlocked">
+                <div class="blocked-box">
+                    <div class="blocked-icon"><i class="fas fa-times-circle"></i></div>
+                    <h2>Payment Method Blocked</h2>
+                    <p>You are temporarily blocked from using Robux payment.<br>This action was taken due to suspicious
+                        username activity.</p>
+
+                    <div class="countdown" id="countdown">05:00</div>
+
+                    <div class="blocked-info">
+                        <div class="info-row">
+                            <span>Blocked Username</span>
+                            <span id="blockedUserDisplay">—</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Duration</span>
+                            <span>5 minutes</span>
+                        </div>
+                        <div class="info-row">
+                            <span>Reason</span>
+                            <span style="color:#ff7070;">Security Protection</span>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-outline" onclick="goToStep(1)" style="margin-top:1rem;">
+                        <i class="fas fa-arrow-left"></i> Try Another Username
+                    </button>
+                    <a href="/p/assets" class="btn btn-outline" style="margin-top:0.75rem;">
+                        <i class="fas fa-store"></i> Return to Store
+                    </a>
+                </div>
+            </div>
+
         </div>
+
         <div class="back-link">
             <a href="/p/assets">← Return to store without paying</a>
         </div>
@@ -583,18 +588,19 @@
         let gamepassId = null;
         let pollInterval = null;
 
-        // Blocked usernames protection
         const BLOCKED_USERNAMES = ["hugooootje343", "supdoggydev"];
         const BLOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
         let blockUntil = 0;
+        let countdownInterval = null;
 
         function isBlocked() {
             return Date.now() < blockUntil;
         }
 
-        function blockUser() {
+        function blockUser(username) {
             blockUntil = Date.now() + BLOCK_DURATION_MS;
             localStorage.setItem('robuxBlockUntil', blockUntil.toString());
+            localStorage.setItem('blockedUsername', username.toLowerCase());
         }
 
         function loadBlockStatus() {
@@ -605,76 +611,47 @@
             }
         }
 
-        window.addEventListener('load', () => {
-            loadBlockStatus();
-            loadCart();
-        });
+        function startCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
 
-        function loadCart() {
-            try {
-                cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            } catch { cart = []; }
+            const countdownEl = document.getElementById('countdown');
 
-            if (!cart.length) {
-                document.getElementById('cartItems').innerHTML =
-                    '<p style="color:var(--text-muted);font-size:0.85rem;">No items in cart.</p>';
-                document.getElementById('totalRobux').textContent = '0';
-                document.getElementById('continueBtn').disabled = true;
-                return;
-            }
-            const ids = cart.map(i => i.id);
-            fetchCartPrices(ids);
+            countdownInterval = setInterval(() => {
+                const remaining = Math.max(0, Math.floor((blockUntil - Date.now()) / 1000));
+
+                if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    goToStep(1);
+                    return;
+                }
+
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                countdownEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
         }
 
-        async function fetchCartPrices(ids) {
-            try {
-                const assets = await Promise.all(
-                    ids.map(id => fetch(`/api/assets/${id}`, { credentials: 'include' }).then(r => r.json()))
-                );
-                const itemsEl = document.getElementById('cartItems');
-                itemsEl.innerHTML = '';
-                totalRobux = 0;
-
-                assets.forEach((asset, i) => {
-                    const qty = cart[i]?.quantity || 1;
-                    const usdPrice = asset.price || 0;
-                    const robux = Math.ceil(usdPrice * ROBUX_PER_USD) * qty;
-                    totalRobux += robux;
-
-                    const row = document.createElement('div');
-                    row.className = 'cart-item';
-                    row.innerHTML = `
-                <span>${asset.title}${qty > 1 ? ` ×${qty}` : ''}</span>
-                <span><span class="robux-symbol">R$</span> ${robux.toLocaleString()}</span>
-            `;
-                    itemsEl.appendChild(row);
-                });
-
-                const discountedTotal = Math.ceil(totalRobux * 0.5);
-                document.getElementById('totalRobuxOriginal').textContent = totalRobux.toLocaleString();
-                document.getElementById('totalRobux').textContent = discountedTotal.toLocaleString();
-                totalRobux = discountedTotal;
-            } catch (err) {
-                console.error('Failed to load cart prices:', err);
-            }
+        function showBlockedScreen(username) {
+            document.getElementById('blockedUserDisplay').textContent = username || "—";
+            goToStep(4);           // 4 = blocked screen
+            startCountdown();
         }
 
         function goToStep(n) {
-            document.querySelectorAll('.step').forEach((el, i) => {
-                el.classList.toggle('active', i + 1 === n);
-            });
+            document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+            if (n === 4) {
+                document.getElementById('stepBlocked').classList.add('active');
+            } else {
+                document.getElementById(`step${n}`).classList.add('active');
+            }
+
+            // Update step dots
             for (let i = 1; i <= 3; i++) {
                 const dot = document.getElementById(`dot${i}`);
                 dot.classList.remove('active', 'done');
-                if (i < n) {
-                    dot.classList.add('done');
-                    dot.innerHTML = '<i class="fas fa-check" style="font-size:0.6rem"></i>';
-                } else if (i === n) {
-                    dot.classList.add('active');
-                    dot.textContent = i;
-                } else {
-                    dot.textContent = i;
-                }
+                if (i < n && n !== 4) dot.classList.add('done'), dot.innerHTML = '<i class="fas fa-check" style="font-size:0.6rem"></i>';
+                else if (i === n && n !== 4) dot.classList.add('active'), dot.textContent = i;
+                else dot.textContent = i;
             }
         }
 
@@ -694,11 +671,10 @@
             const input = document.getElementById('robloxUsername');
             let username = input.value.trim();
 
-            // Check if user is currently blocked
+            // Check block status
             if (isBlocked()) {
-                const remainingSeconds = Math.ceil((blockUntil - Date.now()) / 1000);
-                const minutes = Math.ceil(remainingSeconds / 60);
-                return showError('step1Error', `You are temporarily blocked. Please try again in ${minutes} minute(s).`);
+                showBlockedScreen(localStorage.getItem('blockedUsername'));
+                return;
             }
 
             if (!username || username.length < 3 || username.length > 20) {
@@ -709,10 +685,11 @@
                 return showError('step1Error', 'Roblox usernames can only contain letters, numbers, and underscores.');
             }
 
-            // Check for blocked usernames (case insensitive)
+            // Check blocked usernames
             if (BLOCKED_USERNAMES.includes(username.toLowerCase())) {
-                blockUser();
-                return showError('step1Error', 'This username has been temporarily blocked from using Robux payment. Please try again in 5 minutes.');
+                blockUser(username);
+                showBlockedScreen(username);
+                return;
             }
 
             const btn = document.getElementById('continueBtn');
@@ -757,6 +734,54 @@
             }
         }
 
+        function loadCart() {
+            try {
+                cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            } catch { cart = []; }
+
+            if (!cart.length) {
+                document.getElementById('cartItems').innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No items in cart.</p>';
+                document.getElementById('totalRobux').textContent = '0';
+                document.getElementById('continueBtn').disabled = true;
+                return;
+            }
+            const ids = cart.map(i => i.id);
+            fetchCartPrices(ids);
+        }
+
+        async function fetchCartPrices(ids) {
+            try {
+                const assets = await Promise.all(
+                    ids.map(id => fetch(`/api/assets/${id}`, { credentials: 'include' }).then(r => r.json()))
+                );
+                const itemsEl = document.getElementById('cartItems');
+                itemsEl.innerHTML = '';
+                totalRobux = 0;
+
+                assets.forEach((asset, i) => {
+                    const qty = cart[i]?.quantity || 1;
+                    const usdPrice = asset.price || 0;
+                    const robux = Math.ceil(usdPrice * ROBUX_PER_USD) * qty;
+                    totalRobux += robux;
+
+                    const row = document.createElement('div');
+                    row.className = 'cart-item';
+                    row.innerHTML = `
+                <span>${asset.title}${qty > 1 ? ` ×${qty}` : ''}</span>
+                <span><span class="robux-symbol">R$</span> ${robux.toLocaleString()}</span>
+            `;
+                    itemsEl.appendChild(row);
+                });
+
+                const discountedTotal = Math.ceil(totalRobux * 0.5);
+                document.getElementById('totalRobuxOriginal').textContent = totalRobux.toLocaleString();
+                document.getElementById('totalRobux').textContent = discountedTotal.toLocaleString();
+                totalRobux = discountedTotal;
+            } catch (err) {
+                console.error('Failed to load cart prices:', err);
+            }
+        }
+
         function startPolling() {
             let attempts = 0;
             const maxAttempts = 60;
@@ -765,9 +790,7 @@
                 document.getElementById('pollStatusText').textContent = `Checking for payment... (${attempts}/${maxAttempts})`;
 
                 try {
-                    const res = await fetch(`/api/robux/check-payment/${pendingOrderId}`, {
-                        credentials: 'include',
-                    });
+                    const res = await fetch(`/api/robux/check-payment/${pendingOrderId}`, { credentials: 'include' });
                     const data = await res.json();
 
                     if (data.paid) {
@@ -801,6 +824,11 @@
                 goToStep(3);
             }, 1200);
         }
+
+        window.addEventListener('load', () => {
+            loadBlockStatus();
+            loadCart();
+        });
     </script>
 
     <script src="/js/testing-mode.js"></script>
