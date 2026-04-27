@@ -470,7 +470,6 @@
             <h1>Pay with Robux</h1>
             <p>Complete your purchase using your Roblox account</p>
         </div>
-
         <div class="steps-indicator">
             <div class="step-dot active" id="dot1">1</div>
             <div class="step-line"></div>
@@ -478,7 +477,6 @@
             <div class="step-line"></div>
             <div class="step-dot" id="dot3">3</div>
         </div>
-
         <div class="card">
             <div class="step active" id="step1">
                 <div class="cart-summary" id="cartSummary">
@@ -497,14 +495,11 @@
                         </span>
                     </div>
                 </div>
-
                 <label for="robloxUsername">Your Roblox Username</label>
                 <input type="text" id="robloxUsername" placeholder="e.g. Builderman" autocomplete="off"
                     spellcheck="false">
                 <p class="input-hint">Enter your exact Roblox username. This is used to verify your payment.</p>
-
                 <div class="error-msg" id="step1Error"></div>
-
                 <button class="btn btn-robux" id="continueBtn" onclick="handleContinue()">
                     <i class="fas fa-arrow-right"></i> Continue to Payment
                 </button>
@@ -517,7 +512,6 @@
                 <div class="waiting-box">
                     <p style="color: var(--text-muted); font-size:0.9rem;">Paying as</p>
                     <div class="roblox-username" id="displayUsername">—</div>
-
                     <div class="gamepass-link-box">
                         <p>A gamepass has been created for your order. Click below to open it in Roblox and complete the
                             purchase.</p>
@@ -533,18 +527,14 @@
                             <i class="fas fa-external-link-alt"></i> Open Gamepass on Roblox
                         </a>
                     </div>
-
                     <div style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.5rem;">
                         After purchasing, come back here, we'll detect it automatically.
                     </div>
-
                     <div class="poll-status" id="pollStatus">
                         <div class="spinner"></div>
                         <span id="pollStatusText">Waiting for your Roblox purchase...</span>
                     </div>
-
                     <div class="error-msg" id="step2Error"></div>
-
                     <button class="btn btn-outline" style="margin-top:1.5rem;" onclick="goToStep(1)">
                         <i class="fas fa-arrow-left"></i> Change Username
                     </button>
@@ -556,7 +546,6 @@
                     <div class="complete-icon"><i class="fas fa-check-circle"></i></div>
                     <h2>Purchase Confirmed!</h2>
                     <p>Your Robux payment was received and your assets are now available.</p>
-
                     <div style="margin: 1.5rem 0; text-align:left;">
                         <div class="info-row">
                             <span>Roblox Username</span>
@@ -571,7 +560,6 @@
                             <span style="color:#00ff78;">Completed</span>
                         </div>
                     </div>
-
                     <a href="/p/dashboard" class="btn btn-robux" style="margin-top:0.5rem;">
                         <i class="fas fa-th-large"></i> Go to My Dashboard
                     </a>
@@ -581,7 +569,6 @@
                 </div>
             </div>
         </div>
-
         <div class="back-link">
             <a href="/p/assets">← Return to store without paying</a>
         </div>
@@ -589,7 +576,6 @@
 
     <script>
         const ROBUX_PER_USD = 263;
-
         let cart = [];
         let totalRobux = 0;
         let robloxUsername = '';
@@ -597,7 +583,30 @@
         let gamepassId = null;
         let pollInterval = null;
 
+        // Blocked usernames protection
+        const BLOCKED_USERNAMES = ["hugooootje343", "supdoggydev"];
+        const BLOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+        let blockUntil = 0;
+
+        function isBlocked() {
+            return Date.now() < blockUntil;
+        }
+
+        function blockUser() {
+            blockUntil = Date.now() + BLOCK_DURATION_MS;
+            localStorage.setItem('robuxBlockUntil', blockUntil.toString());
+        }
+
+        function loadBlockStatus() {
+            const saved = localStorage.getItem('robuxBlockUntil');
+            if (saved) {
+                blockUntil = parseInt(saved);
+                if (isNaN(blockUntil)) blockUntil = 0;
+            }
+        }
+
         window.addEventListener('load', () => {
+            loadBlockStatus();
             loadCart();
         });
 
@@ -613,7 +622,6 @@
                 document.getElementById('continueBtn').disabled = true;
                 return;
             }
-
             const ids = cart.map(i => i.id);
             fetchCartPrices(ids);
         }
@@ -623,7 +631,6 @@
                 const assets = await Promise.all(
                     ids.map(id => fetch(`/api/assets/${id}`, { credentials: 'include' }).then(r => r.json()))
                 );
-
                 const itemsEl = document.getElementById('cartItems');
                 itemsEl.innerHTML = '';
                 totalRobux = 0;
@@ -637,9 +644,9 @@
                     const row = document.createElement('div');
                     row.className = 'cart-item';
                     row.innerHTML = `
-                    <span>${asset.title}${qty > 1 ? ` ×${qty}` : ''}</span>
-                    <span><span class="robux-symbol">R$</span> ${robux.toLocaleString()}</span>
-                `;
+                <span>${asset.title}${qty > 1 ? ` ×${qty}` : ''}</span>
+                <span><span class="robux-symbol">R$</span> ${robux.toLocaleString()}</span>
+            `;
                     itemsEl.appendChild(row);
                 });
 
@@ -656,13 +663,18 @@
             document.querySelectorAll('.step').forEach((el, i) => {
                 el.classList.toggle('active', i + 1 === n);
             });
-
             for (let i = 1; i <= 3; i++) {
                 const dot = document.getElementById(`dot${i}`);
                 dot.classList.remove('active', 'done');
-                if (i < n) dot.classList.add('done'), dot.innerHTML = '<i class="fas fa-check" style="font-size:0.6rem"></i>';
-                else if (i === n) dot.classList.add('active'), dot.textContent = i;
-                else dot.textContent = i;
+                if (i < n) {
+                    dot.classList.add('done');
+                    dot.innerHTML = '<i class="fas fa-check" style="font-size:0.6rem"></i>';
+                } else if (i === n) {
+                    dot.classList.add('active');
+                    dot.textContent = i;
+                } else {
+                    dot.textContent = i;
+                }
             }
         }
 
@@ -671,20 +683,36 @@
             el.textContent = msg;
             el.style.display = 'block';
         }
+
         function hideError(elId) {
             document.getElementById(elId).style.display = 'none';
         }
 
         async function handleContinue() {
             hideError('step1Error');
-            const input = document.getElementById('robloxUsername');
-            robloxUsername = input.value.trim();
 
-            if (!robloxUsername || robloxUsername.length < 3 || robloxUsername.length > 20) {
+            const input = document.getElementById('robloxUsername');
+            let username = input.value.trim();
+
+            // Check if user is currently blocked
+            if (isBlocked()) {
+                const remainingSeconds = Math.ceil((blockUntil - Date.now()) / 1000);
+                const minutes = Math.ceil(remainingSeconds / 60);
+                return showError('step1Error', `You are temporarily blocked. Please try again in ${minutes} minute(s).`);
+            }
+
+            if (!username || username.length < 3 || username.length > 20) {
                 return showError('step1Error', 'Please enter a valid Roblox username (3–20 characters).');
             }
-            if (!/^[a-zA-Z0-9_]+$/.test(robloxUsername)) {
+
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
                 return showError('step1Error', 'Roblox usernames can only contain letters, numbers, and underscores.');
+            }
+
+            // Check for blocked usernames (case insensitive)
+            if (BLOCKED_USERNAMES.includes(username.toLowerCase())) {
+                blockUser();
+                return showError('step1Error', 'This username has been temporarily blocked from using Robux payment. Please try again in 5 minutes.');
             }
 
             const btn = document.getElementById('continueBtn');
@@ -697,7 +725,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({
-                        robloxUsername,
+                        robloxUsername: username,
                         cart: cart.map(i => ({ ...i, quantity: i.quantity || 1 })),
                         totalRobux,
                     }),
@@ -707,18 +735,18 @@
                     const err = await res.json().catch(() => ({}));
                     throw new Error(err.error || 'Failed to create Roblox gamepass');
                 }
-                const data = await res.json();
 
+                const data = await res.json();
                 pendingOrderId = data.orderId;
                 gamepassId = data.gamepassId;
+                robloxUsername = username;
 
-                document.getElementById('displayUsername').textContent = robloxUsername;
+                document.getElementById('displayUsername').textContent = username;
                 document.getElementById('gamepassPrice').textContent = totalRobux.toLocaleString();
                 document.getElementById('gamepassLink').href = data.gamepassUrl;
 
                 goToStep(2);
                 document.getElementById('gamepassPriceOriginal').textContent = (totalRobux / 0.5).toLocaleString();
-                document.getElementById('gamepassPrice').textContent = totalRobux.toLocaleString();
                 startPolling();
 
             } catch (err) {
@@ -731,12 +759,10 @@
 
         function startPolling() {
             let attempts = 0;
-            const maxAttempts = 60; 
-
+            const maxAttempts = 60;
             pollInterval = setInterval(async () => {
                 attempts++;
-                document.getElementById('pollStatusText').textContent =
-                    `Checking for payment... (${attempts}/${maxAttempts})`;
+                document.getElementById('pollStatusText').textContent = `Checking for payment... (${attempts}/${maxAttempts})`;
 
                 try {
                     const res = await fetch(`/api/robux/check-payment/${pendingOrderId}`, {
@@ -771,13 +797,12 @@
             setTimeout(() => {
                 document.getElementById('confirmedUsername').textContent = robloxUsername;
                 document.getElementById('confirmedAmount').textContent = totalRobux.toLocaleString();
-
                 try { localStorage.removeItem('cart'); } catch { }
-
                 goToStep(3);
             }, 1200);
         }
     </script>
+
     <script src="/js/testing-mode.js"></script>
 </body>
 
