@@ -2799,28 +2799,30 @@ async function checkRobloxOpenCloud() {
 app.get('/api/health', handleHealthCheck);
 app.post('/api/health', handleHealthCheck);
 
+// ─────────────────────────────────────────────────────────────
+// Updated /api/health - Force now properly triggers reporting
+// ─────────────────────────────────────────────────────────────
+
+app.get('/api/health', handleHealthCheck);
+app.post('/api/health', handleHealthCheck);
+
 async function handleHealthCheck(req, res) {
   const start = Date.now();
   const isPostRequest = req.method === 'POST';
 
-  // Allow forcing status via POST body or query (for testing)
+  // Force status via POST body or ?force=...
   let forcedStatus = null;
   if (isPostRequest && req.body?.status) {
-    forcedStatus = req.body.status.toLowerCase(); // "degraded" or "error"
+    forcedStatus = String(req.body.status).toLowerCase();
   } else if (req.query.force) {
-    forcedStatus = req.query.force.toLowerCase();
+    forcedStatus = String(req.query.force).toLowerCase();
   }
 
-  // === Run real health checks ===
+  // Run real health checks
   const [
-    stripeApi,
-    stripePrices,
-    stripeFx,
-    supabaseDb,
-    supabaseStorage,
-    supabaseAuth,
-    robloxPublic,
-    robloxOpenCloud,
+    stripeApi, stripePrices, stripeFx,
+    supabaseDb, supabaseStorage, supabaseAuth,
+    robloxPublic, robloxOpenCloud,
   ] = await Promise.allSettled([
     withTimeout(checkStripeApi()),
     withTimeout(checkStripePrices()),
@@ -2833,23 +2835,12 @@ async function handleHealthCheck(req, res) {
   ]);
 
   const services = {
-    stripe: {
-      api: fmtResult(stripeApi),
-      prices: fmtResult(stripePrices),
-      fx_rates: fmtResult(stripeFx),
-    },
-    supabase: {
-      database: fmtResult(supabaseDb),
-      storage: fmtResult(supabaseStorage),
-      auth: fmtResult(supabaseAuth),
-    },
-    roblox: {
-      public_api: fmtResult(robloxPublic),
-      open_cloud: fmtResult(robloxOpenCloud),
-    },
+    stripe: { api: fmtResult(stripeApi), prices: fmtResult(stripePrices), fx_rates: fmtResult(stripeFx) },
+    supabase: { database: fmtResult(supabaseDb), storage: fmtResult(supabaseStorage), auth: fmtResult(supabaseAuth) },
+    roblox: { public_api: fmtResult(robloxPublic), open_cloud: fmtResult(robloxOpenCloud) },
   };
 
-  // Determine overall status
+  // Determine status
   let overallStatus = 'ok';
   let hasError = false;
   let hasDegraded = false;
@@ -2867,68 +2858,59 @@ async function handleHealthCheck(req, res) {
     overallStatus = hasError ? 'error' : hasDegraded ? 'degraded' : 'ok';
   }
 
-  // ── Auto-remediation + Smart BetterStack Reporting ──
+  // Auto-remediation + Reporting
   if (hasDegraded || hasError) {
-    console.warn(`⚠️ Health check detected ${overallStatus.toUpperCase()} state at ${new Date().toISOString()}`);
+    console.warn(`⚠️ ${overallStatus.toUpperCase()} state detected (forced: ${!!forcedStatus})`);
 
     let remediationAttempted = false;
     let remediationSuccess = true;
 
-    // Auto-remediate Stripe prices if affected
-    if (services.stripe.prices.status === 'degraded' || services.stripe.prices.status === 'error') {
+    if (services.stripe.prices.status !== 'ok') {
       remediationAttempted = true;
       try {
-        console.log('🔄 Auto-remediating Stripe prices...');
         await syncAssetsWithStripe();
-        console.log('✅ Stripe sync remediation completed');
-      } catch (err) {
-        console.error('❌ Stripe remediation failed:', err.message);
+        remediationSuccess = true;
+      } catch (e) {
         remediationSuccess = false;
       }
     }
 
-    // Build affected_resources — only include the ones that are actually degraded/error
-    const affectedResources = [];
-
     const statusForReport = overallStatus === 'error' ? 'downtime' : 'degraded';
 
-    // Stripe group
-    if (services.stripe.api.status === 'error' || services.stripe.api.status === 'degraded' ||
-      services.stripe.prices.status === 'error' || services.stripe.prices.status === 'degraded' ||
-      services.stripe.fx_rates.status === 'error' || services.stripe.fx_rates.status === 'degraded') {
+    // Always report these when forced (or when actually affected)
+    const affectedResources = [];
+
+    // Stripe / Payment related
+    if (hasError || hasDegraded || forcedStatus) {
       affectedResources.push({ status_page_resource_id: "8753682", status: statusForReport }); // Payment Gateway
       affectedResources.push({ status_page_resource_id: "8753683", status: statusForReport }); // Checkout Service
     }
 
-    // Supabase / Database group
-    if (services.supabase.database.status === 'error' || services.supabase.database.status === 'degraded' ||
-      services.supabase.storage.status === 'error' || services.supabase.storage.status === 'degraded' ||
-      services.supabase.auth.status === 'error' || services.supabase.auth.status === 'degraded') {
+    // Supabase / Backend
+    if (hasError || hasDegraded || forcedStatus) {
       affectedResources.push({ status_page_resource_id: "8753673", status: statusForReport }); // API
       affectedResources.push({ status_page_resource_id: "8753674", status: statusForReport }); // Database
       affectedResources.push({ status_page_resource_id: "8753675", status: statusForReport }); // Authentication
     }
 
-    // Robux / Roblox group
-    if (services.roblox.public_api.status === 'error' || services.roblox.public_api.status === 'degraded' ||
-      services.roblox.open_cloud.status === 'error' || services.roblox.open_cloud.status === 'degraded') {
+    // Robux
+    if (hasError || hasDegraded || forcedStatus) {
       affectedResources.push({ status_page_resource_id: "8831641", status: statusForReport }); // Robux Payment Gateway
     }
 
-    // Frontend (if overall error is very broad)
-    if (hasError) {
+    // Frontend (only on full error)
+    if (hasError || forcedStatus === 'error') {
       affectedResources.push({ status_page_resource_id: "8753671", status: statusForReport }); // Frontend Website
     }
 
-    // Send report to BetterStack only if we have affected resources
+    // Send report
     if (affectedResources.length > 0) {
       try {
         const payload = {
-          title: `${overallStatus.toUpperCase()} Detected in SupStore Backend`,
-          message: `Health check performed at ${new Date().toISOString()}.\n` +
-            `Status: ${overallStatus}\n` +
-            `Forced: ${forcedStatus || 'no'}\n` +
-            `Auto-remediation: ${remediationAttempted ? (remediationSuccess ? 'succeeded' : 'failed') : 'not needed'}`,
+          title: `${overallStatus.toUpperCase()} - Forced Test from Health Check`,
+          message: `Forced ${overallStatus} test at ${new Date().toISOString()}\n` +
+            `Method: ${req.method} | Forced: ${forcedStatus || 'no'}\n` +
+            `Remediation: ${remediationAttempted ? (remediationSuccess ? 'OK' : 'FAILED') : 'none'}`,
           report_type: 'manual',
           notify_subscribers: false,
           affected_resources: affectedResources,
@@ -2936,30 +2918,26 @@ async function handleHealthCheck(req, res) {
           starts_at: new Date().toISOString(),
         };
 
-        const response = await fetch(
-          'https://uptime.betterstack.com/api/v2/status-pages/240023/status-reports',
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': 'Bearer bxNvHS1mJzjv4w87n14cfaSZ',
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-          }
-        );
+        const response = await fetch('https://uptime.betterstack.com/api/v2/status-pages/240023/status-reports', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer bxNvHS1mJzjv4w87n14cfaSZ',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
 
         if (response.ok) {
-          console.log(`✅ BetterStack report sent successfully (${affectedResources.length} resources affected)`);
+          console.log(`✅ BetterStack report sent (${affectedResources.length} resources marked ${statusForReport})`);
         } else {
-          console.error(`❌ Failed to send BetterStack report: ${response.status}`);
+          console.error(`❌ BetterStack report failed: ${response.status}`);
         }
       } catch (err) {
-        console.error('❌ Error sending BetterStack report:', err.message);
+        console.error('❌ Failed to send report to BetterStack:', err.message);
       }
     }
   }
 
-  // Final response
   res.status(200).json({
     status: overallStatus,
     timestamp: new Date().toISOString(),
@@ -2968,6 +2946,7 @@ async function handleHealthCheck(req, res) {
     remediation_attempted: hasDegraded || hasError,
     forced: !!forcedStatus,
     method: req.method,
+    affected_resources_count: affectedResources?.length || 0,   // for debugging
   });
 }
 
