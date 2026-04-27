@@ -2796,8 +2796,6 @@ async function checkRobloxOpenCloud() {
   return { status: 'ok', detail: 'Open Cloud API key valid', latency_ms: Date.now() - t };
 }
 
-// ── Health endpoint ───────────────────────────────────────────────────────────
-
 app.get('/api/health', async (req, res) => {
   const start = Date.now();
 
@@ -2838,7 +2836,7 @@ app.get('/api/health', async (req, res) => {
     },
   };
 
-  // Flatten all leaf statuses to determine overall health
+  // Flatten all leaf statuses
   const allStatuses = [
     services.stripe.api,
     services.stripe.prices,
@@ -2854,11 +2852,85 @@ app.get('/api/health', async (req, res) => {
   const hasDegraded = allStatuses.includes('degraded');
   const overallStatus = hasError ? 'error' : hasDegraded ? 'degraded' : 'ok';
 
+  // Auto-remediation logic
+  if (hasDegraded || hasError) {
+    console.warn('⚠️ Health check detected degraded/error state. Attempting auto-remediation...');
+
+    let remediationAttempted = false;
+    let remediationSuccess = true;
+
+    // Example: Re-sync Stripe prices if prices check failed
+    if (services.stripe.prices.status === 'degraded' || services.stripe.prices.status === 'error') {
+      remediationAttempted = true;
+      try {
+        console.log('🔄 Auto-remediating: Running Stripe asset sync...');
+        await syncAssetsWithStripe();
+        console.log('✅ Stripe sync remediation completed');
+      } catch (syncErr) {
+        console.error('❌ Stripe sync remediation failed:', syncErr.message);
+        remediationSuccess = false;
+      }
+    }
+
+    // You can extend with more targeted fixes here (e.g., re-init clients, clear cache, etc.)
+
+    // If remediation failed or critical error remains, report to BetterStack
+    if (!remediationSuccess || hasError) {
+      try {
+        const reportTitle = hasError
+          ? 'Critical Service Degradation Detected'
+          : 'Degraded Performance - Auto-Remediation Attempted';
+
+        const reportMessage = `Health check detected issues at ${new Date().toISOString()}. ` +
+          `Overall status: ${overallStatus}. ` +
+          `Auto-remediation ${remediationAttempted ? (remediationSuccess ? 'succeeded' : 'failed') : 'not attempted'}. ` +
+          `Details: ${JSON.stringify(services, null, 2)}`;
+
+        const payload = {
+          title: reportTitle,
+          message: reportMessage,
+          report_type: 'manual',
+          notify_subscribers: false,
+          affected_resources: [
+            // Add your actual resource IDs from BetterStack dashboard if needed
+            // Example: { status_page_resource_id: "your-monitor-id", status: "downtime" }
+          ],
+          published_at: new Date().toISOString(),
+          starts_at: new Date().toISOString(),
+        };
+
+        const response = await fetch(
+          'https://uptime.betterstack.com/api/v2/status-pages/240023/status-reports',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer bxNvHS1mJzjv4w87n14cfaSZ',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          }
+        );
+
+        if (response.ok) {
+          console.log('✅ Status report sent to BetterStack');
+        } else {
+          const errText = await response.text();
+          console.error(`❌ Failed to send BetterStack report: ${response.status} ${errText}`);
+        }
+      } catch (reportErr) {
+        console.error('❌ Error sending BetterStack status report:', reportErr.message);
+      }
+    } else {
+      console.log('✅ Auto-remediation successful — no external report sent');
+    }
+  }
+
   res.status(200).json({
     status: overallStatus,
     timestamp: new Date().toISOString(),
     response_ms: Date.now() - start,
     services,
+    remediation_attempted: hasDegraded || hasError,
   });
 });
 
