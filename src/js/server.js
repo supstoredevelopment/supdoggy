@@ -1129,7 +1129,7 @@ async function getValidStripePriceId(asset, currency, productId) {
 
   // Price is missing or stale — recreate it
   const rate = await getExchangeRate(currency); // see below
-  const amount = Math.round(asset.price * rate * 100);
+  const amount = Math.round((asset.price / 2) * rate * 100);
 
   const newPrice = await stripe.prices.create({
     product: productId,
@@ -2096,7 +2096,7 @@ async function syncAssetsWithStripe() {
 
         for (const currency of currencies) {
           const rate = exchangeRates[currency];
-          const amount = Math.round(asset.price * rate * 100);
+          const amount = Math.round((asset.price / 2) * rate * 100);
 
           try {
             const existingPrices = await stripe.prices.list({ product: productId, currency, limit: 1 });
