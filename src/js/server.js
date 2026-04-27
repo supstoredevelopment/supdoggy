@@ -1163,7 +1163,7 @@ async function getValidStripePriceId(asset, currency, productId) {
   if (!validProductId) {
     const product = await stripe.products.create({
       name: asset.title,
-      description: asset.description || '',
+      ...(asset.description ? { description: asset.description } : {}),
       metadata: { asset_id: asset.id.toString() },
     });
     validProductId = product.id;
