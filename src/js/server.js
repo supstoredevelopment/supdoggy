@@ -1130,12 +1130,35 @@ async function getValidStripePriceId(asset, currency, productId) {
     console.warn(`⚠️ No price ID found for asset ${asset.id} in ${currency} — will create`);
   }
 
-  // Price is missing, stale, or never existed — create it
+  // Verify product exists, recreate if not
+  let validProductId = productId;
+  if (validProductId) {
+    try {
+      await stripe.products.retrieve(validProductId);
+    } catch (err) {
+      console.warn(`⚠️ Product ${validProductId} not found in Stripe — will recreate`);
+      validProductId = null;
+    }
+  }
+
+  if (!validProductId) {
+    const product = await stripe.products.create({
+      name: asset.title,
+      description: asset.description || '',
+      metadata: { asset_id: asset.id.toString() },
+    });
+    validProductId = product.id;
+    await supabaseAdmin.from('assets').update({
+      stripe_product_id: validProductId,
+    }).eq('id', asset.id);
+    console.log(`✅ Recreated product for asset ${asset.id}: ${validProductId}`);
+  }
+
   const rate = await getExchangeRate(currency);
   const amount = Math.round((asset.price / 2) * rate * 100);
 
   const newPrice = await stripe.prices.create({
-    product: productId,
+    product: validProductId,
     unit_amount: amount,
     currency,
     metadata: { asset_id: asset.id.toString() },
