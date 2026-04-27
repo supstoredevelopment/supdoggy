@@ -2654,76 +2654,212 @@ app.post('/api/robux/webhook', async (req, res) => {
   }
 });
 
-const HEALTH_CHECK_TIMEOUT = 5000; // 5s per service
+// ── Health check helpers ──────────────────────────────────────────────────────
 
-async function withTimeout(promise, ms) {
+const HEALTH_TIMEOUT = 6000;
+
+function withTimeout(promise, ms = HEALTH_TIMEOUT) {
   let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error('timeout')), ms);
-  });
-  try {
-    const result = await Promise.race([promise, timeout]);
-    clearTimeout(timer);
-    return result;
-  } catch (err) {
-    clearTimeout(timer);
-    throw err;
-  }
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('timeout')), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
 }
 
-async function checkStripe() {
-  const start = Date.now();
+function fmtResult(settled) {
+  return settled.status === 'fulfilled'
+    ? settled.value
+    : { status: 'error', error: settled.reason?.message || 'unknown' };
+}
+
+// ── Individual checks ─────────────────────────────────────────────────────────
+
+async function checkStripeApi() {
+  const t = Date.now();
+  // Proves secret key works and Stripe API is reachable
   await stripe.balance.retrieve();
-  return { status: 'ok', latency_ms: Date.now() - start };
+  return { status: 'ok', detail: 'API key valid', latency_ms: Date.now() - t };
 }
 
-async function checkSupabase() {
-  const start = Date.now();
-  const { error } = await supabaseAdmin
+async function checkStripePrices() {
+  const t = Date.now();
+  // Pull a sample of assets that have Stripe price IDs and verify they're still active
+  const { data: assets, error } = await supabaseAdmin
     .from('assets')
-    .select('id', { count: 'exact', head: true })
-    .limit(1);
-  if (error) throw new Error(error.message);
-  return { status: 'ok', latency_ms: Date.now() - start };
+    .select('id, title, stripe_price_id')
+    .not('stripe_price_id', 'is', null)
+    .limit(3);
+
+  if (error) throw new Error(`DB error: ${error.message}`);
+  if (!assets?.length) return { status: 'ok', detail: 'no assets to check', latency_ms: Date.now() - t };
+
+  const results = [];
+  for (const asset of assets) {
+    try {
+      const price = await stripe.prices.retrieve(asset.stripe_price_id);
+      results.push({
+        asset_id: asset.id,
+        price_id: asset.stripe_price_id,
+        active: price.active,
+      });
+    } catch (err) {
+      results.push({
+        asset_id: asset.id,
+        price_id: asset.stripe_price_id,
+        active: false,
+        error: err.message,
+      });
+    }
+  }
+
+  const allActive = results.every((r) => r.active);
+  return {
+    status: allActive ? 'ok' : 'degraded',
+    detail: allActive ? 'sampled prices are active' : 'one or more prices inactive or missing',
+    checked: results.length,
+    prices: results,
+    latency_ms: Date.now() - t,
+  };
 }
 
-async function checkRoblox() {
-  const start = Date.now();
-  const res = await fetch('https://users.roblox.com/v1/users/1', {
-    signal: AbortSignal.timeout(HEALTH_CHECK_TIMEOUT),
+async function checkStripeFx() {
+  const t = Date.now();
+  const res = await fetch('https://api.stripe.com/v1/fx_quotes', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+      'Stripe-Version': '2025-04-30.preview',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      to_currency: 'eur',
+      'from_currencies[]': 'usd',
+      lock_duration: 'none',
+      'usage[type]': 'payment',
+    }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return { status: 'ok', latency_ms: Date.now() - start };
+  const data = await res.json();
+  const rate = data?.rates?.usd?.exchange_rate;
+  if (!rate) throw new Error('no exchange rate returned');
+  return { status: 'ok', detail: 'FX USD→EUR reachable', usd_to_eur: rate, latency_ms: Date.now() - t };
 }
 
+async function checkSupabaseDb() {
+  const t = Date.now();
+  const { count, error } = await supabaseAdmin
+    .from('assets')
+    .select('*', { count: 'exact', head: true });
+  if (error) throw new Error(error.message);
+  return { status: 'ok', detail: `assets table reachable (${count} rows)`, latency_ms: Date.now() - t };
+}
+
+async function checkSupabaseStorage() {
+  const t = Date.now();
+  const { data, error } = await supabaseAdmin.storage.from('assets').list('', { limit: 1 });
+  if (error) throw new Error(error.message);
+  return { status: 'ok', detail: 'storage bucket reachable', latency_ms: Date.now() - t };
+}
+
+async function checkSupabaseAuth() {
+  const t = Date.now();
+  // Verify the admin auth client can make calls (doesn't expose user data)
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 });
+  if (error) throw new Error(error.message);
+  return { status: 'ok', detail: 'auth admin reachable', latency_ms: Date.now() - t };
+}
+
+async function checkRobloxPublic() {
+  const t = Date.now();
+  const res = await fetch('https://users.roblox.com/v1/users/1');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (!data?.id) throw new Error('unexpected response shape');
+  return { status: 'ok', detail: 'Roblox Users API reachable', latency_ms: Date.now() - t };
+}
+
+async function checkRobloxOpenCloud() {
+  const t = Date.now();
+  if (!process.env.ROBLOX_API_KEY || !process.env.ROBLOX_UNIVERSE_ID) {
+    return { status: 'skipped', detail: 'ROBLOX_API_KEY or ROBLOX_UNIVERSE_ID not configured' };
+  }
+  // List game passes — lightweight read that proves the API key and universe ID are valid
+  const res = await fetch(
+    `https://apis.roblox.com/game-passes/v1/universes/${process.env.ROBLOX_UNIVERSE_ID}/game-passes?limit=1`,
+    { headers: { 'x-api-key': process.env.ROBLOX_API_KEY } }
+  );
+  if (res.status === 401) throw new Error('API key invalid or unauthorized');
+  if (res.status === 404) throw new Error('Universe ID not found');
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return { status: 'ok', detail: 'Open Cloud API key valid', latency_ms: Date.now() - t };
+}
+
+// ── Health endpoint ───────────────────────────────────────────────────────────
+
 app.get('/api/health', async (req, res) => {
-  const [stripe_result, supabase_result, roblox_result] = await Promise.allSettled([
-    withTimeout(checkStripe(), HEALTH_CHECK_TIMEOUT),
-    withTimeout(checkSupabase(), HEALTH_CHECK_TIMEOUT),
-    withTimeout(checkRoblox(), HEALTH_CHECK_TIMEOUT),
+  const start = Date.now();
+
+  const [
+    stripeApi,
+    stripePrices,
+    stripeFx,
+    supabaseDb,
+    supabaseStorage,
+    supabaseAuth,
+    robloxPublic,
+    robloxOpenCloud,
+  ] = await Promise.allSettled([
+    withTimeout(checkStripeApi()),
+    withTimeout(checkStripePrices()),
+    withTimeout(checkStripeFx()),
+    withTimeout(checkSupabaseDb()),
+    withTimeout(checkSupabaseStorage()),
+    withTimeout(checkSupabaseAuth()),
+    withTimeout(checkRobloxPublic()),
+    withTimeout(checkRobloxOpenCloud()),
   ]);
 
-  const fmt = (r) =>
-    r.status === 'fulfilled'
-      ? r.value
-      : { status: 'error', error: r.reason?.message || 'unknown' };
-
   const services = {
-    stripe: fmt(stripe_result),
-    supabase: fmt(supabase_result),
-    roblox: fmt(roblox_result),
+    stripe: {
+      api: fmtResult(stripeApi),
+      prices: fmtResult(stripePrices),
+      fx_rates: fmtResult(stripeFx),
+    },
+    supabase: {
+      database: fmtResult(supabaseDb),
+      storage: fmtResult(supabaseStorage),
+      auth: fmtResult(supabaseAuth),
+    },
+    roblox: {
+      public_api: fmtResult(robloxPublic),
+      open_cloud: fmtResult(robloxOpenCloud),
+    },
   };
 
-  const allOk = Object.values(services).every((s) => s.status === 'ok');
+  // Flatten all leaf statuses to determine overall health
+  const allStatuses = [
+    services.stripe.api,
+    services.stripe.prices,
+    services.stripe.fx_rates,
+    services.supabase.database,
+    services.supabase.storage,
+    services.supabase.auth,
+    services.roblox.public_api,
+    services.roblox.open_cloud,
+  ].map((s) => s.status);
 
-  const payload = {
-    status: allOk ? 'ok' : 'degraded',
+  const hasError = allStatuses.includes('error');
+  const hasDegraded = allStatuses.includes('degraded');
+  const overallStatus = hasError ? 'error' : hasDegraded ? 'degraded' : 'ok';
+
+  res.status(200).json({
+    status: overallStatus,
     timestamp: new Date().toISOString(),
+    response_ms: Date.now() - start,
     services,
-  };
-
-  // Return 200 always — let Better Uptime detect issues via keyword matching
-  res.status(200).json(payload);
+  });
 });
 
 const PORT = process.env.PORT || 3001;
