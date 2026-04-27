@@ -9,7 +9,7 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto'; 
+import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -587,7 +587,7 @@ app.use(
         fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
         imgSrc: ["'self'", "data:", "https:", "blob:"],
         connectSrc: ["'self'", "https://api.stripe.com", "https://api.emailjs.com", "https://api.exchangerate-api.com", process.env.SUPABASE_URL, process.env.FRONTEND_URL || "'self'", "http://localhost:3000", "http://localhost:3001"].filter(Boolean),
-        frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com", "https://www.youtube.com", "https://youtube.com"],
+        frameSrc: ["'self'", "https://js.stripe.com", "https://hooks.stripe.com", "https://www.youtube.com", "https://youtube.com", "https://supstore.betteruptime.com"],
         childSrc: ["'self'", "https://www.youtube.com", "https://youtube.com"],
         mediaSrc: ["'self'", "https://www.youtube.com", "https://youtube.com", "https://*.googlevideo.com"],
         objectSrc: ["'none'"],
