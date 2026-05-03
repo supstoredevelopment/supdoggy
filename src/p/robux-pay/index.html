@@ -773,7 +773,7 @@
                 assets.forEach((asset, i) => {
                     const qty = cart[i]?.quantity || 1;
                     const usdPrice = asset.price || 0;
-                    const robux = Math.ceil(usdPrice * ROBUX_RATE) * qty;
+                    const robux = Math.ceil(usdPrice * ROBUX_PER_USD) * qty;
                     fullTotal += robux;
 
                     const row = document.createElement('div');
