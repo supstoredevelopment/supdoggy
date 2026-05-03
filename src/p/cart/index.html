@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <script src="/js/discount.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SupStore — Cart</title>
@@ -1483,15 +1484,16 @@
                 const price = Number(item.price) || 0;
                 totalUSD += price;
 
-                const discountedPrice = price * 0.5;
+                const discountedPrice = DISCOUNT.apply(price);
                 const discountedFormatted = discountedPrice.toFixed(2);
 
                 const priceHTML = converting
                     ? `<span class="price-val">${fmtCur(discountedPrice)}</span><span class="price-usd">$${discountedFormatted} USD</span>`
-                    : `
-                <span style="text-decoration:line-through; color:#888; font-size:0.85rem;">$${price.toFixed(2)}</span>
-                <span class="price-val" style="color:#00d4ff;">$${discountedFormatted}</span>
-              `;
+                    : DISCOUNT.active()
+                        ? `<span style="text-decoration:line-through;color:#888;font-size:0.85rem;">$${price.toFixed(2)}</span>
+               <span class="price-val" style="color:#00d4ff;">$${discountedFormatted}</span>`
+                        : `<span class="price-val">$${discountedFormatted}</span>`;
+
 
                 const card = document.createElement('div');
                 card.className = 'cart-item';
@@ -1515,7 +1517,7 @@
                 list.appendChild(card);
             });
 
-            const discountedTotalUSD = totalUSD * 0.5;           // keep as number
+            const discountedTotalUSD = DISCOUNT.apply(totalUSD);         // keep as number
             const discountedTotalStr = discountedTotalUSD.toFixed(2);
 
             // Subtotal (always shows the discounted price in USD)
@@ -1533,11 +1535,10 @@
                 totalNote.textContent = `Converted at Stripe's live rate`;
                 totalNote.style.display = 'block';
             } else {
-                // USD only - show strikethrough original + discounted
-                totalEl.innerHTML = `
-            <span style="text-decoration:line-through; color:#888; font-size:1.1rem;">$${totalUSD.toFixed(2)}</span><br>
-            <span style="color:#00d4ff; font-weight:700;">$${discountedTotalStr}</span>
-        `;
+                totalEl.innerHTML = DISCOUNT.active()
+                    ? `<span style="text-decoration:line-through;color:#888;font-size:1.1rem;">$${totalUSD.toFixed(2)}</span><br>
+               <span style="color:#00d4ff;font-weight:700;">$${discountedTotalStr}</span>`
+                    : `<span style="color:#00d4ff;font-weight:700;">$${discountedTotalStr}</span>`;
                 totalUSDEl.style.display = 'none';
                 totalNote.style.display = 'none';
             }

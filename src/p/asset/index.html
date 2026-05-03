@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 
+
 <head>
+    <script src="/js/discount.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SupStore - Asset Detail</title>
@@ -1895,28 +1897,19 @@
         <span class="review-link" onclick="document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'})">(${count} ratings)</span>
     </div>` : ''}
 </div>
-<div class="sidebar-price-block">
-    <div class="price-label">Price</div>
-    ${isFree 
-    
-        ? `<div class="sidebar-price" style="color:var(--accent);font-size:1.5rem;">FREE</div>`
-        : `
-            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                <span style="text-decoration:line-through; color:#888; font-size:1.05rem; font-weight:500;">$${(asset.price).toFixed(2)}</span>
-                <span style="color:#00d4ff; font-weight:800; font-size:1.65rem; line-height:1;">$${(asset.price * 0.5).toFixed(2)}</span>
-                <span style="font-size:0.95rem; color:#aaa; background:rgba(0,212,255,0.1); padding:2px 8px; border-radius:6px;">
-                    ${Math.ceil(asset.price * 0.5 * 263)} R$
-                </span>
-            </div>
-            <div style="margin-top:6px; font-size:0.82rem; color:#00d4ff; font-weight:600;">
-                50% Release Discount
-            </div>
-        `
-    }
-    <div class="price-note" style="margin-top:8px;">
-        ${isFree ? 'No payment required' : 'Taxes not included • Instant access after purchase'}
+    <div class="sidebar-price-block">
+        <div class="price-label">Price</div>
+        ${isFree
+                        ? `<div class="sidebar-price" style="color:var(--accent);font-size:1.5rem;">FREE</div>`
+                        : `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                   ${DISCOUNT.displayPrice(asset.price, { showRobux: true, accentColor: '#00d4ff' })}
+               </div>
+               ${DISCOUNT.active() ? '<div style="margin-top:6px;font-size:0.82rem;color:#00d4ff;font-weight:600;">50% Release Discount</div>' : ''}`
+                    }
+        <div class="price-note" style="margin-top:8px;">
+            ${isFree ? 'No payment required' : 'Taxes not included • Instant access after purchase'}
+        </div>
     </div>
-</div>
                             ${sidebarActionsHTML}
                             <div class="sidebar-details">
                                 <h4>Details</h4>
@@ -2014,7 +2007,7 @@
                     <div class="carousel-card-body">
                         <div class="carousel-card-title">${asset.title}</div>
                         <div class="carousel-card-footer">
-                            <div class="carousel-card-price">${asset.price === 0 ? 'FREE' : '$' + asset.price.toLocaleString()}</div>
+                              <div class="carousel-card-price">${asset.price === 0 ? 'FREE' : '$' + DISCOUNT.apply(asset.price).toFixed(2)}</div>
                             ${score > 0 ? `<div class="carousel-card-stars">${renderStars(score, '0.6rem')}</div>` : ''}
                         </div>
                     </div>`;

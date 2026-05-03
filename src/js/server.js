@@ -13,8 +13,16 @@ import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const DISCOUNT_END = new Date('2026-05-03T23:59:59Z');
+function discountActive() { return Date.now() < DISCOUNT_END.getTime(); }
+function applyDiscount(price) { return discountActive() ? price * 0.5 : price; }
+
 
 dotenv.config();
 
@@ -1178,7 +1186,7 @@ async function getValidStripePriceId(asset, currency, productId) {
   }
 
   const rate = await getExchangeRate(currency);
-  const amount = Math.round((asset.price / 2) * rate * 100);
+  const amount = Math.round(applyDiscount(asset.price) * rate * 100);
 
   const newPrice = await stripe.prices.create({
     product: validProductId,
@@ -1497,7 +1505,7 @@ app.post('/api/create-checkout-session', checkoutLimiter, authenticateToken, asy
       }
 
       lineItems.push({ price: stripePriceId, quantity: item.quantity });
-      totalAmount += (product.price / 2) * item.quantity;  // was product.price * item.quantity
+      totalAmount += applyDiscount(product.price) * item.quantity;
       paidAssetIds.push(product.id);
     }
 
@@ -2144,7 +2152,7 @@ async function syncAssetsWithStripe() {
 
         for (const currency of currencies) {
           const rate = exchangeRates[currency];
-          const amount = Math.round((asset.price / 2) * rate * 100);
+          const amount = Math.round(applyDiscount(asset.price) * rate * 100);
 
           try {
             const existingPrices = await stripe.prices.list({ product: productId, currency, limit: 1 });
@@ -2378,8 +2386,9 @@ app.post('/api/robux/create-gamepass', robuxLimiter, authenticateToken, async (r
       const product = products.find(p => p.id === item.id);
       if (!product) return res.status(400).json({ error: `Product ${item.id} not found` });
       expectedRobuxBeforeDiscount += Math.ceil(product.price * ROBUX_PER_USD) * item.quantity;
+
     }
-    const expectedRobux = Math.ceil(expectedRobuxBeforeDiscount * 0.5);
+    const expectedRobux = Math.ceil(applyDiscount(expectedRobuxBeforeDiscount));
 
     if (expectedRobux !== totalRobux) {
       console.warn(`⚠️ Robux mismatch — client: ${totalRobux} | server: ${expectedRobux}`);

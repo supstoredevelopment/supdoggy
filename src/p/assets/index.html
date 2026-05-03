@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <script src="/js/discount.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SupStore - All Assets</title>
@@ -1282,20 +1283,14 @@
                             ${renderStars(score, count)}
                             ${count > 0 ? `<span class="rating-count">(${count})</span>` : ''}
                         </div>` : ''}
-                     <div class="asset-card-price">
+    <div class="asset-card-price">
     ${isOwned
                         ? '<span style="color:var(--accent);font-weight:700;font-size:0.82rem;"><i class="fas fa-check-circle"></i> In your library</span>'
-                        : isFree
-                            ? '<span style="color:var(--accent);font-weight:800;">FREE</span>'
-                            : `
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; line-height: 1.1;">
-                    <span style="text-decoration: line-through; color: #888; font-size: 0.78rem;">$${(asset.price).toFixed(2)}</span>
-                    <span style="color: #00d4ff; font-weight: 700; font-size: 0.98rem;">$${(asset.price * 0.5).toFixed(2)}</span>
-                    <span style="font-size: 0.76rem; color: #aaa; margin-left: 4px;">(${Math.ceil(asset.price * 0.5 * 263)} R$)</span>
-                </div>
-            `
+                        : `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;line-height:1.1;">
+               ${DISCOUNT.displayPrice(asset.price, { showRobux: true })}
+           </div>`
                     }
-</div>
+    </div>
                     </div>`;
 
                 grid.appendChild(el);
@@ -1338,43 +1333,25 @@
         }
 
 
+
         function startCountdown() {
             const discountBar = document.getElementById('discount-bar');
-            const countdownEl = document.getElementById('countdown');
-            const closeBtn = document.getElementById('close-discount');
+            if (!discountBar) return;
 
-            // Target: May 4th 2026, 23:59:59
-            const targetDate = new Date('2026-05-03T23:59:59').getTime();
-
-            function updateCountdown() {
-                const now = new Date().getTime();
-                const distance = targetDate - now;
-
-                if (distance < 0) {
-                    discountBar.style.display = 'none';
-                    return;
-                }
-
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                countdownEl.innerHTML = `
-            <span>${days}d</span>
-            <span>${hours.toString().padStart(2, '0')}h</span>
-            <span>${minutes.toString().padStart(2, '0')}m</span>
-            <span>${seconds.toString().padStart(2, '0')}s</span>
-        `;
+            // Hide the whole banner if discount is over
+            if (!DISCOUNT.active()) {
+                discountBar.style.display = 'none';
+                return;
             }
 
-            const timer = setInterval(updateCountdown, 1000);
-            updateCountdown(); // initial
+            DISCOUNT.startCountdown('countdown');
 
-            closeBtn.addEventListener('click', () => {
-                discountBar.style.display = 'none';
-                clearInterval(timer);
-            });
+            const closeBtn = document.getElementById('close-discount');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    discountBar.style.display = 'none';
+                });
+            }
         }
 
         async function init() {

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SupStore - Pay with Robux</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="/js/discount.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
@@ -459,14 +460,14 @@
                     <h3>Your Order</h3>
                     <div id="cartItems"></div>
                     <hr class="cart-divider">
-                    <div style="margin-bottom:0.4rem;">
+                    <div id="discountBadgeRow" style="margin-bottom:0.4rem;display:none;">
                         <span class="discount-badge">50% Release Discount</span>
                     </div>
                     <div class="cart-total">
                         <span>Total</span>
                         <span>
-                            <span class="cart-total-original"><span class="robux-symbol">R$</span> <span
-                                    id="totalRobuxOriginal">—</span></span>
+                            <span class="cart-total-original" id="originalPriceRow" style="display:none;"><span
+                                    class="robux-symbol">R$</span> <span id="totalRobuxOriginal">—</span></span>
                             <span class="robux-symbol">R$</span> <span id="totalRobux">—</span>
                         </span>
                     </div>
@@ -492,12 +493,12 @@
                     <div class="gamepass-link-box">
                         <p>A gamepass has been created for your order. Click below to open it in Roblox and complete the
                             purchase.</p>
-                        <div style="text-align:center; margin-bottom:0.75rem;">
+                        <div id="discountBadgeRow2" style="text-align:center;margin-bottom:0.75rem;display:none;">
                             <span class="discount-badge">50% Release Discount</span>
                         </div>
                         <div class="price-tag">
-                            <span class="price-original"><span class="robux-symbol">R$</span><span
-                                    id="gamepassPriceOriginal">—</span></span>
+                            <span class="price-original" id="gamepassOriginalRow" style="display:none;"><span
+                                    class="robux-symbol">R$</span><span id="gamepassPriceOriginal">—</span></span>
                             <span class="robux-symbol">R$</span><span id="gamepassPrice">—</span>
                         </div>
                         <a class="btn-roblox-open" id="gamepassLink" href="#" target="_blank">
@@ -589,7 +590,7 @@
     </div>
 
     <script>
-        const ROBUX_PER_USD = 263;
+        const ROBUX_PER_USD = DISCOUNT.ROBUX_RATE;
         let cart = [];
         let totalRobux = 0;
         let robloxUsername = '';
@@ -767,30 +768,35 @@
 
                 const itemsEl = document.getElementById('cartItems');
                 itemsEl.innerHTML = '';
-                let fullTotal = 0;   // Original full price
+                let fullTotal = 0;
 
                 assets.forEach((asset, i) => {
                     const qty = cart[i]?.quantity || 1;
                     const usdPrice = asset.price || 0;
-                    const robux = Math.ceil(usdPrice * ROBUX_PER_USD) * qty;
+                    const robux = Math.ceil(usdPrice * ROBUX_RATE) * qty;
                     fullTotal += robux;
 
                     const row = document.createElement('div');
                     row.className = 'cart-item';
                     row.innerHTML = `
-                <span>${asset.title}${qty > 1 ? ` ×${qty}` : ''}</span>
-                <span><span class="robux-symbol">R$</span> ${robux.toLocaleString()}</span>
-            `;
+                    <span>${asset.title}${qty > 1 ? ` ×${qty}` : ''}</span>
+                    <span><span class="robux-symbol">R$</span> ${robux.toLocaleString()}</span>`;
                     itemsEl.appendChild(row);
                 });
 
-                const discountedTotal = Math.ceil(fullTotal * 0.5);
+                const finalTotal = Math.ceil(DISCOUNT.apply(fullTotal));
 
-                document.getElementById('totalRobuxOriginal').textContent = fullTotal.toLocaleString();
-                document.getElementById('totalRobux').textContent = discountedTotal.toLocaleString();
+                if (DISCOUNT.active()) {
+                    document.getElementById('discountBadgeRow').style.display = '';
+                    document.getElementById('discountBadgeRow2').style.display = '';
+                    document.getElementById('originalPriceRow').style.display = '';
+                    document.getElementById('gamepassOriginalRow').style.display = '';
+                    document.getElementById('totalRobuxOriginal').textContent = fullTotal.toLocaleString();
+                    document.getElementById('gamepassPriceOriginal').textContent = fullTotal.toLocaleString();
+                }
 
-                // Store discounted for payment
-                totalRobux = discountedTotal;
+                document.getElementById('totalRobux').textContent = finalTotal.toLocaleString();
+                totalRobux = finalTotal;
 
             } catch (err) {
                 console.error('Failed to load cart prices:', err);
