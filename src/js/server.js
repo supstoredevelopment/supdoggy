@@ -20,8 +20,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const DISCOUNT_END = new Date('2026-05-03T23:59:59Z');
+const msUntilExpiry = DISCOUNT_END.getTime() - Date.now();
 function discountActive() { return Date.now() < DISCOUNT_END.getTime(); }
 function applyDiscount(price) { return discountActive() ? price * 0.5 : price; }
+
 
 
 dotenv.config();
@@ -2212,6 +2214,19 @@ async function syncAssetsWithStripe() {
   }
 }
 
+
+if (msUntilExpiry > 0) {
+  console.log(`⏰ Stripe resync scheduled in ${Math.round(msUntilExpiry / 60000)} minutes (discount expiry)`);
+  setTimeout(() => {
+    console.log('⏰ Discount expired — resyncing Stripe prices to full price...');
+    syncAssetsWithStripe().catch(err =>
+      console.error('❌ Post-discount Stripe sync failed:', err)
+    );
+  }, msUntilExpiry + 5000); // +5s buffer
+} else {
+  console.log('ℹ️ Discount already expired — Stripe sync will use full prices');
+}
+
 const ROBUX_PER_USD = parseFloat(process.env.ROBUX_PER_USD || '80');
 
 
@@ -2921,40 +2936,40 @@ async function handleHealthCheck(req, res) {
     affectedResourcesCount = affectedResources.length;
 
     // Send report to BetterStack
-    try {
-      const payload = {
-        title: `${overallStatus.toUpperCase()} Detected - ${forcedStatus ? 'Forced Test' : 'Health Check'}`,
-        message: `Health check at ${new Date().toISOString()}\n` +
-          `Status: ${overallStatus}\n` +
-          `Forced: ${forcedStatus || 'no'}\n` +
-          `Remediation: ${remediationAttempted ? (remediationSuccess ? 'succeeded' : 'failed') : 'none'}`,
-        report_type: 'manual',
-        notify_subscribers: false,
-        affected_resources: affectedResources,
-        published_at: new Date().toISOString(),
-        starts_at: new Date().toISOString(),
-      };
+    // try {
+    //   const payload = {
+    //     title: `${overallStatus.toUpperCase()} Detected - ${forcedStatus ? 'Forced Test' : 'Health Check'}`,
+    //     message: `Health check at ${new Date().toISOString()}\n` +
+    //       `Status: ${overallStatus}\n` +
+    //       `Forced: ${forcedStatus || 'no'}\n` +
+    //       `Remediation: ${remediationAttempted ? (remediationSuccess ? 'succeeded' : 'failed') : 'none'}`,
+    //     report_type: 'manual',
+    //     notify_subscribers: false,
+    //     affected_resources: affectedResources,
+    //     published_at: new Date().toISOString(),
+    //     starts_at: new Date().toISOString(),
+    //   };
 
-      const response = await fetch(
-        'https://uptime.betterstack.com/api/v2/status-pages/240023/status-reports',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer bxNvHS1mJzjv4w87n14cfaSZ',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+    //   const response = await fetch(
+    //     'https://uptime.betterstack.com/api/v2/status-pages/240023/status-reports',
+    //     {
+    //       method: 'POST',
+    //       headers: {
+    //         'Authorization': 'Bearer bxNvHS1mJzjv4w87n14cfaSZ',
+    //         'Content-Type': 'application/json',
+    //       },
+    //       body: JSON.stringify(payload),
+    //     }
+    //   );
 
-      if (response.ok) {
-        console.log(`✅ BetterStack report sent successfully (${affectedResourcesCount} resources marked as ${statusForReport})`);
-      } else {
-        console.error(`❌ BetterStack report failed: ${response.status}`);
-      }
-    } catch (err) {
-      console.error('❌ Error sending BetterStack report:', err.message);
-    }
+    //   if (response.ok) {
+    //     console.log(`✅ BetterStack report sent successfully (${affectedResourcesCount} resources marked as ${statusForReport})`);
+    //   } else {
+    //     console.error(`❌ BetterStack report failed: ${response.status}`);
+    //   }
+    // } catch (err) {
+    //   console.error('❌ Error sending BetterStack report:', err.message);
+    // }
   }
 
   // Return response
