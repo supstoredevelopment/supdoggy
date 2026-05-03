@@ -13,7 +13,7 @@
 
 const DISCOUNT = (() => {
     // ── Configure here ──────────────────────────────────────────────────────────
-    const END_DATE = new Date('2026-05-03T23:59:59Z');   // May 3 end of day UTC
+    const END_DATE = new Date('2026-05-03T21:59:59Z');   // May 3 end of day UTC
     const RATE = 0.5;                                 // 50 % off
     const ROBUX_RATE = 263;                                 // R$ per $1 USD
     // ────────────────────────────────────────────────────────────────────────────

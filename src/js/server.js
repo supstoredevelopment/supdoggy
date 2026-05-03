@@ -19,7 +19,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DISCOUNT_END = new Date('2026-05-03T23:59:59Z');
+const DISCOUNT_END = new Date('2026-05-03T21:59:59Z');
 const msUntilExpiry = DISCOUNT_END.getTime() - Date.now();
 function discountActive() { return Date.now() < DISCOUNT_END.getTime(); }
 function applyDiscount(price) { return discountActive() ? price * 0.5 : price; }
